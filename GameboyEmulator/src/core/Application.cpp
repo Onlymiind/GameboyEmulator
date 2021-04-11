@@ -1,15 +1,23 @@
 #include "Application.h"
 #include "utils/Utils.h"
+#include "core/gb/CPU.h"
 
 
 #include "glm/vec4.hpp"
+#include "SFML/Graphics.hpp"
+
+#include <iostream>
+#include <iomanip>
 
 
 namespace gbemu {
 
 
 	Application::Application() :
-		m_Window({ 400, 400 }, "GameboyEmulator"), m_IsRunning(true) {}
+		m_Window({ 400, 400 }, "GameboyEmulator"), m_IsRunning(true) 
+	{
+		init();
+	}
 
 	Application::~Application()
 	{
@@ -26,6 +34,9 @@ namespace gbemu {
 
 	void Application::init()
 	{
+		SharpSM83 cpu;
+
+		std::cout << cpu.registersOut() << "\n";
 	}
 
 	void Application::update()
