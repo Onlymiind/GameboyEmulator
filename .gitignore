@@ -361,3 +361,7 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/bin_int/Debug-windows-x86/GameboyEmulator
+/GameboyEmulator.sln
+/GameboyEmulator/GameboyEmulator.vcxproj.filters
+/GameboyEmulator/GameboyEmulator.vcxproj
