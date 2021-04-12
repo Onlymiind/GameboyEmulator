@@ -1,10 +1,12 @@
 #pragma once
 #include "utils/Utils.h"
 
+#include <iostream>
 #include <cstdint>
 #include <string_view>
 #include <sstream>
 #include <string>
+#include <array>
 
 namespace gbemu {
 
@@ -28,8 +30,8 @@ namespace gbemu {
 			stream << "D: "; toHexOutput(stream, D); stream << " E: "; toHexOutput(stream, E); stream << "\n";
 			stream << "H: "; toHexOutput(stream, H); stream << " L: "; toHexOutput(stream, L); stream << "\n";
 
-			stream << "SP: "; toHexOutput(stream, StackPointer); stream << "\n";
-			stream << "PC: "; toHexOutput(stream, ProgramCounter); stream << "\n";
+			stream << "SP: "; toHexOutput(stream, SP); stream << "\n";
+			stream << "PC: "; toHexOutput(stream, PC); stream << "\n";
 
 			return stream.str();
 		}
@@ -53,7 +55,8 @@ namespace gbemu {
 					uint8_t H : 1;
 					uint8_t N : 1;
 					uint8_t Z : 1;
-				};
+				} Flags;
+
 				uint8_t A;
 			};
 		};
@@ -85,25 +88,55 @@ namespace gbemu {
 			};
 		};
 
-		uint16_t StackPointer{}, ProgramCounter{};
+		uint16_t SP{}, PC{};
 
-	};
 
-	enum class ACC: uint8_t {
-		NONE, IMM_8,
-		IMM_16,
-		REG,  REG_IND
-	};
+		//8-bit registers lookup
+		const std::array<uint8_t*, 8> REG = 
+		{
+			reinterpret_cast<uint8_t*>(&BC) + 1, reinterpret_cast<uint8_t*>(&BC) + 0, // &B, &C
+			reinterpret_cast<uint8_t*>(&DE) + 1, reinterpret_cast<uint8_t*>(&DE) + 0, // &D, &E
+			reinterpret_cast<uint8_t*>(&HL) + 1, reinterpret_cast<uint8_t*>(&HL) + 0, // &H, &L
+			reinterpret_cast<uint8_t*>(&HL) + 0, reinterpret_cast<uint8_t*>(&AF) + 1  // &HL ([HL]), &A
+		};
 
-	enum class REG: uint8_t {
-		NONE, A, B, C, D, E,
-		H, L, BC, DE, HL, SP
+		//Register pair lookup with SP
+		const std::array<uint16_t*, 4> REGP_SP = { &BC, &DE, &HL, &SP };
+
+		//Register pair lookup with AF
+		const std::array<uint16_t*, 4> REGP_AF = { &BC, &DE, &HL, &AF };
 	};
 
 
 	struct instruction {
 		std::string_view mnemonic;
-		ACC accA, accB;
-		REG regA, regB;
+	};
+
+	/// <summary>
+	/// Struct to support easy opcode decomposition;
+	/// </summary>
+	struct opcode {
+		union {
+			uint8_t code;
+
+			struct {
+
+				uint8_t z : 3;
+
+				union {
+
+					uint8_t y : 3;
+
+					struct {
+
+						uint8_t q : 1;
+
+						uint8_t p : 2;
+					};
+				};
+
+				uint8_t x : 2;
+			};
+		};
 	};
 }
