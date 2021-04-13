@@ -14,29 +14,18 @@ namespace gbemu {
 
 		opcode code{};
 
-		switch (code.x) {
-		case 0: {
-			if (code.z == 2 || code.z == 6 || (code.z == 1 && code.q == 0) || (code.z == 0 && code.y == 1)) LD(code);
+		code.code = 0x43;
 
+		m_TableLookup[code.code].Implementation(this, code);
 
-
-		}
-		case 1: {
-
-		}
-		case 2: {
-			AL_LOOKUP[code.y](this, code);
-			break;
-		}
-		case 3: {
-
-		}
-		}
 	}
 
 	std::string SharpSM83::registersOut()
 	{
 		std::stringstream stream{};
+
+		REG.B = 1;
+		REG.E = 10;
 
 		stream << "CPU registers:\n";
 
@@ -49,11 +38,25 @@ namespace gbemu {
 		stream << "SP: "; toHexOutput(stream, REG.SP); stream << "\n";
 		stream << "PC: "; toHexOutput(stream, REG.PC); stream << "\n";
 
+		tick();
+
+		stream << "CPU registers:\n";
+
+		stream << "A: "; toHexOutput(stream, REG.A); stream << " F: "; toHexOutput(stream, static_cast<uint8_t>(REG.AF & 0x00FF)); stream << "\n";
+
+		stream << "B: "; toHexOutput(stream, REG.B); stream << " C: "; toHexOutput(stream, REG.C); stream << "\n";
+		stream << "D: "; toHexOutput(stream, REG.D); stream << " E: "; toHexOutput(stream, REG.E); stream << "\n";
+		stream << "H: "; toHexOutput(stream, REG.H); stream << " L: "; toHexOutput(stream, REG.L); stream << "\n";
+
+		stream << "SP: "; toHexOutput(stream, REG.SP); stream << "\n";
+		stream << "PC: "; toHexOutput(stream, REG.PC); stream << "\n";
+
+
 		return stream.str();
 	}
 	uint8_t SharpSM83::NOP(opcode code)
 	{
-		return uint8_t();
+		return 0;
 	}
 	uint8_t SharpSM83::LD(opcode code)
 	{
@@ -183,8 +186,16 @@ namespace gbemu {
 	{
 		return uint8_t();
 	}
+	uint8_t SharpSM83::LD_REG(opcode code)
+	{
+		if (code.y == 6);      //TODO: Add logic to writing
+		else if (code.z == 6); //TODO: Add logic to reading
+		else *m_TableREG8[code.y] = (*m_TableREG8[code.z]);
+
+		return 0;
+	}
 	uint8_t SharpSM83::NONE(opcode code)
 	{
-		return uint8_t();
+		return 0;
 	}
 }
