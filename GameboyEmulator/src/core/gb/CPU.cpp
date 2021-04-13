@@ -64,7 +64,26 @@ namespace gbemu {
 	}
 	uint8_t SharpSM83::INC(opcode code)
 	{
-		return uint8_t();
+		switch (code.z) {
+		case 3: {
+			++(*m_TableREGP_SP[code.p]);
+			break;
+		}
+		case 5: {
+			REG.Flags.N = 0;
+			if (code.y == 6); //INC [HL]
+			else {
+				REG.Flags.H = halfCarryOccured8Add(*m_TableREG8[code.y], 1);
+
+				++(*m_TableREG8[code.y]);
+
+				REG.Flags.Z = *m_TableREG8[code.y] == 0;
+			}
+
+			break;
+		}
+		}
+		return 0;
 	}
 	uint8_t SharpSM83::RLA(opcode code)
 	{
@@ -76,6 +95,41 @@ namespace gbemu {
 	}
 	uint8_t SharpSM83::ADD(opcode code)
 	{
+		REG.Flags.N = 0;
+
+		switch (code.x) {
+		case 0: {
+			REG.Flags.H = halfCarryOccured16Add(REG.HL, *m_TableREGP_SP[code.p]);
+			REG.Flags.C = carryOccured16Add(REG.HL, *m_TableREGP_SP[code.p]);
+
+			REG.HL += *m_TableREGP_SP[code.p];
+
+			break;
+		}
+		case 2: {
+			if (code.z == 6); // ADD [HL]
+			else {
+				REG.Flags.H = halfCarryOccured8Add(REG.A, *m_TableREG8[code.z]);
+				REG.Flags.C = carryOccured8Add(REG.A, *m_TableREG8[code.z]);
+
+				REG.A += *m_TableREG8[code.z];
+
+				REG.Flags.Z = REG.A == 0;
+			}
+			break;
+		}
+		case 3: {
+			if (code.z == 0) //ADD SP, r8
+			{
+
+			}
+			else //ADD A, d8
+			{
+
+			}
+			break;
+		}
+		}
 		return uint8_t();
 	}
 	uint8_t SharpSM83::JR(opcode code)
@@ -84,7 +138,27 @@ namespace gbemu {
 	}
 	uint8_t SharpSM83::DEC(opcode code)
 	{
-		return uint8_t();
+		switch (code.z) {
+		case 3: {
+			--(*m_TableREGP_SP[code.p]);
+			break;
+		}
+		case 5: {
+			REG.Flags.N = 1;
+			if (code.y == 6); //DEC [HL]
+			else {
+				REG.Flags.H = halfCarryOccured8Sub(*m_TableREG8[code.y], 1);
+
+				--(*m_TableREG8[code.y]);
+
+				REG.Flags.Z = *m_TableREG8[code.y] == 0;
+			}
+
+			break;
+		}
+		}
+
+		return 0;
 	}
 	uint8_t SharpSM83::RRA(opcode code)
 	{
@@ -197,5 +271,49 @@ namespace gbemu {
 	uint8_t SharpSM83::NONE(opcode code)
 	{
 		return 0;
+	}
+	uint8_t SharpSM83::RLC(opcode code)
+	{
+		return uint8_t();
+	}
+	uint8_t SharpSM83::RRC(opcode code)
+	{
+		return uint8_t();
+	}
+	uint8_t SharpSM83::RL(opcode code)
+	{
+		return uint8_t();
+	}
+	uint8_t SharpSM83::RR(opcode code)
+	{
+		return uint8_t();
+	}
+	uint8_t SharpSM83::SLA(opcode code)
+	{
+		return uint8_t();
+	}
+	uint8_t SharpSM83::SRA(opcode code)
+	{
+		return uint8_t();
+	}
+	uint8_t SharpSM83::SWAP(opcode code)
+	{
+		return uint8_t();
+	}
+	uint8_t SharpSM83::SRL(opcode code)
+	{
+		return uint8_t();
+	}
+	uint8_t SharpSM83::BIT(opcode code)
+	{
+		return uint8_t();
+	}
+	uint8_t SharpSM83::RES(opcode code)
+	{
+		return uint8_t();
+	}
+	uint8_t SharpSM83::SET(opcode code)
+	{
+		return uint8_t();
 	}
 }
