@@ -61,6 +61,49 @@ namespace gbemu {
 
 		uint8_t NONE(opcode code);
 
+		//Refixed instructions
+		uint8_t RLC (opcode code); uint8_t RRC(opcode code); 
+		uint8_t RL  (opcode code); uint8_t RR (opcode code);
+		uint8_t SLA (opcode code); uint8_t SRA(opcode code);
+		uint8_t SWAP(opcode code); uint8_t SRL(opcode code);
+		uint8_t BIT (opcode code); uint8_t RES(opcode code);  
+		uint8_t SET (opcode code);
+	private:
+
+		inline bool halfCarryOccured8Add(uint8_t lhs, uint8_t rhs) 
+		{
+			return (((lhs & 0xF) + (rhs & 0xF)) & 0x10) != 0;
+		}
+
+		inline bool halfCarryOccured8Sub(uint8_t lhs, uint8_t rhs) 
+		{
+			return (lhs & 0xF) < (rhs & 0xF);
+		}
+
+		inline bool carryOccured8Add(uint8_t lhs, uint8_t rhs)
+		{
+			uint16_t lhs16{ lhs }, rhs16{ rhs };
+
+			return (lhs16 + rhs16) > 0xFF;
+		}
+
+		inline bool carryOccured8Sub(uint8_t lhs, uint8_t rhs)
+		{
+			return lhs < rhs;
+		}
+		
+		inline bool halfCarryOccured16Add(uint16_t lhs, uint16_t rhs) 
+		{
+			return (((lhs & 0xFFF) + (rhs & 0xFFF)) & 0x1000) != 0;
+		}
+
+		inline bool carryOccured16Add(uint16_t lhs, uint16_t rhs)
+		{
+			uint32_t lhs32{ lhs }, rhs32{ rhs };
+
+			return (lhs32 + rhs32) > 0xFFFF;
+		}
+
 	private:
 		struct {
 			union {
@@ -168,5 +211,13 @@ namespace gbemu {
 			{"LDH [a8], A", &SharpSM83::LDH, 12}, {"POP HL", &SharpSM83::POP, 12}, {"LD [C], A", &SharpSM83::LD, 8}, {"NONE", nullptr, 0},      {"NONE", nullptr, 0}, {"PUSH HL", &SharpSM83::PUSH, 16}, {"AND d8", &SharpSM83::AND, 8}, {"RST 20H", &SharpSM83::RST, 16}, {"ADD SP, r8",     &SharpSM83::ADD, 16}, {"JP HL",     &SharpSM83::JP, 4}, {"LD [a16], A", &SharpSM83::LD, 16}, {"NONE", nullptr, 0},      {"NONE", nullptr, 0}, {"NONE", nullptr, 0}, {"XOR d8", &SharpSM83::XOR, 8}, {"RST 28H", &SharpSM83::RST, 16},
 			{"LDH A, [a8]", &SharpSM83::LDH, 12}, {"POP AF", &SharpSM83::POP, 12}, {"LD A, [C]", &SharpSM83::LD, 8}, {"DI", &SharpSM83::DI, 4}, {"NONE", nullptr, 0}, {"PUSH AF", &SharpSM83::PUSH, 16}, {"OR d8",  &SharpSM83::OR,  8}, {"RST 30H", &SharpSM83::RST, 16}, {"LD HL, SP + r8", &SharpSM83::LD,  12}, {"LD SP, HL", &SharpSM83::LD, 8}, {"LD A, [a16]", &SharpSM83::LD, 16}, {"EI", &SharpSM83::EI, 4}, {"NONE", nullptr, 0}, {"NONE", nullptr, 0}, {"CP d8",  &SharpSM83::CP,  8}, {"RST 38H", &SharpSM83::RST, 16}
 		} };
+
+		const std::array<std::function<uint8_t(SharpSM83*, opcode)>, 8> m_TableBitOperations =
+		{
+			&SharpSM83::RLC,  &SharpSM83::RRC,
+			&SharpSM83::RL,   &SharpSM83::RR,
+			&SharpSM83::SLA,  &SharpSM83::SRA,
+			&SharpSM83::SWAP, &SharpSM83::SRL
+		};
 	};
 }
