@@ -5,6 +5,7 @@
 #include <type_traits>
 #include <sstream>
 #include <string>
+#include <iomanip>
 
 inline sf::Color colorToSFML(glm::vec4 color)
 {	
