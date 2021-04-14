@@ -10,11 +10,11 @@ namespace gbemu {
 
 	void SharpSM83::tick()
 	{
-		//TODO: read next instruction;
-
-		opcode code{};
-
-		code.code = 0x43;
+		const opcode code = fetch();
+		//TODO: Check CB prefix
+		//TODO: Check if previous instruction has finished
+		//TODO: HALT state (with bug)
+		//TODO: Check if opcode is invalid
 
 		m_TableLookup[code.code].Implementation(this, code);
 
@@ -24,9 +24,6 @@ namespace gbemu {
 	{
 		std::stringstream stream{};
 
-		REG.B = 1;
-		REG.E = 10;
-
 		stream << "CPU registers:\n";
 
 		stream << "A: "; toHexOutput(stream, REG.A); stream << " F: "; toHexOutput(stream, static_cast<uint8_t>(REG.AF & 0x00FF)); stream << "\n";
@@ -37,47 +34,43 @@ namespace gbemu {
 
 		stream << "SP: "; toHexOutput(stream, REG.SP); stream << "\n";
 		stream << "PC: "; toHexOutput(stream, REG.PC); stream << "\n";
-
-		tick();
-
-		stream << "CPU registers:\n";
-
-		stream << "A: "; toHexOutput(stream, REG.A); stream << " F: "; toHexOutput(stream, static_cast<uint8_t>(REG.AF & 0x00FF)); stream << "\n";
-
-		stream << "B: "; toHexOutput(stream, REG.B); stream << " C: "; toHexOutput(stream, REG.C); stream << "\n";
-		stream << "D: "; toHexOutput(stream, REG.D); stream << " E: "; toHexOutput(stream, REG.E); stream << "\n";
-		stream << "H: "; toHexOutput(stream, REG.H); stream << " L: "; toHexOutput(stream, REG.L); stream << "\n";
-
-		stream << "SP: "; toHexOutput(stream, REG.SP); stream << "\n";
-		stream << "PC: "; toHexOutput(stream, REG.PC); stream << "\n";
-
 
 		return stream.str();
 	}
-	uint8_t SharpSM83::NOP(opcode code)
+	uint8_t SharpSM83::NOP(const opcode code)
 	{
 		return 0;
 	}
-	uint8_t SharpSM83::LD(opcode code)
+	uint8_t SharpSM83::LD(const opcode code)
 	{
 		return uint8_t();
 	}
-	uint8_t SharpSM83::INC(opcode code)
+	uint8_t SharpSM83::INC(const opcode code)
 	{
 		switch (code.z) {
-		case 3: {
+		case 3: { // INC reg16[code.p]
 			++(*m_TableREGP_SP[code.p]);
 			break;
 		}
 		case 5: {
 			REG.Flags.N = 0;
-			if (code.y == 6); //INC [HL]
-			else {
+			if (code.y == 6) // INC [HL]
+			{
+				uint8_t value = read(REG.HL);
+				REG.Flags.H = halfCarryOccured8Add(value, 1);
+
+				++value;
+
+				REG.Flags.Z = (value == 0);
+
+				write(REG.HL, value);
+			}
+			else { // INC reg8[code.y]
 				REG.Flags.H = halfCarryOccured8Add(*m_TableREG8[code.y], 1);
 
 				++(*m_TableREG8[code.y]);
 
-				REG.Flags.Z = *m_TableREG8[code.y] == 0;
+				REG.Flags.Z = (*m_TableREG8[code.y] == 0);
 			}
 
 			break;
@@ -85,20 +78,20 @@ namespace gbemu {
 		}
 		return 0;
 	}
-	uint8_t SharpSM83::RLA(opcode code)
+	uint8_t SharpSM83::RLA(const opcode code)
 	{
 		return uint8_t();
 	}
-	uint8_t SharpSM83::RLCA(opcode code)
+	uint8_t SharpSM83::RLCA(const opcode code)
 	{
 		return uint8_t();
 	}
-	uint8_t SharpSM83::ADD(opcode code)
+	uint8_t SharpSM83::ADD(const opcode code)
 	{
 		REG.Flags.N = 0;
 
 		switch (code.x) {
-		case 0: {
+		case 0: { // ADD HL, reg16[code.p]
 			REG.Flags.H = halfCarryOccured16Add(REG.HL, *m_TableREGP_SP[code.p]);
 			REG.Flags.C = carryOccured16Add(REG.HL, *m_TableREGP_SP[code.p]);
 
@@ -107,51 +100,77 @@ namespace gbemu {
 			break;
 		}
 		case 2: {
-			if (code.z == 6); // ADD [HL]
-			else {
+			if (code.z == 6) //ADD A, [HL]
+			{
+				uint8_t value = read(REG.HL);
+				REG.Flags.H = halfCarryOccured8Add(REG.A, value);
+				REG.Flags.C = carryOccured8Add(REG.A, value);
+
+				REG.A += value;
+
+				REG.Flags.Z = (REG.A == 0);
+				//write(REG.HL, value); - don't actually need this, might uncomment for consistency
+			}
+			else { //ADD A, reg8[code.z]
 				REG.Flags.H = halfCarryOccured8Add(REG.A, *m_TableREG8[code.z]);
 				REG.Flags.C = carryOccured8Add(REG.A, *m_TableREG8[code.z]);
 
 				REG.A += *m_TableREG8[code.z];
 
-				REG.Flags.Z = REG.A == 0;
+				REG.Flags.Z = (REG.A == 0);
 			}
 			break;
 		}
 		case 3: {
 			if (code.z == 0) //ADD SP, r8
 			{
-
+				uint8_t value = fetch();
 			}
 			else //ADD A, d8
 			{
+				uint8_t value = fetch();
+				REG.Flags.H = halfCarryOccured8Add(REG.A, value);
+				REG.Flags.C = carryOccured8Add(REG.A, value);
 
+				REG.A += value;
+
+				REG.Flags.Z = (REG.A == 0);
 			}
 			break;
 		}
 		}
 		return uint8_t();
 	}
-	uint8_t SharpSM83::JR(opcode code)
+	uint8_t SharpSM83::JR(const opcode code)
 	{
 		return uint8_t();
 	}
-	uint8_t SharpSM83::DEC(opcode code)
+	uint8_t SharpSM83::DEC(const opcode code)
 	{
 		switch (code.z) {
-		case 3: {
+		case 3: { // DEC reg16[code.p]
 			--(*m_TableREGP_SP[code.p]);
 			break;
 		}
 		case 5: {
 			REG.Flags.N = 1;
-			if (code.y == 6); //DEC [HL]
-			else {
+			if (code.y == 6) // DEC [HL]
+			{
+				uint8_t value = read(REG.HL);
+				REG.Flags.H = halfCarryOccured8Sub(value, 1);
+
+				--value;
+
+				REG.Flags.Z = (value == 0);
+				write(REG.HL, value);
+			}
+			else //DEC reg8[code.y]
+			{
 				REG.Flags.H = halfCarryOccured8Sub(*m_TableREG8[code.y], 1);
 
 				--(*m_TableREG8[code.y]);
 
-				REG.Flags.Z = *m_TableREG8[code.y] == 0;
+				REG.Flags.Z = (*m_TableREG8[code.y] == 0);
 			}
 
 			break;
@@ -160,159 +179,159 @@ namespace gbemu {
 
 		return 0;
 	}
-	uint8_t SharpSM83::RRA(opcode code)
+	uint8_t SharpSM83::RRA(const opcode code)
 	{
 		return uint8_t();
 	}
-	uint8_t SharpSM83::RRCA(opcode code)
+	uint8_t SharpSM83::RRCA(const opcode code)
 	{
 		return uint8_t();
 	}
-	uint8_t SharpSM83::SUB(opcode code)
+	uint8_t SharpSM83::SUB(const opcode code)
 	{
 		return uint8_t();
 	}
-	uint8_t SharpSM83::OR(opcode code)
+	uint8_t SharpSM83::OR(const opcode code)
 	{
 		return uint8_t();
 	}
-	uint8_t SharpSM83::AND(opcode code)
+	uint8_t SharpSM83::AND(const opcode code)
 	{
 		return uint8_t();
 	}
-	uint8_t SharpSM83::XOR(opcode code)
+	uint8_t SharpSM83::XOR(const opcode code)
 	{
 		return uint8_t();
 	}
-	uint8_t SharpSM83::PUSH(opcode code)
+	uint8_t SharpSM83::PUSH(const opcode code)
 	{
 		return uint8_t();
 	}
-	uint8_t SharpSM83::ADC(opcode code)
+	uint8_t SharpSM83::ADC(const opcode code)
 	{
 		return uint8_t();
 	}
-	uint8_t SharpSM83::JP(opcode code)
+	uint8_t SharpSM83::JP(const opcode code)
 	{
 		return uint8_t();
 	}
-	uint8_t SharpSM83::POP(opcode code)
+	uint8_t SharpSM83::POP(const opcode code)
 	{
 		return uint8_t();
 	}
-	uint8_t SharpSM83::RST(opcode code)
+	uint8_t SharpSM83::RST(const opcode code)
 	{
 		return uint8_t();
 	}
-	uint8_t SharpSM83::CALL(opcode code)
+	uint8_t SharpSM83::CALL(const opcode code)
 	{
 		return uint8_t();
 	}
-	uint8_t SharpSM83::SBC(opcode code)
+	uint8_t SharpSM83::SBC(const opcode code)
 	{
 		return uint8_t();
 	}
-	uint8_t SharpSM83::DI(opcode code)
+	uint8_t SharpSM83::DI(const opcode code)
 	{
 		return uint8_t();
 	}
-	uint8_t SharpSM83::RET(opcode code)
+	uint8_t SharpSM83::RET(const opcode code)
 	{
 		return uint8_t();
 	}
-	uint8_t SharpSM83::CPL(opcode code)
+	uint8_t SharpSM83::CPL(const opcode code)
 	{
 		return uint8_t();
 	}
-	uint8_t SharpSM83::RETI(opcode code)
+	uint8_t SharpSM83::RETI(const opcode code)
 	{
 		return uint8_t();
 	}
-	uint8_t SharpSM83::CCF(opcode code)
+	uint8_t SharpSM83::CCF(const opcode code)
 	{
 		return uint8_t();
 	}
-	uint8_t SharpSM83::EI(opcode code)
+	uint8_t SharpSM83::EI(const opcode code)
 	{
 		return uint8_t();
 	}
-	uint8_t SharpSM83::LDH(opcode code)
+	uint8_t SharpSM83::LDH(const opcode code)
 	{
 		return uint8_t();
 	}
-	uint8_t SharpSM83::DAA(opcode code)
+	uint8_t SharpSM83::DAA(const opcode code)
 	{
 		return uint8_t();
 	}
-	uint8_t SharpSM83::HALT(opcode code)
+	uint8_t SharpSM83::HALT(const opcode code)
 	{
 		return uint8_t();
 	}
-	uint8_t SharpSM83::SCF(opcode code)
+	uint8_t SharpSM83::SCF(const opcode code)
 	{
 		return uint8_t();
 	}
-	uint8_t SharpSM83::CP(opcode code)
+	uint8_t SharpSM83::CP(const opcode code)
 	{
 		return uint8_t();
 	}
-	uint8_t SharpSM83::STOP(opcode code)
+	uint8_t SharpSM83::STOP(const opcode code)
 	{
 		return uint8_t();
 	}
-	uint8_t SharpSM83::LD_REG(opcode code)
+	uint8_t SharpSM83::LD_REG(const opcode code)
 	{
-		if (code.y == 6);      //TODO: Add logic to writing
-		else if (code.z == 6); //TODO: Add logic to reading
-		else *m_TableREG8[code.y] = (*m_TableREG8[code.z]);
+		if (code.y == 6) write(REG.HL, *m_TableREG8[code.z]);      // LD [HL], reg8[code.z]
+		else if (code.z == 6) *m_TableREG8[code.y] = read(REG.HL); // LD reg8[code.z], [HL]
+		else *m_TableREG8[code.y] = (*m_TableREG8[code.z]);        // LD reg8[code.y], reg8[code.z]
 
 		return 0;
 	}
-	uint8_t SharpSM83::NONE(opcode code)
+	uint8_t SharpSM83::NONE(const opcode code)
 	{
 		return 0;
 	}
-	uint8_t SharpSM83::RLC(opcode code)
+	uint8_t SharpSM83::RLC(const opcode code)
 	{
 		return uint8_t();
 	}
-	uint8_t SharpSM83::RRC(opcode code)
+	uint8_t SharpSM83::RRC(const opcode code)
 	{
 		return uint8_t();
 	}
-	uint8_t SharpSM83::RL(opcode code)
+	uint8_t SharpSM83::RL(const opcode code)
 	{
 		return uint8_t();
 	}
-	uint8_t SharpSM83::RR(opcode code)
+	uint8_t SharpSM83::RR(const opcode code)
 	{
 		return uint8_t();
 	}
-	uint8_t SharpSM83::SLA(opcode code)
+	uint8_t SharpSM83::SLA(const opcode code)
 	{
 		return uint8_t();
 	}
-	uint8_t SharpSM83::SRA(opcode code)
+	uint8_t SharpSM83::SRA(const opcode code)
 	{
 		return uint8_t();
 	}
-	uint8_t SharpSM83::SWAP(opcode code)
+	uint8_t SharpSM83::SWAP(const opcode code)
 	{
 		return uint8_t();
 	}
-	uint8_t SharpSM83::SRL(opcode code)
+	uint8_t SharpSM83::SRL(const opcode code)
 	{
 		return uint8_t();
 	}
-	uint8_t SharpSM83::BIT(opcode code)
+	uint8_t SharpSM83::BIT(const opcode code)
 	{
 		return uint8_t();
 	}
-	uint8_t SharpSM83::RES(opcode code)
+	uint8_t SharpSM83::RES(const opcode code)
 	{
 		return uint8_t();
 	}
-	uint8_t SharpSM83::SET(opcode code)
+	uint8_t SharpSM83::SET(const opcode code)
 	{
 		return uint8_t();
 	}
