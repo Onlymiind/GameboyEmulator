@@ -124,7 +124,13 @@ namespace gbemu {
 		case 3: {
 			if (code.z == 0) //ADD SP, r8
 			{
+				REG.Flags.Z = 0;
 				uint8_t value = fetch();
+
+				REG.Flags.H = halfCarryOccured8Add(REG.SP & 0x00FF, value); //According to specification H flag should be set if overflow from bit 3
+				REG.Flags.C = carryOccured8Add(REG.SP & 0x00FF, value); //Carry flag should be set if overflow from bit 7
+
+				REG.SP += value;
 			}
 			else //ADD A, d8
 			{
@@ -193,15 +199,96 @@ namespace gbemu {
 	}
 	uint8_t SharpSM83::OR(const opcode code)
 	{
-		return uint8_t();
+		REG.Flags.Value = 0; //Only Z flag can be non-zero as a result of OR
+		switch (code.x) {
+		case 2: {
+			if (code.z == 6) //OR [HL]
+			{
+				REG.A |= read(REG.HL);
+			}
+			else //OR reg8[code.z]
+			{
+				REG.A |= *m_TableREG8[code.z];
+			}
+			break;
+		}
+		case 3: { REG.A |= fetch(); break; } //OR d8
+		}
+
+		REG.Flags.Z = (REG.A == 0);
+
+		return 0;
 	}
 	uint8_t SharpSM83::AND(const opcode code)
 	{
-		return uint8_t();
+		REG.Flags.Value = 0;
+		REG.Flags.H = 1;
+		switch (code.x) {
+		case 2: {
+			if (code.z == 6) //AND [HL]
+			{
+				REG.A &= read(REG.HL);
+			}
+			else //AND reg8[code.z]
+			{
+				REG.A &= *m_TableREG8[code.z];
+			}
+			break;
+		}
+		case 3: { REG.A &= fetch(); break; } //AND d8
+		}
+
+		REG.Flags.Z = (REG.A == 0);
+
+		return 0;
 	}
 	uint8_t SharpSM83::XOR(const opcode code)
 	{
-		return uint8_t();
+		REG.Flags.Value = 0; //Only Z flag can be non-zero as a result of XOR
+		switch (code.x) {
+		case 2: {
+			if (code.z == 6) //XOR [HL]
+			{
+				REG.A ^= read(REG.HL);
+			}
+			else //XOR reg8[code.z]
+			{
+				REG.A ^= *m_TableREG8[code.z];
+			}
+			break;
+		}
+		case 3: { REG.A ^= fetch(); break; } //XOR d8
+		}
+
+		REG.Flags.Z = (REG.A == 0);
+
+		return 0;
+	}
+	uint8_t SharpSM83::CP(const opcode code)
+	{
+		uint8_t value{ 0 };
+
+		switch (code.x) {
+		case 2: {
+			if (code.z == 6) //CP [HL]
+			{
+				value = read(REG.HL);
+			}
+			else //CP reg8[code.z]
+			{
+				value = *m_TableREG8[code.z];
+			}
+			break;
+		}
+		case 3: { value = fetch(); break; } //CP d8
+		}
+
+		REG.Flags.N = 1;
+		REG.Flags.H = halfCarryOccured8Sub(REG.A, value);
+		REG.Flags.C = carryOccured8Sub(REG.A, value);
+		REG.Flags.Z = ((REG.A - value) == 0);
+
+		return 0;
 	}
 	uint8_t SharpSM83::PUSH(const opcode code)
 	{
@@ -268,10 +355,6 @@ namespace gbemu {
 		return uint8_t();
 	}
 	uint8_t SharpSM83::SCF(const opcode code)
-	{
-		return uint8_t();
-	}
-	uint8_t SharpSM83::CP(const opcode code)
 	{
 		return uint8_t();
 	}
