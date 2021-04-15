@@ -445,7 +445,7 @@ namespace gbemu {
 		if (code.z == 6) // SWAP [HL]
 		{
 			uint8_t value = read(REG.HL);
-			temp = value & 0xFF00;
+			temp = value & 0xF0;
 			temp >>= 4;
 			value <<= 4;
 			value |= temp;
@@ -455,7 +455,7 @@ namespace gbemu {
 		}
 		else // SWAP reg8[code.z]
 		{
-			temp = (*m_TableREG8[code.z]) & 0xFF00;
+			temp = (*m_TableREG8[code.z]) & 0xF0;
 			*m_TableREG8[code.z] <<= 4;
 			temp >>= 4;
 			*m_TableREG8[code.z] |= temp;
