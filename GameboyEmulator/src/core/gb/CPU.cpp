@@ -37,6 +37,10 @@ namespace gbemu {
 
 		return stream.str();
 	}
+	uint8_t SharpSM83::NONE(const opcode code)
+	{
+		return 0;
+	}
 	uint8_t SharpSM83::NOP(const opcode code)
 	{
 		return 0;
@@ -145,7 +149,7 @@ namespace gbemu {
 			break;
 		}
 		}
-		return uint8_t();
+		return 0;
 	}
 	uint8_t SharpSM83::JR(const opcode code)
 	{
@@ -370,10 +374,6 @@ namespace gbemu {
 
 		return 0;
 	}
-	uint8_t SharpSM83::NONE(const opcode code)
-	{
-		return 0;
-	}
 	uint8_t SharpSM83::RLC(const opcode code)
 	{
 		return uint8_t();
@@ -384,11 +384,49 @@ namespace gbemu {
 	}
 	uint8_t SharpSM83::RL(const opcode code)
 	{
-		return uint8_t();
+		REG.Flags.Value = 0;
+
+		if (code.z == 6) // RL [HL]
+		{
+			uint8_t value = read(REG.HL);
+			REG.Flags.C = value & 0x80;
+			value <<= 1;
+			value |= REG.Flags.C;
+			write(REG.HL, value);
+			REG.Flags.Z = (value == 0);
+			return 16;
+		}
+		else // RL reg8[code.z]
+		{
+			REG.Flags.C = (*m_TableREG8[code.z]) & 0x80;
+			*m_TableREG8[code.z] <<= 1;
+			*m_TableREG8[code.z] |= REG.Flags.C;
+			REG.Flags.Z = (*m_TableREG8[code.z] == 0);
+			return 8;
+		}
 	}
 	uint8_t SharpSM83::RR(const opcode code)
 	{
-		return uint8_t();
+		REG.Flags.Value = 0;
+
+		if (code.z == 6) // RL [HL]
+		{
+			uint8_t value = read(REG.HL);
+			REG.Flags.C = value & 0x01;
+			value >>= 1;
+			value |= static_cast<uint8_t>(REG.Flags.C) << 7;
+			write(REG.HL, value);
+			REG.Flags.Z = (value == 0);
+			return 16;
+		}
+		else // RL reg8[code.z]
+		{
+			REG.Flags.C = (*m_TableREG8[code.z]) & 0x01;
+			*m_TableREG8[code.z] >>= 1;
+			*m_TableREG8[code.z] |= static_cast<uint8_t>(REG.Flags.C) << 7;
+			REG.Flags.Z = (*m_TableREG8[code.z] == 0);
+			return 8;
+		}
 	}
 	uint8_t SharpSM83::SLA(const opcode code)
 	{
@@ -400,22 +438,102 @@ namespace gbemu {
 	}
 	uint8_t SharpSM83::SWAP(const opcode code)
 	{
-		return uint8_t();
+		REG.Flags.Value = 0;
+		uint8_t temp{ 0 };
+		uint8_t result{ 0 };
+
+		if (code.z == 6) // SWAP [HL]
+		{
+			uint8_t value = read(REG.HL);
+			temp = value & 0xFF00;
+			temp >>= 4;
+			value <<= 4;
+			value |= temp;
+			write(REG.HL, value);
+			REG.Flags.Z = (value == 0);
+			return 16;
+		}
+		else // SWAP reg8[code.z]
+		{
+			temp = (*m_TableREG8[code.z]) & 0xFF00;
+			*m_TableREG8[code.z] <<= 4;
+			temp >>= 4;
+			*m_TableREG8[code.z] |= temp;
+			REG.Flags.Z = (*m_TableREG8[code.z] == 0);
+			return 8;
+		}
 	}
 	uint8_t SharpSM83::SRL(const opcode code)
 	{
+		REG.Flags.Value = 0;
+
+		if (code.z == 6) // SRL [HL]
+		{
+			uint8_t value = read(REG.HL);
+			REG.Flags.C = ((value & 0x01) != 0);
+			value >>= 1;
+			write(REG.HL, value);
+			REG.Flags.Z = (value == 0);
+			return 16;
+		}
+		else // SRL reg8[code.z]
+		{
+			REG.Flags.C = (((*m_TableREG8[code.z]) & 0x01) != 0);
+			*m_TableREG8[code.z] >>= 1;
+			REG.Flags.Z = (*m_TableREG8[code.z] == 0);
+			return 8;
+		}
+
 		return uint8_t();
 	}
 	uint8_t SharpSM83::BIT(const opcode code)
 	{
-		return uint8_t();
+		REG.Flags.N = 0;
+		REG.Flags.H = 1;
+
+		uint8_t result{ 0 };
+
+		if (code.z == 6) // BIT n, [HL]
+		{
+			result = read(REG.HL) & (UINT8_C(1) << code.y);
+			REG.Flags.Z = (result == 0);
+			return 12; 
+		}
+		else //BIT n, reg8[code.z]
+		{
+			result = (*m_TableREG8[code.z] & (UINT8_C(1) << code.y));
+			REG.Flags.Z = (result == 0);
+			return 8;
+		}
 	}
 	uint8_t SharpSM83::RES(const opcode code)
 	{
-		return uint8_t();
+		uint8_t mask = ~(UINT8_C(1) << code.y);
+
+		if (code.z == 6) // RES n, [HL]
+		{ 
+			write(REG.HL, (read(REG.HL) & mask));
+			return 16;
+		}
+		else // RES n, reg8[code.z]
+		{ 
+			*m_TableREG8[code.z] &= mask;
+			return 8;
+		}
 	}
 	uint8_t SharpSM83::SET(const opcode code)
 	{
-		return uint8_t();
+		uint8_t mask = UINT8_C(1) << code.y;
+
+		if (code.z == 6) // SET n, [HL]
+		{
+			write(REG.HL, (read(REG.HL) | mask));
+			return 16;
+		}
+		else // SET n, reg8[code.z]
+		{
+			*m_TableREG8[code.z] |= mask;
+			return 8;
+		}
 	}
 }
