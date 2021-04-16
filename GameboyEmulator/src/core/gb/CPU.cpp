@@ -1,5 +1,6 @@
 #include "core/gb/CPU.h"
 
+#include <climits>
 
 namespace gbemu {
 
@@ -370,17 +371,51 @@ namespace gbemu {
 	{
 		if (code.y == 6) write(REG.HL, *m_TableREG8[code.z]);      // LD [HL], reg8[code.z]
 		else if (code.z == 6) *m_TableREG8[code.y] = read(REG.HL); // LD reg8[code.z], [HL]
-		else *m_TableREG8[code.y] = (*m_TableREG8[code.z]);        // LD reg8[code.y], reg8[code.z]
+		else *m_TableREG8[code.y] = *m_TableREG8[code.z];          // LD reg8[code.y], reg8[code.z]
 
 		return 0;
 	}
 	uint8_t SharpSM83::RLC(const opcode code)
 	{
-		return uint8_t();
+		REG.Flags.Value = 0;
+
+		if (code.z == 6) // RLC [HL]
+		{
+			uint8_t value = read(REG.HL);
+			REG.Flags.C = value & 0x80;
+			value = (value << 1) | (value >> (sizeof(uint8_t) * CHAR_BIT - 1)); // (value << n) | (value >> (BIT_COUNT - n))
+			write(REG.HL, value);
+			REG.Flags.Z = value == 0;
+			return 16;
+		}
+		else //RLC reg8[code.z]
+		{
+			REG.Flags.C = *m_TableREG8[code.z] & 0x80;
+			*m_TableREG8[code.z] = (*m_TableREG8[code.z] << 1) | (*m_TableREG8[code.z] >> (sizeof(uint8_t) * CHAR_BIT - 1)); // (value << n) | (value >> (BIT_COUNT - n))
+			REG.Flags.Z = *m_TableREG8[code.z] == 0;
+			return 8;
+		}
 	}
 	uint8_t SharpSM83::RRC(const opcode code)
 	{
-		return uint8_t();
+		REG.Flags.Value = 0;
+
+		if (code.z == 6) // RRC [HL]
+		{
+			uint8_t value = read(REG.HL);
+			REG.Flags.C = value & 0x01;
+			value = (value >> 1) | (value << (sizeof(uint8_t) * CHAR_BIT - 1)); // (value >> n) | (value << (BIT_COUNT - n))
+			write(REG.HL, value);
+			REG.Flags.Z = value == 0;
+			return 16;
+		}
+		else //RRC reg8[code.z]
+		{
+			REG.Flags.C = *m_TableREG8[code.z] & 0x01;
+			*m_TableREG8[code.z] = (*m_TableREG8[code.z] >> 1) | (*m_TableREG8[code.z] << (sizeof(uint8_t) * CHAR_BIT - 1)); // (value >> n) | (value << (BIT_COUNT - n))
+			REG.Flags.Z = *m_TableREG8[code.z] == 0;
+			return 8;
+		}
 	}
 	uint8_t SharpSM83::RL(const opcode code)
 	{
@@ -430,11 +465,50 @@ namespace gbemu {
 	}
 	uint8_t SharpSM83::SLA(const opcode code)
 	{
-		return uint8_t();
+		REG.Flags.Value = 0;
+
+		if (code.z == 6) // SLA [HL]
+		{
+			uint8_t value = read(REG.HL);
+			REG.Flags.C = ((value & 0x80) != 0);
+			value <<= 1;
+			write(REG.HL, value);
+			REG.Flags.Z = (value == 0);
+			return 16;
+		}
+		else // SLA reg8[code.z]
+		{
+			REG.Flags.C = (((*m_TableREG8[code.z]) & 0x80) != 0);
+			*m_TableREG8[code.z] <<= 1;
+			REG.Flags.Z = (*m_TableREG8[code.z] == 0);
+			return 8;
+		}
 	}
 	uint8_t SharpSM83::SRA(const opcode code)
 	{
-		return uint8_t();
+		REG.Flags.Value = 0;
+		uint8_t firstBit{ 0 };
+
+		if (code.z == 6) // SRA [HL]
+		{
+			uint8_t value = read(REG.HL);
+			REG.Flags.C = ((value & 0x01) != 0);
+			firstBit = value & 0x80;
+			value >>= 1;
+			value |= firstBit;
+			write(REG.HL, value);
+			REG.Flags.Z = (value == 0);
+			return 16;
+		}
+		else // SRA reg8[code.z]
+		{
+			REG.Flags.C = (((*m_TableREG8[code.z]) & 0x01) != 0);
+			firstBit = (*m_TableREG8[code.z]) & 0x80;
+			*m_TableREG8[code.z] >>= 1;
+			*m_TableREG8[code.z] |= firstBit;
+			REG.Flags.Z = (*m_TableREG8[code.z] == 0);
+			return 8;
+		}
 	}
 	uint8_t SharpSM83::SWAP(const opcode code)
 	{
