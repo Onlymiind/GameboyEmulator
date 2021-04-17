@@ -11,6 +11,7 @@ namespace gbemu {
 
 	void SharpSM83::tick()
 	{
+
 		const opcode code = fetch();
 		//TODO: Check CB prefix
 		//TODO: Check if previous instruction has finished
@@ -19,6 +20,10 @@ namespace gbemu {
 
 		m_TableLookup[code.code].Implementation(this, code);
 
+		if (m_EnableIME) { // Enable jumping to interrupt vectors if enabling it is scheduled by EI
+			IME = true;
+			m_EnableIME = false;
+		}
 	}
 
 	std::string SharpSM83::registersOut()
@@ -38,23 +43,41 @@ namespace gbemu {
 
 		return stream.str();
 	}
+
 	uint8_t SharpSM83::NONE(const opcode code)
 	{
 		return 0;
-	}
+	}	  
+
 	uint8_t SharpSM83::NOP(const opcode code)
 	{
 		return 0;
 	}
+
 	uint8_t SharpSM83::LD(const opcode code)
 	{
 		return uint8_t();
 	}
-	uint8_t SharpSM83::LDH(const opcode code)
+
+	uint8_t SharpSM83::LD_IO(const opcode code)
 	{
-		return uint8_t();
+		switch (code.z) {
+		case 0: {
+			uint8_t address = fetch();
+			if (code.y == 4) write(0xFF00 + address, REG.A); // LD [$FF00 + a8], A
+			else REG.A = read(0xFF00 + address);             // LD A, [$FF00 + a8]
+			break;
+		}
+		case 2: {
+			if (code.y == 4) write(0xFF00 + REG.C, REG.A);   // LD [$FF00 + C], A
+			else REG.A = read(0xFF00 + REG.C);               // LD A, [$FF00 + C]
+			break;
+		}
+		}
+		return 0;
 	}
-	uint8_t SharpSM83::LD_REG(const opcode code)
+
+	uint8_t SharpSM83::LD_REG8(const opcode code)
 	{
 		if (code.y == 6) write(REG.HL, *m_TableREG8[code.z]);      // LD [HL], reg8[code.z]
 		else if (code.z == 6) *m_TableREG8[code.y] = read(REG.HL); // LD reg8[code.z], [HL]
@@ -62,6 +85,7 @@ namespace gbemu {
 
 		return 0;
 	}
+
 	uint8_t SharpSM83::INC(const opcode code)
 	{
 		switch (code.z) {
@@ -96,6 +120,7 @@ namespace gbemu {
 		}
 		return 0;
 	}
+
 	uint8_t SharpSM83::DEC(const opcode code)
 	{
 		switch (code.z) {
@@ -130,6 +155,7 @@ namespace gbemu {
 
 		return 0;
 	}
+
 	uint8_t SharpSM83::ADD(const opcode code)
 	{
 		REG.Flags.N = 0;
@@ -190,6 +216,7 @@ namespace gbemu {
 		}
 		return 0;
 	}
+
 	uint8_t SharpSM83::ADC(const opcode code)
 	{
 		REG.Flags.N = 0;
@@ -212,6 +239,7 @@ namespace gbemu {
 		REG.Flags.Z = REG.A == 0;
 		return 0;
 	}
+
 	uint8_t SharpSM83::SUB(const opcode code)
 	{
 		REG.Flags.N = 1;
@@ -235,6 +263,7 @@ namespace gbemu {
 
 		return 0;
 	}
+
 	uint8_t SharpSM83::SBC(const opcode code)
 	{
 		REG.Flags.N = 1;
@@ -257,6 +286,7 @@ namespace gbemu {
 		REG.Flags.Z = REG.A == 0;
 		return 0;
 	}
+
 	uint8_t SharpSM83::OR(const opcode code)
 	{
 		REG.Flags.Value = 0; //Only Z flag can be non-zero as a result of OR
@@ -279,6 +309,7 @@ namespace gbemu {
 
 		return 0;
 	}
+
 	uint8_t SharpSM83::AND(const opcode code)
 	{
 		REG.Flags.Value = 0;
@@ -302,6 +333,7 @@ namespace gbemu {
 
 		return 0;
 	}
+
 	uint8_t SharpSM83::XOR(const opcode code)
 	{
 		REG.Flags.Value = 0; //Only Z flag can be non-zero as a result of XOR
@@ -324,6 +356,7 @@ namespace gbemu {
 
 		return 0;
 	}
+
 	uint8_t SharpSM83::CP(const opcode code)
 	{
 		uint8_t value{ 0 };
@@ -350,6 +383,7 @@ namespace gbemu {
 
 		return 0;
 	}
+
 	uint8_t SharpSM83::JP(const opcode code)
 	{
 		switch (code.z) {
@@ -374,6 +408,7 @@ namespace gbemu {
 		}
 		return 0;
 	}
+
 	uint8_t SharpSM83::JR(const opcode code)
 	{
 		uint8_t relAddress = fetch();
@@ -393,22 +428,26 @@ namespace gbemu {
 
 		return 0;
 	}
+
 	uint8_t SharpSM83::PUSH(const opcode code)
 	{
 		pushStack(*m_TableREGP_AF[code.p]);
 		return 0;
 	}
+
 	uint8_t SharpSM83::POP(const opcode code)
 	{
 		*m_TableREGP_AF[code.p] = popStack();
 		return 0;
 	}
+
 	uint8_t SharpSM83::RST(const opcode code)
 	{
 		pushStack(REG.PC);
 		REG.PC = static_cast<uint16_t>(code.y * 8);
 		return 0;
 	}
+
 	uint8_t SharpSM83::CALL(const opcode code)
 	{
 		uint16_t address{ fetch() };
@@ -432,34 +471,61 @@ namespace gbemu {
 		}
 		return 0;
 	}
+
 	uint8_t SharpSM83::RET(const opcode code)
 	{
-		return uint8_t();
+		switch (code.z) {
+		case 0: { // RET cond[code.y]
+			if (m_TableConditions[code.y](REG.Flags.Value))
+			{
+				REG.PC = popStack();
+				return 3;
+			}
+			break;
+		}
+		case 1: { // RET
+			REG.PC = popStack();
+			break;
+		}
+		}
+		return 0;
 	}
+
 	uint8_t SharpSM83::RETI(const opcode code)
 	{
-		return uint8_t();
+		REG.PC = popStack();
+		IME = true;
+		return 0;
 	}
+
 	uint8_t SharpSM83::DI(const opcode code)
 	{
-		return uint8_t();
+		IME = false;
+		m_EnableIME = false;
+		return 0;
 	}
+
 	uint8_t SharpSM83::EI(const opcode code)
 	{
-		return uint8_t();
+		m_EnableIME = true;
+		return 0;
 	}
+
 	uint8_t SharpSM83::HALT(const opcode code)
 	{
 		return uint8_t();
 	}
+
 	uint8_t SharpSM83::STOP(const opcode code)
 	{
 		return uint8_t();
 	}
+
 	uint8_t SharpSM83::DAA(const opcode code)
 	{
 		return uint8_t();
 	}
+
 	uint8_t SharpSM83::CPL(const opcode code)
 	{
 		REG.Flags.N = 1;
@@ -467,6 +533,7 @@ namespace gbemu {
 		REG.A = ~REG.A;
 		return 0;
 	}
+
 	uint8_t SharpSM83::CCF(const opcode code)
 	{
 		REG.Flags.Z = 0;
@@ -474,6 +541,7 @@ namespace gbemu {
 		REG.Flags.C ^= 1;
 		return 0;
 	}
+
 	uint8_t SharpSM83::SCF(const opcode code)
 	{
 		REG.Flags.Z = 0;
@@ -481,6 +549,7 @@ namespace gbemu {
 		REG.Flags.C = 1;
 		return 0;
 	}
+
 	uint8_t SharpSM83::RLA(const opcode code)
 	{
 		uint8_t firstBit = REG.Flags.C;
@@ -490,6 +559,7 @@ namespace gbemu {
 
 		return 0;
 	}
+
 	uint8_t SharpSM83::RRA(const opcode code)
 	{
 		uint8_t lastBit = static_cast<uint8_t>(REG.Flags.C) << 7;
@@ -498,6 +568,7 @@ namespace gbemu {
 		REG.A = (REG.A >> 1) | lastBit;
 		return 0;
 	}
+
 	uint8_t SharpSM83::RLCA(const opcode code)
 	{
 		REG.Flags.Value = 0;
@@ -507,6 +578,7 @@ namespace gbemu {
 
 		return 0;
 	}
+
 	uint8_t SharpSM83::RRCA(const opcode code)
 	{
 		REG.Flags.Value = 0;
@@ -516,6 +588,7 @@ namespace gbemu {
 
 		return 0;
 	}
+
 	uint8_t SharpSM83::RLC(const opcode code)
 	{
 		REG.Flags.Value = 0;
@@ -537,6 +610,7 @@ namespace gbemu {
 			return 2;
 		}
 	}
+
 	uint8_t SharpSM83::RRC(const opcode code)
 	{
 		REG.Flags.Value = 0;
@@ -558,6 +632,7 @@ namespace gbemu {
 			return 2;
 		}
 	}
+
 	uint8_t SharpSM83::RL(const opcode code)
 	{
 		uint8_t firstBit = REG.Flags.C;
@@ -580,6 +655,7 @@ namespace gbemu {
 			return 2;
 		}
 	}
+
 	uint8_t SharpSM83::RR(const opcode code)
 	{
 		uint8_t lastBit = static_cast<uint8_t>(REG.Flags.C) << 7;
@@ -602,6 +678,7 @@ namespace gbemu {
 			return 2;
 		}
 	}
+
 	uint8_t SharpSM83::SLA(const opcode code)
 	{
 		REG.Flags.Value = 0;
@@ -623,6 +700,7 @@ namespace gbemu {
 			return 2;
 		}
 	}
+
 	uint8_t SharpSM83::SRA(const opcode code)
 	{
 		REG.Flags.Value = 0;
@@ -649,6 +727,7 @@ namespace gbemu {
 			return 2;
 		}
 	}
+
 	uint8_t SharpSM83::SWAP(const opcode code)
 	{
 		REG.Flags.Value = 0;
@@ -676,6 +755,7 @@ namespace gbemu {
 			return 2;
 		}
 	}
+
 	uint8_t SharpSM83::SRL(const opcode code)
 	{
 		REG.Flags.Value = 0;
@@ -699,6 +779,7 @@ namespace gbemu {
 
 		return uint8_t();
 	}
+
 	uint8_t SharpSM83::BIT(const opcode code)
 	{
 		REG.Flags.N = 0;
@@ -719,6 +800,7 @@ namespace gbemu {
 			return 2;
 		}
 	}
+
 	uint8_t SharpSM83::RES(const opcode code)
 	{
 		uint8_t mask = ~(1 << code.y);
@@ -734,6 +816,7 @@ namespace gbemu {
 			return 2;
 		}
 	}
+
 	uint8_t SharpSM83::SET(const opcode code)
 	{
 		uint8_t mask = 1 << code.y;

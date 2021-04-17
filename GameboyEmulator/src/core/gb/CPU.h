@@ -71,18 +71,18 @@ namespace gbemu {
 		}
 
 
-		//Unprefixed instrictions
+		//Unprefixed instrictions. Can return the additional amount of machine cycles needed for the instruction
 		uint8_t NOP(const opcode code); uint8_t LD(const opcode code); uint8_t INC(const opcode code); uint8_t RLA(const opcode code); uint8_t RLCA(const opcode code);
 		uint8_t ADD(const opcode code); uint8_t JR(const opcode code); uint8_t DEC(const opcode code); uint8_t RRA(const opcode code); uint8_t RRCA(const opcode code);
 		uint8_t SUB(const opcode code); uint8_t OR(const opcode code); uint8_t AND(const opcode code); uint8_t XOR(const opcode code); uint8_t PUSH(const opcode code);
 		uint8_t ADC(const opcode code); uint8_t JP(const opcode code); uint8_t POP(const opcode code); uint8_t RST(const opcode code); uint8_t CALL(const opcode code);
 		uint8_t SBC(const opcode code); uint8_t DI(const opcode code); uint8_t RET(const opcode code); uint8_t CPL(const opcode code); uint8_t RETI(const opcode code);
-		uint8_t CCF(const opcode code); uint8_t EI(const opcode code); uint8_t LDH(const opcode code); uint8_t DAA(const opcode code); uint8_t HALT(const opcode code);
-		uint8_t SCF(const opcode code); uint8_t CP(const opcode code); uint8_t STOP(const opcode code); uint8_t LD_REG(const opcode code);
+		uint8_t CCF(const opcode code); uint8_t EI(const opcode code); uint8_t DAA(const opcode code); uint8_t HALT(const opcode code); uint8_t LD_IO(const opcode code);
+		uint8_t SCF(const opcode code); uint8_t CP(const opcode code); uint8_t STOP(const opcode code); uint8_t LD_REG8(const opcode code);
 
 		uint8_t NONE(const opcode code);
 
-		//Refixed instructions
+		//Prefixed instructions. Always return the amount of machine cycles needed for the instruction
 		uint8_t RLC (const opcode code); uint8_t RRC(const opcode code); 
 		uint8_t RL  (const opcode code); uint8_t RR (const opcode code);
 		uint8_t SLA (const opcode code); uint8_t SRA(const opcode code);
@@ -143,6 +143,7 @@ namespace gbemu {
 			lsb = read(REG.SP);
 			++REG.SP;
 			msb = read(REG.SP);
+			++REG.SP;
 			uint16_t result = (static_cast<uint16_t>(msb) << 8) | static_cast<uint16_t>(lsb);
 			return result;
 		}
@@ -195,9 +196,11 @@ namespace gbemu {
 				};
 			};
 
-			uint16_t SP{}, PC{};
+			uint16_t SP{}, PC{}; // Stack pointer, program counter
 		} REG;
 
+		bool IME{ false }; // Interrupt master enable
+		bool m_EnableIME{ false };
 
 		//8-bit registers lookup
 		const std::array<uint8_t*, 8> m_TableREG8 = 
@@ -226,7 +229,7 @@ namespace gbemu {
 		struct Instruction {
 			std::string_view Mnemonic;
 			std::function<uint8_t(SharpSM83*, const opcode)> Implementation;
-			uint8_t ClockCycles;
+			uint8_t MachineCycles;
 		};
 
 		const std::array<Instruction, 256> m_TableLookup =
@@ -236,20 +239,20 @@ namespace gbemu {
 			{"JR NZ, r8", &SharpSM83::JR,   2}, {"LD HL, d16", &SharpSM83::LD, 3}, {"LD [HL+], A", &SharpSM83::LD, 2}, {"INC HL", &SharpSM83::INC, 2}, {"INC H",    &SharpSM83::INC, 1}, {"DEC H",    &SharpSM83::DEC, 1}, {"LD H, d8",    &SharpSM83::LD, 2}, {"DAA",  &SharpSM83::DAA,  1}, {"JR Z, r8",     &SharpSM83::JR, 2}, {"ADD HL, HL", &SharpSM83::ADD, 2}, {"LD A, [HL+]", &SharpSM83::LD, 2}, {"DEC HL", &SharpSM83::DEC, 2}, {"INC L", &SharpSM83::INC, 1}, {"DEC L", &SharpSM83::DEC, 1}, {"LD L, d8", &SharpSM83::LD, 2}, {"CPL",  &SharpSM83::CPL,  1},
 			{"JR NC, r8", &SharpSM83::JR,   2}, {"LD SP, d16", &SharpSM83::LD, 3}, {"LD [HL-], A", &SharpSM83::LD, 2}, {"INC SP", &SharpSM83::INC, 2}, {"INC [HL]", &SharpSM83::INC, 3}, {"DEC [HL]", &SharpSM83::DEC, 3}, {"LD [HL], d8", &SharpSM83::LD, 3}, {"SCF",  &SharpSM83::SCF,  1}, {"JR C, r8",     &SharpSM83::JR, 2}, {"ADD HL, SP", &SharpSM83::ADD, 2}, {"LD A, [HL-]", &SharpSM83::LD, 2}, {"DEC SP", &SharpSM83::DEC, 2}, {"INC A", &SharpSM83::INC, 1}, {"DEC A", &SharpSM83::DEC, 1}, {"LD A, d8", &SharpSM83::LD, 2}, {"CCF",  &SharpSM83::CCF,  1},
 			
-			{"LD B, B",    &SharpSM83::LD_REG, 1}, {"LD B, C",    &SharpSM83::LD_REG, 1}, {"LD B, D",    &SharpSM83::LD_REG, 1}, {"LD B, E",    &SharpSM83::LD_REG, 1}, {"LD B, H",    &SharpSM83::LD_REG, 1}, {"LD B, L",    &SharpSM83::LD_REG, 1}, {"LD B, [HL]", &SharpSM83::LD_REG, 2}, {"LD B, A",    &SharpSM83::LD_REG, 1}, {"LD C, B", &SharpSM83::LD_REG, 1}, {"LD C, C", &SharpSM83::LD_REG, 1}, {"LD C, D", &SharpSM83::LD_REG, 1}, {"LD C, E", &SharpSM83::LD_REG, 1}, {"LD C, H", &SharpSM83::LD_REG, 1}, {"LD C, L", &SharpSM83::LD_REG, 1}, {"LD C, [HL]", &SharpSM83::LD_REG, 2}, {"LD C, A", &SharpSM83::LD_REG, 1},
-			{"LD D, B",    &SharpSM83::LD_REG, 1}, {"LD D, C",    &SharpSM83::LD_REG, 1}, {"LD D, D",    &SharpSM83::LD_REG, 1}, {"LD D, E",    &SharpSM83::LD_REG, 1}, {"LD D, H",    &SharpSM83::LD_REG, 1}, {"LD D, L",    &SharpSM83::LD_REG, 1}, {"LD D, [HL]", &SharpSM83::LD_REG, 2}, {"LD D, A",    &SharpSM83::LD_REG, 1}, {"LD E, B", &SharpSM83::LD_REG, 1}, {"LD E, C", &SharpSM83::LD_REG, 1}, {"LD E, D", &SharpSM83::LD_REG, 1}, {"LD E, E", &SharpSM83::LD_REG, 1}, {"LD E, H", &SharpSM83::LD_REG, 1}, {"LD E, L", &SharpSM83::LD_REG, 1}, {"LD E, [HL]", &SharpSM83::LD_REG, 2}, {"LD E, A", &SharpSM83::LD_REG, 1},
-			{"LD H, B",    &SharpSM83::LD_REG, 1}, {"LD H, C",    &SharpSM83::LD_REG, 1}, {"LD H, D",    &SharpSM83::LD_REG, 1}, {"LD H, E",    &SharpSM83::LD_REG, 1}, {"LD H, H",    &SharpSM83::LD_REG, 1}, {"LD H, L",    &SharpSM83::LD_REG, 1}, {"LD H, [HL]", &SharpSM83::LD_REG, 2}, {"LD H. A",    &SharpSM83::LD_REG, 1}, {"LD L, B", &SharpSM83::LD_REG, 1}, {"LD L, C", &SharpSM83::LD_REG, 1}, {"LD L, D", &SharpSM83::LD_REG, 1}, {"LD L, E", &SharpSM83::LD_REG, 1}, {"LD L, H", &SharpSM83::LD_REG, 1}, {"LD L, L", &SharpSM83::LD_REG, 1}, {"LD L, [HL]", &SharpSM83::LD_REG, 2}, {"LD L, A", &SharpSM83::LD_REG, 1},
-			{"LD [HL], B", &SharpSM83::LD_REG, 2}, {"LD [HL], C", &SharpSM83::LD_REG, 2}, {"LD [HL], D", &SharpSM83::LD_REG, 2}, {"LD [HL], E", &SharpSM83::LD_REG, 2}, {"LD [HL], H", &SharpSM83::LD_REG, 2}, {"LD [HL], L", &SharpSM83::LD_REG, 2}, {"HALT",       &SharpSM83::HALT,   1}, {"LD [HL], A", &SharpSM83::LD_REG, 2}, {"LD A, B", &SharpSM83::LD_REG, 1}, {"LD A, C", &SharpSM83::LD_REG, 1}, {"LD A, D", &SharpSM83::LD_REG, 1}, {"LD A. E", &SharpSM83::LD_REG, 1}, {"LD A, H", &SharpSM83::LD_REG, 1}, {"LD A, L", &SharpSM83::LD_REG, 1}, {"LD A, [HL]", &SharpSM83::LD_REG, 2}, {"LD A, A", &SharpSM83::LD_REG, 1},
+			{"LD B, B",    &SharpSM83::LD_REG8, 1}, {"LD B, C",    &SharpSM83::LD_REG8, 1}, {"LD B, D",    &SharpSM83::LD_REG8, 1}, {"LD B, E",    &SharpSM83::LD_REG8, 1}, {"LD B, H",    &SharpSM83::LD_REG8, 1}, {"LD B, L",    &SharpSM83::LD_REG8, 1}, {"LD B, [HL]", &SharpSM83::LD_REG8, 2}, {"LD B, A",    &SharpSM83::LD_REG8, 1}, {"LD C, B", &SharpSM83::LD_REG8, 1}, {"LD C, C", &SharpSM83::LD_REG8, 1}, {"LD C, D", &SharpSM83::LD_REG8, 1}, {"LD C, E", &SharpSM83::LD_REG8, 1}, {"LD C, H", &SharpSM83::LD_REG8, 1}, {"LD C, L", &SharpSM83::LD_REG8, 1}, {"LD C, [HL]", &SharpSM83::LD_REG8, 2}, {"LD C, A", &SharpSM83::LD_REG8, 1},
+			{"LD D, B",    &SharpSM83::LD_REG8, 1}, {"LD D, C",    &SharpSM83::LD_REG8, 1}, {"LD D, D",    &SharpSM83::LD_REG8, 1}, {"LD D, E",    &SharpSM83::LD_REG8, 1}, {"LD D, H",    &SharpSM83::LD_REG8, 1}, {"LD D, L",    &SharpSM83::LD_REG8, 1}, {"LD D, [HL]", &SharpSM83::LD_REG8, 2}, {"LD D, A",    &SharpSM83::LD_REG8, 1}, {"LD E, B", &SharpSM83::LD_REG8, 1}, {"LD E, C", &SharpSM83::LD_REG8, 1}, {"LD E, D", &SharpSM83::LD_REG8, 1}, {"LD E, E", &SharpSM83::LD_REG8, 1}, {"LD E, H", &SharpSM83::LD_REG8, 1}, {"LD E, L", &SharpSM83::LD_REG8, 1}, {"LD E, [HL]", &SharpSM83::LD_REG8, 2}, {"LD E, A", &SharpSM83::LD_REG8, 1},
+			{"LD H, B",    &SharpSM83::LD_REG8, 1}, {"LD H, C",    &SharpSM83::LD_REG8, 1}, {"LD H, D",    &SharpSM83::LD_REG8, 1}, {"LD H, E",    &SharpSM83::LD_REG8, 1}, {"LD H, H",    &SharpSM83::LD_REG8, 1}, {"LD H, L",    &SharpSM83::LD_REG8, 1}, {"LD H, [HL]", &SharpSM83::LD_REG8, 2}, {"LD H. A",    &SharpSM83::LD_REG8, 1}, {"LD L, B", &SharpSM83::LD_REG8, 1}, {"LD L, C", &SharpSM83::LD_REG8, 1}, {"LD L, D", &SharpSM83::LD_REG8, 1}, {"LD L, E", &SharpSM83::LD_REG8, 1}, {"LD L, H", &SharpSM83::LD_REG8, 1}, {"LD L, L", &SharpSM83::LD_REG8, 1}, {"LD L, [HL]", &SharpSM83::LD_REG8, 2}, {"LD L, A", &SharpSM83::LD_REG8, 1},
+			{"LD [HL], B", &SharpSM83::LD_REG8, 2}, {"LD [HL], C", &SharpSM83::LD_REG8, 2}, {"LD [HL], D", &SharpSM83::LD_REG8, 2}, {"LD [HL], E", &SharpSM83::LD_REG8, 2}, {"LD [HL], H", &SharpSM83::LD_REG8, 2}, {"LD [HL], L", &SharpSM83::LD_REG8, 2}, {"HALT",       &SharpSM83::HALT,    1}, {"LD [HL], A", &SharpSM83::LD_REG8, 2}, {"LD A, B", &SharpSM83::LD_REG8, 1}, {"LD A, C", &SharpSM83::LD_REG8, 1}, {"LD A, D", &SharpSM83::LD_REG8, 1}, {"LD A. E", &SharpSM83::LD_REG8, 1}, {"LD A, H", &SharpSM83::LD_REG8, 1}, {"LD A, L", &SharpSM83::LD_REG8, 1}, {"LD A, [HL]", &SharpSM83::LD_REG8, 2}, {"LD A, A", &SharpSM83::LD_REG8, 1},
 			
 			{"ADD A, B", &SharpSM83::ADD, 1}, {"ADD A, C", &SharpSM83::ADD, 1}, {"ADD A, D", &SharpSM83::ADD, 1}, {"ADD A, E", &SharpSM83::ADD, 1}, {"ADD A, H", &SharpSM83::ADD, 1}, {"ADD A, L", &SharpSM83::ADD, 1}, {"ADD A, [HL]", &SharpSM83::ADD, 2}, {"ADD A, A", &SharpSM83::ADD, 1}, {"ADC A, B", &SharpSM83::ADC, 1}, {"ADC A, C", &SharpSM83::ADC, 1}, {"ADC A, D", &SharpSM83::ADC, 1}, {"ADC A, E", &SharpSM83::ADC, 1}, {"ADC A, H", &SharpSM83::ADC, 1}, {"ADC A, L", &SharpSM83::ADC, 1}, {"ADC A, [HL]", &SharpSM83::ADC, 2}, {"ADC A, A", &SharpSM83::ADC, 1},
 			{"SUB B",    &SharpSM83::SUB, 1}, {"SUB C",    &SharpSM83::SUB, 1}, {"SUB D",    &SharpSM83::SUB, 1}, {"SUB E",    &SharpSM83::SUB, 1}, {"SUB H",    &SharpSM83::SUB, 1}, {"SUB L",    &SharpSM83::SUB, 1}, {"SUB [HL]",    &SharpSM83::SUB, 2}, {"SUB A",    &SharpSM83::SUB, 1}, {"SBC A, B", &SharpSM83::SBC, 1}, {"SBC A, C", &SharpSM83::SBC, 1}, {"SBC A, D", &SharpSM83::SBC, 1}, {"SBC A, E", &SharpSM83::SBC, 1}, {"SBC A, H", &SharpSM83::SBC, 1}, {"SBC A, L", &SharpSM83::SBC, 1}, {"SBC A, [HL]", &SharpSM83::SBC, 2}, {"SBC A, A", &SharpSM83::SBC, 1},
 			{"AND B",    &SharpSM83::AND, 1}, {"AND C",    &SharpSM83::AND, 1}, {"AND D",    &SharpSM83::AND, 1}, {"AND E",    &SharpSM83::AND, 1}, {"AND H",    &SharpSM83::AND, 1}, {"AND L",    &SharpSM83::AND, 1}, {"AND [HL]",    &SharpSM83::AND, 2}, {"AND A",    &SharpSM83::AND, 1}, {"XOR B",    &SharpSM83::XOR, 1}, {"XOR C",    &SharpSM83::XOR, 1}, {"XOR D",    &SharpSM83::XOR, 1}, {"XOR E",    &SharpSM83::XOR, 1}, {"XOR H",    &SharpSM83::XOR, 1}, {"XOR L",    &SharpSM83::XOR, 1}, {"XOR [HL]",    &SharpSM83::XOR, 2}, {"XOR A",    &SharpSM83::XOR, 1},
 			{"OR B",     &SharpSM83::OR,  1}, {"OR C",     &SharpSM83::OR,  1}, {"OR D",     &SharpSM83::OR,  1}, {"OR E",     &SharpSM83::OR,  1}, {"OR H",     &SharpSM83::OR,  1}, {"OR L",     &SharpSM83::OR,  1}, {"OR [HL]",     &SharpSM83::OR,  2}, {"OR A",     &SharpSM83::OR,  1}, {"CP B",     &SharpSM83::CP,  1}, {"CP C",     &SharpSM83::CP,  1}, {"CP D",     &SharpSM83::CP,  1}, {"CP E",     &SharpSM83::CP,  1}, {"CP H",     &SharpSM83::CP,  1}, {"CP L",     &SharpSM83::CP,  1}, {"CP [HL]",     &SharpSM83::CP,  2}, {"CP A",     &SharpSM83::CP,  1},
 			
-			{"RET NZ",      &SharpSM83::RET,  2}, {"POP BC", &SharpSM83::POP, 3}, {"JP NZ, a16", &SharpSM83::JP, 3}, {"JP a16", &SharpSM83::JP, 4}, {"CALL NZ, a16", &SharpSM83::CALL, 3}, {"PUSH BC", &SharpSM83::PUSH, 4}, {"ADD A, d8", &SharpSM83::ADD, 2}, {"RST 00H", &SharpSM83::RST, 4}, {"RET Z",          &SharpSM83::RET, 2}, {"RET",       &SharpSM83::RET,  4}, {"JP Z, a16",   &SharpSM83::JP, 3}, {"CB",   nullptr,        1}, {"CALL Z, a16", &SharpSM83::CALL, 3}, {"CALL a16", &SharpSM83::CALL, 6}, {"ADC A, d8", &SharpSM83::ADC, 2}, {"RST 08H", &SharpSM83::RST, 4},
-			{"RET NC",      &SharpSM83::RET,  2}, {"POP DE", &SharpSM83::POP, 3}, {"JP NC, a16", &SharpSM83::JP, 3}, {"NONE",   nullptr,        0}, {"CALL NC, a16", &SharpSM83::CALL, 3}, {"PUSH DE", &SharpSM83::PUSH, 4}, {"SUB d8",    &SharpSM83::SUB, 2}, {"RST 10H", &SharpSM83::RST, 4}, {"RET C",          &SharpSM83::RET, 2}, {"RETI",      &SharpSM83::RETI, 4}, {"JP C, a16",   &SharpSM83::JP, 3}, {"NONE", nullptr,        0}, {"CALL C, a16", &SharpSM83::CALL, 3}, {"NONE",     nullptr,          0}, {"SBC A, d8", &SharpSM83::ADC, 2}, {"RST 18H", &SharpSM83::RST, 4},
-			{"LDH [a8], A", &SharpSM83::LDH,  3}, {"POP HL", &SharpSM83::POP, 3}, {"LD [C], A",  &SharpSM83::LD, 2}, {"NONE",   nullptr,        0}, {"NONE",         nullptr,          0}, {"PUSH HL", &SharpSM83::PUSH, 4}, {"AND d8",    &SharpSM83::AND, 2}, {"RST 20H", &SharpSM83::RST, 4}, {"ADD SP, r8",     &SharpSM83::ADD, 4}, {"JP HL",     &SharpSM83::JP,   1}, {"LD [a16], A", &SharpSM83::LD, 4}, {"NONE", nullptr,        0}, {"NONE",        nullptr,          0}, {"NONE",     nullptr,          0}, {"XOR d8",    &SharpSM83::XOR, 2}, {"RST 28H", &SharpSM83::RST, 4},
-			{"LDH A, [a8]", &SharpSM83::LDH,  3}, {"POP AF", &SharpSM83::POP, 3}, {"LD A, [C]",  &SharpSM83::LD, 2}, {"DI",     &SharpSM83::DI, 1}, {"NONE",         nullptr,          0}, {"PUSH AF", &SharpSM83::PUSH, 4}, {"OR d8",     &SharpSM83::OR,  2}, {"RST 30H", &SharpSM83::RST, 4}, {"LD HL, SP + r8", &SharpSM83::LD,  3}, {"LD SP, HL", &SharpSM83::LD,   2}, {"LD A, [a16]", &SharpSM83::LD, 4}, {"EI",   &SharpSM83::EI, 1}, {"NONE",        nullptr,          0}, {"NONE",     nullptr,          0}, {"CP d8",     &SharpSM83::CP,  2}, {"RST 38H", &SharpSM83::RST, 4}
+			{"RET NZ",             &SharpSM83::RET,    2}, {"POP BC", &SharpSM83::POP, 3}, {"JP NZ, a16",         &SharpSM83::JP,    3}, {"JP a16", &SharpSM83::JP, 4}, {"CALL NZ, a16", &SharpSM83::CALL, 3}, {"PUSH BC", &SharpSM83::PUSH, 4}, {"ADD A, d8", &SharpSM83::ADD, 2}, {"RST 00H", &SharpSM83::RST, 4}, {"RET Z",          &SharpSM83::RET, 2}, {"RET",       &SharpSM83::RET,  4}, {"JP Z, a16",   &SharpSM83::JP, 3}, {"CB",   nullptr,        1}, {"CALL Z, a16", &SharpSM83::CALL, 3}, {"CALL a16", &SharpSM83::CALL, 6}, {"ADC A, d8", &SharpSM83::ADC, 2}, {"RST 08H", &SharpSM83::RST, 4},
+			{"RET NC",             &SharpSM83::RET,    2}, {"POP DE", &SharpSM83::POP, 3}, {"JP NC, a16",         &SharpSM83::JP,    3}, {"NONE",   nullptr,        0}, {"CALL NC, a16", &SharpSM83::CALL, 3}, {"PUSH DE", &SharpSM83::PUSH, 4}, {"SUB d8",    &SharpSM83::SUB, 2}, {"RST 10H", &SharpSM83::RST, 4}, {"RET C",          &SharpSM83::RET, 2}, {"RETI",      &SharpSM83::RETI, 4}, {"JP C, a16",   &SharpSM83::JP, 3}, {"NONE", nullptr,        0}, {"CALL C, a16", &SharpSM83::CALL, 3}, {"NONE",     nullptr,          0}, {"SBC A, d8", &SharpSM83::ADC, 2}, {"RST 18H", &SharpSM83::RST, 4},
+			{"LD [$FF00 + a8], A", &SharpSM83::LD_IO,  3}, {"POP HL", &SharpSM83::POP, 3}, {"LD [$FF00 + C], A",  &SharpSM83::LD_IO, 2}, {"NONE",   nullptr,        0}, {"NONE",         nullptr,          0}, {"PUSH HL", &SharpSM83::PUSH, 4}, {"AND d8",    &SharpSM83::AND, 2}, {"RST 20H", &SharpSM83::RST, 4}, {"ADD SP, r8",     &SharpSM83::ADD, 4}, {"JP HL",     &SharpSM83::JP,   1}, {"LD [a16], A", &SharpSM83::LD, 4}, {"NONE", nullptr,        0}, {"NONE",        nullptr,          0}, {"NONE",     nullptr,          0}, {"XOR d8",    &SharpSM83::XOR, 2}, {"RST 28H", &SharpSM83::RST, 4},
+			{"LD A, [$FF00 + a8]", &SharpSM83::LD_IO,  3}, {"POP AF", &SharpSM83::POP, 3}, {"LD A, [$FF00 + C]",  &SharpSM83::LD_IO, 2}, {"DI",     &SharpSM83::DI, 1}, {"NONE",         nullptr,          0}, {"PUSH AF", &SharpSM83::PUSH, 4}, {"OR d8",     &SharpSM83::OR,  2}, {"RST 30H", &SharpSM83::RST, 4}, {"LD HL, SP + r8", &SharpSM83::LD,  3}, {"LD SP, HL", &SharpSM83::LD,   2}, {"LD A, [a16]", &SharpSM83::LD, 4}, {"EI",   &SharpSM83::EI, 1}, {"NONE",        nullptr,          0}, {"NONE",     nullptr,          0}, {"CP d8",     &SharpSM83::CP,  2}, {"RST 38H", &SharpSM83::RST, 4}
 		} };
 
 		const std::array<std::function<uint8_t(SharpSM83*, opcode)>, 8> m_TableBitOperations =
