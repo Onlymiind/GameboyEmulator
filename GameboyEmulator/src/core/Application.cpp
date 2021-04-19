@@ -1,6 +1,9 @@
 #include "Application.h"
 #include "utils/Utils.h"
 #include "core/gb/CPU.h"
+#include "core/gb/AddressBus.h"
+#include "core/gb/RAM.h"
+#include "core/gb/MemoryController.h"
 
 
 #include "glm/vec4.hpp"
@@ -34,9 +37,13 @@ namespace gbemu {
 
 	void Application::init()
 	{
-		SharpSM83 cpu;
+		RAM ram;
+		AddressBus bus;
+		bus.connect(MemoryController(0x0000, 0xFFFF, [&ram](uint16_t address) { return ram.read(address); }, [&ram](uint16_t address, uint8_t data) {ram.write(address, data); }));
+		SharpSM83 cpu{ bus };
 
 		std::cout << cpu.registersOut() << "\n";
+		for (uint32_t i{ 0 }; i < 100; ++i) cpu.tick();
 	}
 
 	void Application::update()
