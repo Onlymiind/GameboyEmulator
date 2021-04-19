@@ -30,6 +30,7 @@ namespace gbemu {
 		//TODO: Check if opcode is invalid
 
 		m_TableLookup[code.code].Implementation(this, code);
+		std::cout << m_TableLookup[code.code].Mnemonic << "\n";
 
 		if (m_EnableIME) { // Enable jumping to interrupt vectors if enabling it is scheduled by EI
 			IME = true;
@@ -62,7 +63,6 @@ namespace gbemu {
 
 	uint8_t SharpSM83::NOP(const opcode code)
 	{
-		std::cout << "NOP\n";
 		return 0;
 	}
 
@@ -73,15 +73,15 @@ namespace gbemu {
 
 	uint8_t SharpSM83::LD_IO(const opcode code)
 	{
-		switch (code.z) {
+		switch (code.getZ()) {
 		case 0: {
 			uint8_t address = fetch();
-			if (code.y == 4) write(0xFF00 + address, REG.A); // LD [$FF00 + a8], A
+			if (code.getY() == 4) write(0xFF00 + address, REG.A); // LD [$FF00 + a8], A
 			else REG.A = read(0xFF00 + address);             // LD A, [$FF00 + a8]
 			break;
 		}
 		case 2: {
-			if (code.y == 4) write(0xFF00 + REG.C, REG.A);   // LD [$FF00 + C], A
+			if (code.getY() == 4) write(0xFF00 + REG.C, REG.A);   // LD [$FF00 + C], A
 			else REG.A = read(0xFF00 + REG.C);               // LD A, [$FF00 + C]
 			break;
 		}
@@ -91,23 +91,23 @@ namespace gbemu {
 
 	uint8_t SharpSM83::LD_REG8(const opcode code)
 	{
-		if (code.y == 6) write(REG.HL, *m_TableREG8[code.z]);      // LD [HL], reg8[code.z]
-		else if (code.z == 6) *m_TableREG8[code.y] = read(REG.HL); // LD reg8[code.z], [HL]
-		else *m_TableREG8[code.y] = *m_TableREG8[code.z];          // LD reg8[code.y], reg8[code.z]
+		if (code.getY() == 6) write(REG.HL, *m_TableREG8[code.getZ()]);      // LD [HL], reg8[code.getZ()]
+		else if (code.getZ() == 6) *m_TableREG8[code.getY()] = read(REG.HL); // LD reg8[code.getY()], [HL]
+		else *m_TableREG8[code.getY()] = *m_TableREG8[code.getZ()];          // LD reg8[code.getY()], reg8[code.getZ()]
 
 		return 0;
 	}
 
 	uint8_t SharpSM83::INC(const opcode code)
 	{
-		switch (code.z) {
-		case 3: { // INC reg16[code.p]
-			++(*m_TableREGP_SP[code.p]);
+		switch (code.getZ()) {
+		case 3: { // INC reg16[code.getP()]
+			++(*m_TableREGP_SP[code.getP()]);
 			break;
 		}
 		case 5: {
 			REG.Flags.N = 0;
-			if (code.y == 6) // INC [HL]
+			if (code.getY() == 6) // INC [HL]
 			{
 				uint8_t value = read(REG.HL);
 
@@ -119,12 +119,12 @@ namespace gbemu {
 
 				REG.Flags.Z = value == 0;
 			}
-			else { // INC reg8[code.y]
-				REG.Flags.H = halfCarryOccured8Add(*m_TableREG8[code.y], 1);
+			else { // INC reg8[code.getY()]
+				REG.Flags.H = halfCarryOccured8Add(*m_TableREG8[code.getY()], 1);
 
-				++(*m_TableREG8[code.y]);
+				++(*m_TableREG8[code.getY()]);
 
-				REG.Flags.Z = *m_TableREG8[code.y] == 0;
+				REG.Flags.Z = *m_TableREG8[code.getY()] == 0;
 			}
 
 			break;
@@ -135,14 +135,14 @@ namespace gbemu {
 
 	uint8_t SharpSM83::DEC(const opcode code)
 	{
-		switch (code.z) {
-		case 3: { // DEC reg16[code.p]
-			--(*m_TableREGP_SP[code.p]);
+		switch (code.getZ()) {
+		case 3: { // DEC reg16[code.getP()]
+			--(*m_TableREGP_SP[code.getP()]);
 			break;
 		}
 		case 5: {
 			REG.Flags.N = 1;
-			if (code.y == 6) // DEC [HL]
+			if (code.getY() == 6) // DEC [HL]
 			{
 				uint8_t value = read(REG.HL);
 				REG.Flags.H = halfCarryOccured8Sub(value, 1);
@@ -152,13 +152,13 @@ namespace gbemu {
 				write(REG.HL, value);
 				REG.Flags.Z = value == 0;
 			}
-			else //DEC reg8[code.y]
+			else //DEC reg8[code.getY()]
 			{
-				REG.Flags.H = halfCarryOccured8Sub(*m_TableREG8[code.y], 1);
+				REG.Flags.H = halfCarryOccured8Sub(*m_TableREG8[code.getY()], 1);
 
-				--(*m_TableREG8[code.y]);
+				--(*m_TableREG8[code.getY()]);
 
-				REG.Flags.Z = *m_TableREG8[code.y] == 0;
+				REG.Flags.Z = *m_TableREG8[code.getY()] == 0;
 			}
 
 			break;
@@ -172,17 +172,17 @@ namespace gbemu {
 	{
 		REG.Flags.N = 0;
 
-		switch (code.x) {
-		case 0: { // ADD HL, reg16[code.p]
-			REG.Flags.H = halfCarryOccured16Add(REG.HL, *m_TableREGP_SP[code.p]);
-			REG.Flags.C = carryOccured16Add(REG.HL, *m_TableREGP_SP[code.p]);
+		switch (code.getX()) {
+		case 0: { // ADD HL, reg16[code.getP()]
+			REG.Flags.H = halfCarryOccured16Add(REG.HL, *m_TableREGP_SP[code.getP()]);
+			REG.Flags.C = carryOccured16Add(REG.HL, *m_TableREGP_SP[code.getP()]);
 
-			REG.HL += *m_TableREGP_SP[code.p];
+			REG.HL += *m_TableREGP_SP[code.getP()];
 
 			break;
 		}
 		case 2: {
-			if (code.z == 6) //ADD A, [HL]
+			if (code.getZ() == 6) //ADD A, [HL]
 			{
 				uint8_t value = read(REG.HL);
 				REG.Flags.H = halfCarryOccured8Add(REG.A, value);
@@ -192,18 +192,18 @@ namespace gbemu {
 
 				REG.Flags.Z = (REG.A == 0);
 			}
-			else { //ADD A, reg8[code.z]
-				REG.Flags.H = halfCarryOccured8Add(REG.A, *m_TableREG8[code.z]);
-				REG.Flags.C = carryOccured8Add(REG.A, *m_TableREG8[code.z]);
+			else { //ADD A, reg8[code.getZ()]
+				REG.Flags.H = halfCarryOccured8Add(REG.A, *m_TableREG8[code.getZ()]);
+				REG.Flags.C = carryOccured8Add(REG.A, *m_TableREG8[code.getZ()]);
 
-				REG.A += *m_TableREG8[code.z];
+				REG.A += *m_TableREG8[code.getZ()];
 
 				REG.Flags.Z = REG.A == 0;
 			}
 			break;
 		}
 		case 3: {
-			if (code.z == 0) //ADD SP, r8
+			if (code.getZ() == 0) //ADD SP, r8
 			{
 				REG.Flags.Z = 0;
 				uint8_t value = fetch();
@@ -234,10 +234,10 @@ namespace gbemu {
 		REG.Flags.N = 0;
 		uint8_t value{ 0 };
 
-		switch (code.x) {
+		switch (code.getX()) {
 		case 2: {
-			if (code.z == 6) { value = read(REG.HL); } // ADC [HL]
-			else { value = *m_TableREG8[code.z]; }     // ADC reg8[code.z]
+			if (code.getZ() == 6) { value = read(REG.HL); } // ADC [HL]
+			else { value = *m_TableREG8[code.getZ()]; }     // ADC reg8[code.getZ()]
 			break;
 		}
 		case 3: { value = fetch(); break; } // ADC d8
@@ -257,10 +257,10 @@ namespace gbemu {
 		REG.Flags.N = 1;
 		uint8_t value{ 0 };
 
-		switch (code.x) {
+		switch (code.getX()) {
 		case 2: {
-			if (code.z == 6) { value = read(REG.HL); } // SUB [HL]
-			else { value = *m_TableREG8[code.z]; }     // SUB reg8[code.z]
+			if (code.getZ() == 6) { value = read(REG.HL); } // SUB [HL]
+			else { value = *m_TableREG8[code.getZ()]; }     // SUB reg8[code.getZ()]
 			break;
 		}
 		case 3: { value = fetch(); break; } // SUB d8
@@ -281,10 +281,10 @@ namespace gbemu {
 		REG.Flags.N = 1;
 		uint8_t value{ 0 };
 
-		switch (code.x) {
+		switch (code.getX()) {
 		case 2: {
-			if (code.z == 6) { value = read(REG.HL); } // SBC [HL]
-			else { value = *m_TableREG8[code.z]; }     // SBC reg8[code.z]
+			if (code.getZ() == 6) { value = read(REG.HL); } // SBC [HL]
+			else { value = *m_TableREG8[code.getZ()]; }     // SBC reg8[code.getZ()]
 			break;
 		}
 		case 3: { value = fetch(); break; } // SBC d8
@@ -302,15 +302,15 @@ namespace gbemu {
 	uint8_t SharpSM83::OR(const opcode code)
 	{
 		REG.Flags.Value = 0; //Only Z flag can be non-zero as a result of OR
-		switch (code.x) {
+		switch (code.getX()) {
 		case 2: {
-			if (code.z == 6) //OR [HL]
+			if (code.getZ() == 6) //OR [HL]
 			{
 				REG.A |= read(REG.HL);
 			}
-			else //OR reg8[code.z]
+			else //OR reg8[code.getZ()]
 			{
-				REG.A |= *m_TableREG8[code.z];
+				REG.A |= *m_TableREG8[code.getZ()];
 			}
 			break;
 		}
@@ -326,15 +326,15 @@ namespace gbemu {
 	{
 		REG.Flags.Value = 0;
 		REG.Flags.H = 1;
-		switch (code.x) {
+		switch (code.getX()) {
 		case 2: {
-			if (code.z == 6) //AND [HL]
+			if (code.getZ() == 6) //AND [HL]
 			{
 				REG.A &= read(REG.HL);
 			}
-			else //AND reg8[code.z]
+			else //AND reg8[code.getZ()]
 			{
-				REG.A &= *m_TableREG8[code.z];
+				REG.A &= *m_TableREG8[code.getZ()];
 			}
 			break;
 		}
@@ -349,15 +349,15 @@ namespace gbemu {
 	uint8_t SharpSM83::XOR(const opcode code)
 	{
 		REG.Flags.Value = 0; //Only Z flag can be non-zero as a result of XOR
-		switch (code.x) {
+		switch (code.getX()) {
 		case 2: {
-			if (code.z == 6) //XOR [HL]
+			if (code.getZ() == 6) //XOR [HL]
 			{
 				REG.A ^= read(REG.HL);
 			}
-			else //XOR reg8[code.z]
+			else //XOR reg8[code.getZ()]
 			{
-				REG.A ^= *m_TableREG8[code.z];
+				REG.A ^= *m_TableREG8[code.getZ()];
 			}
 			break;
 		}
@@ -373,15 +373,15 @@ namespace gbemu {
 	{
 		uint8_t value{ 0 };
 
-		switch (code.x) {
+		switch (code.getX()) {
 		case 2: {
-			if (code.z == 6) //CP [HL]
+			if (code.getZ() == 6) //CP [HL]
 			{
 				value = read(REG.HL);
 			}
-			else //CP reg8[code.z]
+			else //CP reg8[code.getZ()]
 			{
-				value = *m_TableREG8[code.z];
+				value = *m_TableREG8[code.getZ()];
 			}
 			break;
 		}
@@ -398,13 +398,13 @@ namespace gbemu {
 
 	uint8_t SharpSM83::JP(const opcode code)
 	{
-		switch (code.z) {
+		switch (code.getZ()) {
 		case 1: {REG.PC = REG.HL; break; } // JP HL
-		case 2: { //JP cond[code.y], a16
+		case 2: { //JP cond[code.getY()], a16
 			uint16_t address = fetch();
 			address |= static_cast<uint16_t>(fetch()) << 8;
 
-			if (m_TableConditions[code.y](REG.Flags.Value)) 
+			if (m_TableConditions[code.getY()](REG.Flags.Value)) 
 			{
 				REG.PC = address;
 				return 1;
@@ -425,13 +425,13 @@ namespace gbemu {
 	{
 		uint8_t relAddress = fetch();
 
-		if (code.y == 3) // JR r8
+		if (code.getY() == 3) // JR r8
 		{
 			REG.PC += relAddress;
 		}
-		else // JR cond[code.y - 4], r8
+		else // JR cond[code.getY() - 4], r8
 		{
-			if (m_TableConditions[code.y - 4](REG.Flags.Value))
+			if (m_TableConditions[code.getY() - 4](REG.Flags.Value))
 			{
 				REG.PC += relAddress;
 				return 1;
@@ -443,20 +443,20 @@ namespace gbemu {
 
 	uint8_t SharpSM83::PUSH(const opcode code)
 	{
-		pushStack(*m_TableREGP_AF[code.p]);
+		pushStack(*m_TableREGP_AF[code.getP()]);
 		return 0;
 	}
 
 	uint8_t SharpSM83::POP(const opcode code)
 	{
-		*m_TableREGP_AF[code.p] = popStack();
+		*m_TableREGP_AF[code.getP()] = popStack();
 		return 0;
 	}
 
 	uint8_t SharpSM83::RST(const opcode code)
 	{
 		pushStack(REG.PC);
-		REG.PC = static_cast<uint16_t>(code.y * 8);
+		REG.PC = static_cast<uint16_t>(code.getY() * 8);
 		return 0;
 	}
 
@@ -465,9 +465,9 @@ namespace gbemu {
 		uint16_t address{ fetch() };
 		address |= static_cast<uint16_t>(fetch()) << 8;
 
-		switch (code.z) {
-		case 4: { // CALL cond[code.y], a16
-			if (m_TableConditions[code.y](REG.Flags.Value))
+		switch (code.getZ()) {
+		case 4: { // CALL cond[code.getY()], a16
+			if (m_TableConditions[code.getY()](REG.Flags.Value))
 			{
 				pushStack(REG.PC);
 				REG.PC = address;
@@ -486,9 +486,9 @@ namespace gbemu {
 
 	uint8_t SharpSM83::RET(const opcode code)
 	{
-		switch (code.z) {
-		case 0: { // RET cond[code.y]
-			if (m_TableConditions[code.y](REG.Flags.Value))
+		switch (code.getZ()) {
+		case 0: { // RET cond[code.getY()]
+			if (m_TableConditions[code.getY()](REG.Flags.Value))
 			{
 				REG.PC = popStack();
 				return 3;
@@ -605,7 +605,7 @@ namespace gbemu {
 	{
 		REG.Flags.Value = 0;
 
-		if (code.z == 6) // RLC [HL]
+		if (code.getZ() == 6) // RLC [HL]
 		{
 			uint8_t value = read(REG.HL);
 			REG.Flags.C = (value & 0x80) != 0;
@@ -614,11 +614,11 @@ namespace gbemu {
 			REG.Flags.Z = value == 0;
 			return 4;
 		}
-		else //RLC reg8[code.z]
+		else //RLC reg8[code.getZ()]
 		{
-			REG.Flags.C = (*m_TableREG8[code.z] & 0x80) != 0;
-			*m_TableREG8[code.z] = (*m_TableREG8[code.z] << 1) | (*m_TableREG8[code.z] >> (sizeof(uint8_t) * CHAR_BIT - 1)); // (value << n) | (value >> (BIT_COUNT - n))
-			REG.Flags.Z = *m_TableREG8[code.z] == 0;
+			REG.Flags.C = (*m_TableREG8[code.getZ()] & 0x80) != 0;
+			*m_TableREG8[code.getZ()] = (*m_TableREG8[code.getZ()] << 1) | (*m_TableREG8[code.getZ()] >> (sizeof(uint8_t) * CHAR_BIT - 1)); // (value << n) | (value >> (BIT_COUNT - n))
+			REG.Flags.Z = *m_TableREG8[code.getZ()] == 0;
 			return 2;
 		}
 	}
@@ -627,7 +627,7 @@ namespace gbemu {
 	{
 		REG.Flags.Value = 0;
 
-		if (code.z == 6) // RRC [HL]
+		if (code.getZ() == 6) // RRC [HL]
 		{
 			uint8_t value = read(REG.HL);
 			REG.Flags.C = (value & 0x01) != 0;
@@ -636,11 +636,11 @@ namespace gbemu {
 			REG.Flags.Z = value == 0;
 			return 4;
 		}
-		else //RRC reg8[code.z]
+		else //RRC reg8[code.getZ()]
 		{
-			REG.Flags.C = (*m_TableREG8[code.z] & 0x01) != 0;
-			*m_TableREG8[code.z] = (*m_TableREG8[code.z] >> 1) | (*m_TableREG8[code.z] << (sizeof(uint8_t) * CHAR_BIT - 1)); // (value >> n) | (value << (BIT_COUNT - n))
-			REG.Flags.Z = *m_TableREG8[code.z] == 0;
+			REG.Flags.C = (*m_TableREG8[code.getZ()] & 0x01) != 0;
+			*m_TableREG8[code.getZ()] = (*m_TableREG8[code.getZ()] >> 1) | (*m_TableREG8[code.getZ()] << (sizeof(uint8_t) * CHAR_BIT - 1)); // (value >> n) | (value << (BIT_COUNT - n))
+			REG.Flags.Z = *m_TableREG8[code.getZ()] == 0;
 			return 2;
 		}
 	}
@@ -650,7 +650,7 @@ namespace gbemu {
 		uint8_t firstBit = REG.Flags.C;
 		REG.Flags.Value = 0;
 
-		if (code.z == 6) // RL [HL]
+		if (code.getZ() == 6) // RL [HL]
 		{
 			uint8_t value = read(REG.HL);
 			REG.Flags.C = (value & 0x80) != 0;
@@ -659,11 +659,11 @@ namespace gbemu {
 			REG.Flags.Z = value == 0;
 			return 4;
 		}
-		else // RL reg8[code.z]
+		else // RL reg8[code.getZ()]
 		{
-			REG.Flags.C = (*m_TableREG8[code.z] & 0x80) != 0;
-			*m_TableREG8[code.z] = (*m_TableREG8[code.z] << 1) | firstBit;
-			REG.Flags.Z = *m_TableREG8[code.z] == 0;
+			REG.Flags.C = (*m_TableREG8[code.getZ()] & 0x80) != 0;
+			*m_TableREG8[code.getZ()] = (*m_TableREG8[code.getZ()] << 1) | firstBit;
+			REG.Flags.Z = *m_TableREG8[code.getZ()] == 0;
 			return 2;
 		}
 	}
@@ -673,7 +673,7 @@ namespace gbemu {
 		uint8_t lastBit = static_cast<uint8_t>(REG.Flags.C) << 7;
 		REG.Flags.Value = 0;
 
-		if (code.z == 6) // RL [HL]
+		if (code.getZ() == 6) // RL [HL]
 		{
 			uint8_t value = read(REG.HL);
 			REG.Flags.C = (value & 0x01) != 0;
@@ -682,11 +682,11 @@ namespace gbemu {
 			REG.Flags.Z = value == 0;
 			return 4;
 		}
-		else // RL reg8[code.z]
+		else // RL reg8[code.getZ()]
 		{
-			REG.Flags.C = (*m_TableREG8[code.z] & 0x01) != 0;
-			*m_TableREG8[code.z] = (*m_TableREG8[code.z] >> 1) | lastBit;
-			REG.Flags.Z = *m_TableREG8[code.z] == 0;
+			REG.Flags.C = (*m_TableREG8[code.getZ()] & 0x01) != 0;
+			*m_TableREG8[code.getZ()] = (*m_TableREG8[code.getZ()] >> 1) | lastBit;
+			REG.Flags.Z = *m_TableREG8[code.getZ()] == 0;
 			return 2;
 		}
 	}
@@ -695,7 +695,7 @@ namespace gbemu {
 	{
 		REG.Flags.Value = 0;
 
-		if (code.z == 6) // SLA [HL]
+		if (code.getZ() == 6) // SLA [HL]
 		{
 			uint8_t value = read(REG.HL);
 			REG.Flags.C = (value & 0x80) != 0;
@@ -704,11 +704,11 @@ namespace gbemu {
 			REG.Flags.Z = value == 0;
 			return 4;
 		}
-		else // SLA reg8[code.z]
+		else // SLA reg8[code.getZ()]
 		{
-			REG.Flags.C = (*m_TableREG8[code.z] & 0x80) != 0;
-			*m_TableREG8[code.z] <<= 1;
-			REG.Flags.Z = *m_TableREG8[code.z] == 0;
+			REG.Flags.C = (*m_TableREG8[code.getZ()] & 0x80) != 0;
+			*m_TableREG8[code.getZ()] <<= 1;
+			REG.Flags.Z = *m_TableREG8[code.getZ()] == 0;
 			return 2;
 		}
 	}
@@ -718,7 +718,7 @@ namespace gbemu {
 		REG.Flags.Value = 0;
 		uint8_t firstBit{ 0 };
 
-		if (code.z == 6) // SRA [HL]
+		if (code.getZ() == 6) // SRA [HL]
 		{
 			uint8_t value = read(REG.HL);
 			REG.Flags.C = (value & 0x01) != 0;
@@ -729,13 +729,13 @@ namespace gbemu {
 			REG.Flags.Z = value == 0;
 			return 4;
 		}
-		else // SRA reg8[code.z]
+		else // SRA reg8[code.getZ()]
 		{
-			REG.Flags.C = (*m_TableREG8[code.z] & 0x01) != 0;
-			firstBit = (*m_TableREG8[code.z]) & 0x80;
-			*m_TableREG8[code.z] >>= 1;
-			*m_TableREG8[code.z] |= firstBit;
-			REG.Flags.Z = *m_TableREG8[code.z] == 0;
+			REG.Flags.C = (*m_TableREG8[code.getZ()] & 0x01) != 0;
+			firstBit = (*m_TableREG8[code.getZ()]) & 0x80;
+			*m_TableREG8[code.getZ()] >>= 1;
+			*m_TableREG8[code.getZ()] |= firstBit;
+			REG.Flags.Z = *m_TableREG8[code.getZ()] == 0;
 			return 2;
 		}
 	}
@@ -746,7 +746,7 @@ namespace gbemu {
 		uint8_t temp{ 0 };
 		uint8_t result{ 0 };
 
-		if (code.z == 6) // SWAP [HL]
+		if (code.getZ() == 6) // SWAP [HL]
 		{
 			uint8_t value = read(REG.HL);
 			temp = value & 0xF0;
@@ -757,13 +757,13 @@ namespace gbemu {
 			REG.Flags.Z = value == 0;
 			return 4;
 		}
-		else // SWAP reg8[code.z]
+		else // SWAP reg8[code.getZ()]
 		{
-			temp = (*m_TableREG8[code.z]) & 0xF0;
-			*m_TableREG8[code.z] <<= 4;
+			temp = (*m_TableREG8[code.getZ()]) & 0xF0;
+			*m_TableREG8[code.getZ()] <<= 4;
 			temp >>= 4;
-			*m_TableREG8[code.z] |= temp;
-			REG.Flags.Z = *m_TableREG8[code.z] == 0;
+			*m_TableREG8[code.getZ()] |= temp;
+			REG.Flags.Z = *m_TableREG8[code.getZ()] == 0;
 			return 2;
 		}
 	}
@@ -772,7 +772,7 @@ namespace gbemu {
 	{
 		REG.Flags.Value = 0;
 
-		if (code.z == 6) // SRL [HL]
+		if (code.getZ() == 6) // SRL [HL]
 		{
 			uint8_t value = read(REG.HL);
 			REG.Flags.C = (value & 0x01) != 0;
@@ -781,11 +781,11 @@ namespace gbemu {
 			REG.Flags.Z = value == 0;
 			return 4;
 		}
-		else // SRL reg8[code.z]
+		else // SRL reg8[code.getZ()]
 		{
-			REG.Flags.C = (*m_TableREG8[code.z] & 0x01) != 0;
-			*m_TableREG8[code.z] >>= 1;
-			REG.Flags.Z = *m_TableREG8[code.z] == 0;
+			REG.Flags.C = (*m_TableREG8[code.getZ()] & 0x01) != 0;
+			*m_TableREG8[code.getZ()] >>= 1;
+			REG.Flags.Z = *m_TableREG8[code.getZ()] == 0;
 			return 2;
 		}
 
@@ -799,15 +799,15 @@ namespace gbemu {
 
 		uint8_t result{ 0 };
 
-		if (code.z == 6) // BIT n, [HL]
+		if (code.getZ() == 6) // BIT n, [HL]
 		{
-			result = read(REG.HL) & (1 << code.y);
+			result = read(REG.HL) & (1 << code.getY());
 			REG.Flags.Z = result == 0;
 			return 3; 
 		}
-		else //BIT n, reg8[code.z]
+		else //BIT n, reg8[code.getZ()]
 		{
-			result = *m_TableREG8[code.z] & (1 << code.y);
+			result = *m_TableREG8[code.getZ()] & (1 << code.getY());
 			REG.Flags.Z = result == 0;
 			return 2;
 		}
@@ -815,32 +815,32 @@ namespace gbemu {
 
 	uint8_t SharpSM83::RES(const opcode code)
 	{
-		uint8_t mask = ~(1 << code.y);
+		uint8_t mask = ~(1 << code.getY());
 
-		if (code.z == 6) // RES n, [HL]
+		if (code.getZ() == 6) // RES n, [HL]
 		{ 
 			write(REG.HL, (read(REG.HL) & mask));
 			return 4;
 		}
-		else // RES n, reg8[code.z]
+		else // RES n, reg8[code.getZ()]
 		{ 
-			*m_TableREG8[code.z] &= mask;
+			*m_TableREG8[code.getZ()] &= mask;
 			return 2;
 		}
 	}
 
 	uint8_t SharpSM83::SET(const opcode code)
 	{
-		uint8_t mask = 1 << code.y;
+		uint8_t mask = 1 << code.getY();
 
-		if (code.z == 6) // SET n, [HL]
+		if (code.getZ() == 6) // SET n, [HL]
 		{
 			write(REG.HL, (read(REG.HL) | mask));
 			return 4;
 		}
-		else // SET n, reg8[code.z]
+		else // SET n, reg8[code.getZ()]
 		{
-			*m_TableREG8[code.z] |= mask;
+			*m_TableREG8[code.getZ()] |= mask;
 			return 2;
 		}
 	}
