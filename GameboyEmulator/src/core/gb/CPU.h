@@ -19,28 +19,13 @@ namespace gbemu {
 		opcode(uint8_t val) :
 			code(val) {}
 
-		union {
-			uint8_t code;
+		inline uint8_t getX() const { return (code & 0b11000000) >> 6; }
+		inline uint8_t getY() const { return (code & 0b00111000) >> 3; }
+		inline uint8_t getZ() const { return (code & 0b00000111) >> 0; }
+		inline uint8_t getP() const { return (code & 0b00110000) >> 4; }
+		inline uint8_t getQ() const { return (code & 0b00001000) >> 3; }
 
-			struct {
-
-				uint8_t z : 3;
-
-				union {
-
-					uint8_t y : 3;
-
-					struct {
-
-						uint8_t q : 1;
-
-						uint8_t p : 2;
-					};
-				};
-
-				uint8_t x : 2;
-			};
-		};
+		uint8_t code;
 	};
 
 	class SharpSM83 {
@@ -51,6 +36,8 @@ namespace gbemu {
 		void tick();
 
 		std::string registersOut();
+
+		inline uint16_t getProgramCounter() const { return REG.PC; }
 
 	private:
 
@@ -175,6 +162,7 @@ namespace gbemu {
 					uint8_t C;
 					uint8_t B;
 				};
+
 			};
 
 			union {

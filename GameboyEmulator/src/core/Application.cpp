@@ -37,13 +37,29 @@ namespace gbemu {
 
 	void Application::init()
 	{
+
 		RAM ram;
+
+		ram.write(0x0000, 0x4E);
+		ram.write(0x0001, 0x09);
+		ram.write(0x0002, 0x5E);
+		ram.write(0x0003, 0x83);
+		ram.write(0x0004, 0x7E);
+		ram.write(0x0005, 0xE6);
+		ram.write(0x0006, 0x00);
+		ram.write(0x0007, 0xFF);
+		ram.write(0x004E, 0xFE);
+
 		AddressBus bus;
-		bus.connect(MemoryController(0x0000, 0xFFFF, [&ram](uint16_t address) { return ram.read(address); }, [&ram](uint16_t address, uint8_t data) {ram.write(address, data); }));
+		bus.connect(MemoryController(0x0000, 0xFFFF, [&ram](uint16_t address) { return ram.read(address); }, [&ram](uint16_t address, uint8_t data) { ram.write(address, data); }));
 		SharpSM83 cpu{ bus };
 
+		for (uint32_t i{ 0 }; i < 6; ++i)
+		{ 
+			cpu.tick(); 
+		}
+
 		std::cout << cpu.registersOut() << "\n";
-		for (uint32_t i{ 0 }; i < 100; ++i) cpu.tick();
 	}
 
 	void Application::update()
