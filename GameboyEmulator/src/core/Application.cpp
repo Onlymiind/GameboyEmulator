@@ -54,10 +54,12 @@ namespace gbemu {
 		bus.connect(MemoryController(0x0000, 0xFFFF, [&ram](uint16_t address) { return ram.read(address); }, [&ram](uint16_t address, uint8_t data) { ram.write(address, data); }));
 		SharpSM83 cpu{ bus };
 
-		for (uint32_t i{ 0 }; i < 6; ++i)
+		for (uint32_t i{ 0 }; i < 100; ++i)
 		{ 
 			cpu.tick(); 
 		}
+
+		//while (m_IsRunning) cpu.tick();
 
 		std::cout << cpu.registersOut() << "\n";
 	}
