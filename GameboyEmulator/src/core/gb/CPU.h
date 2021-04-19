@@ -1,10 +1,9 @@
 #pragma once
 #include "utils/Utils.h"
+#include "core/gb/AddressBus.h"
 
-#include <iostream>
 #include <cstdint>
 #include <string_view>
-#include <sstream>
 #include <string>
 #include <array>
 #include <functional>
@@ -45,23 +44,23 @@ namespace gbemu {
 	};
 
 	class SharpSM83 {
-		friend struct Instruction;
 	public:
-		SharpSM83();
+		SharpSM83(AddressBus& bus);
 		~SharpSM83() {}
 
 		void tick();
 
 		std::string registersOut();
+
 	private:
 
 		inline uint8_t read(uint16_t address)
 		{
-			return 0;
+			return m_Bus.read(address);
 		}
 		inline void write(uint16_t address, uint8_t data)
 		{
-
+			m_Bus.write(address, data);
 		}
 		inline uint8_t fetch()
 		{
@@ -147,7 +146,7 @@ namespace gbemu {
 			uint16_t result = (static_cast<uint16_t>(msb) << 8) | static_cast<uint16_t>(lsb);
 			return result;
 		}
-	private:
+	private: //REGISTERS
 		struct {
 			union {
 				uint16_t AF{};
@@ -201,6 +200,9 @@ namespace gbemu {
 
 		bool IME{ false }; // Interrupt master enable
 		bool m_EnableIME{ false };
+
+
+	private: //LOOKUP
 
 		//8-bit registers lookup
 		const std::array<uint8_t*, 8> m_TableREG8 = 
@@ -262,5 +264,9 @@ namespace gbemu {
 			&SharpSM83::SLA,  &SharpSM83::SRA,
 			&SharpSM83::SWAP, &SharpSM83::SRL
 		};
+
+	private: //ADDRESS BUS
+
+		AddressBus& m_Bus;
 	};
 }

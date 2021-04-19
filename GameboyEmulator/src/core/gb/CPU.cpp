@@ -1,11 +1,22 @@
 #include "core/gb/CPU.h"
+#include "core/gb/AddressBus.h"
+#include "utils/Utils.h"
 
 #include <climits>
+#include <iostream>
+#include <cstdint>
+#include <string_view>
+#include <sstream>
+#include <string>
+#include <array>
+#include <functional>
+
 
 namespace gbemu {
 
 
-	SharpSM83::SharpSM83()
+	SharpSM83::SharpSM83(AddressBus& bus):
+		m_Bus(bus)
 	{}
 
 
@@ -51,6 +62,7 @@ namespace gbemu {
 
 	uint8_t SharpSM83::NOP(const opcode code)
 	{
+		std::cout << "NOP\n";
 		return 0;
 	}
 
