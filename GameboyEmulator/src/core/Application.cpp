@@ -4,6 +4,8 @@
 #include "core/gb/AddressBus.h"
 #include "core/gb/RAM.h"
 #include "core/gb/MemoryController.h"
+#include "core/gb/ROM.h"
+#include "utils/FileManager.h"
 
 
 #include "glm/vec4.hpp"
@@ -11,13 +13,17 @@
 
 #include <iostream>
 #include <iomanip>
+#include <memory>
 
+
+#define BIND_READ(x, func) std::bind(func, &x, std::placeholders::_1)
+#define BIND_WRITE(x, func) std::bind(func, &x, std::placeholders::_1, std::placeholders::_2)
 
 namespace gbemu {
 
 
 	Application::Application() :
-		m_Window({ 400, 400 }, "GameboyEmulator"), m_IsRunning(true) 
+		m_Window({ 400, 400 }, "GameboyEmulator"), m_RAM(nullptr), m_ROM(nullptr), m_Bus(), m_CPU(nullptr), m_IsRunning(true), m_StepMode(false), m_Execute(false)
 	{
 		init();
 	}
@@ -37,35 +43,30 @@ namespace gbemu {
 
 	void Application::init()
 	{
+		m_RAM = std::make_unique<RAM>(0x8000, 0xFFFF);
+		m_ROM = std::make_unique<ROM>(FileManager::readFile("../TestRoms/blargg/cpu_instrs/individual/02-interrupts.gb"));
 
-		RAM ram;
+		m_Bus.connect(MemoryController(0x0000, 0x7FFF, BIND_READ(*m_ROM, &ROM::read), BIND_WRITE(*m_ROM, &ROM::write)));
+		m_Bus.connect(MemoryController(0x8000, 0xFFFF, BIND_READ(*m_RAM, &RAM::read), BIND_WRITE(*m_RAM, &RAM::write)));
 
-		ram.write(0x0000, 0x4E);
-		ram.write(0x0001, 0x09);
-		ram.write(0x0002, 0x5E);
-		ram.write(0x0003, 0x83);
-		ram.write(0x0004, 0x7E);
-		ram.write(0x0005, 0xE6);
-		ram.write(0x0006, 0x00);
-		ram.write(0x0007, 0xFF);
-		ram.write(0x004E, 0xFE);
-
-		AddressBus bus;
-		bus.connect(MemoryController(0x0000, 0xFFFF, [&ram](uint16_t address) { return ram.read(address); }, [&ram](uint16_t address, uint8_t data) { ram.write(address, data); }));
-		SharpSM83 cpu{ bus };
-
-		for (uint32_t i{ 0 }; i < 100; ++i)
-		{ 
-			cpu.tick(); 
-		}
-
-		//while (m_IsRunning) cpu.tick();
-
-		std::cout << cpu.registersOut() << "\n";
+		m_CPU = std::make_unique<SharpSM83>(m_Bus);
 	}
 
 	void Application::update()
 	{
+		if (m_StepMode) {
+			if (m_Execute) 
+			{
+				if (m_CPU->isFinished()) m_CPU->tick();
+				while (!m_CPU->isFinished()) 
+				{
+					m_CPU->tick();
+				}
+				m_Execute = false;
+			}
+		}
+		else m_CPU->tick();
+
 		sf::CircleShape circle(40);
 		circle.setFillColor(sf::Color::Red);
 
@@ -78,11 +79,21 @@ namespace gbemu {
 	void Application::pollEvents()
 	{
 		sf::Event event{};
-		while (m_Window.pollEvent(event)) if (event.type == sf::Event::Closed) m_IsRunning = false;
+		while (m_Window.pollEvent(event))
+		{
+			if (event.type == sf::Event::Closed) m_IsRunning = false;
+
+			else if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Space) m_StepMode = !m_StepMode;
+			else if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::A)
+			{
+				m_Execute = true;
+			}
+		}
 	}
 
 	void Application::cleanup()
 	{
+		std::cout << m_CPU->registersOut() << "\n";
 		m_Window.close();
 	}
 }
