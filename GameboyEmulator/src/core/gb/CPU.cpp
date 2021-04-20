@@ -15,33 +15,59 @@
 namespace gbemu {
 
 
-	SharpSM83::SharpSM83(AddressBus& bus):
-		m_Bus(bus)
+	SharpSM83::SharpSM83(AddressBus& bus) :
+		m_Bus(bus), m_CyclesToFinish(0)
 	{}
 
 
 	void SharpSM83::tick()
 	{
+		if (m_CyclesToFinish == 0) {
 
-		const opcode code = fetch();
-		//TODO: Check CB prefix
-		//TODO: Check if previous instruction has finished
-		//TODO: HALT state (with bug)
-		//TODO: Check if opcode is invalid
+			const opcode code = fetch();
+			//TODO: HALT state (with bug)
+			//TODO: Check if opcode is invalid
+			if (code.code == 0xCB) 
+			{
+				switch (code.getX()) {
+				case 0: {
+					m_CyclesToFinish = m_TableBitOperations[code.getY()](this, code);
+					break;
+				}
+				case 1: {
+					m_CyclesToFinish = BIT(code);
+					break;
+				}
+				case 2: {
+					m_CyclesToFinish = RES(code);
+					break;
+				}
+				case 3: {
+					m_CyclesToFinish = SET(code);
+					break;
+				}
+				}
+			}
+			else 
+			{
+				m_CyclesToFinish = m_TableLookup[code.code].MachineCycles + m_TableLookup[code.code].Implementation(this, code);
+				std::cout << m_TableLookup[code.code].Mnemonic << "\n";
+			}
 
-		m_TableLookup[code.code].Implementation(this, code);
-		std::cout << m_TableLookup[code.code].Mnemonic << "\n";
+		}
 
 		if (m_EnableIME) { // Enable jumping to interrupt vectors if enabling it is scheduled by EI
 			IME = true;
 			m_EnableIME = false;
 		}
+
+		--m_CyclesToFinish;
 	}
 
 	std::string SharpSM83::registersOut()
 	{
 		std::stringstream stream{};
-
+		
 		stream << "CPU registers:\n";
 
 		stream << "A: "; toHexOutput(stream, REG.A); stream << " F: "; toHexOutput(stream, static_cast<uint8_t>(REG.AF & 0x00FF)); stream << "\n";
@@ -68,7 +94,118 @@ namespace gbemu {
 
 	uint8_t SharpSM83::LD(const opcode code)
 	{
-		return uint8_t();
+		switch (code.getX()) {
+		case 0: {
+			switch (code.getQ()) {
+			case 0: {
+				switch (code.getP()) {
+				case 0: { // LD [BC], A
+					write(REG.BC, REG.A);
+					break;
+				}
+				case 1: { // LD [DE], A
+					write(REG.DE, REG.A);
+					break;
+				}
+				case 2: { // LD [HLI], A
+					write(REG.HL, REG.A);
+					++REG.HL;
+					break;
+				}
+				case 3: { // LD [HLD], A
+					write(REG.HL, REG.A);
+					--REG.HL;
+					break;
+				}
+				}
+				break;
+			}
+			case 1: {
+				switch (code.getP()) {
+				case 0: { // LD A, [BC]
+					REG.A = read(REG.BC);
+					break;
+				}
+				case 1: { // LD A, [DE]
+					REG.A = read(REG.DE);
+					break;
+				}
+				case 2: { // LD A, [HLI]
+					REG.A = read(REG.HL);
+					++REG.HL;
+					break;
+				}
+				case 3: { // LD A, [HLD]
+					REG.A = read(REG.HL);
+					--REG.HL;
+					break;
+				}
+				}
+				break;
+			}
+			}
+			break;
+		}
+		case 3: {
+			uint16_t address = fetch();
+			address |= static_cast<uint16_t>(fetch()) << 8;
+
+			switch (code.getY()) {
+			case 5: { // LD [a16], A
+				write(address, REG.A);
+				break;
+			}
+			case 7: { // LD A, [a16]
+				REG.A = read(address);
+				break;
+			}
+			}
+
+			break;
+		}
+		}
+
+
+		return 0;
+	}
+
+	uint8_t SharpSM83::LD_IMM(const opcode code)
+	{
+		switch (code.getX()) {
+		case 0: {
+			switch (code.getZ()) {
+			case 1: {                     // LD reg16[code.p], d16
+				uint16_t value = fetch();
+				value |= static_cast<uint16_t>(fetch()) << 8;
+
+				*m_TableREGP_SP[code.getP()] = value;
+				break;
+			}
+			case 6: {
+				uint8_t value = fetch();
+
+				if (code.getY() == 6) write(REG.HL, value); // LD [HL], d8
+				else *m_TableREG8[code.getY()] = value;     // LD reg8[code.y], d8
+
+				break;
+			}
+			}
+
+			break;
+		}
+		case 3: { // LD HL, SP + r8
+			uint8_t offset = fetch();
+			REG.Flags.H = halfCarryOccured8Add(REG.SP & 0x00FF, offset);
+			REG.Flags.C = carryOccured8Add(REG.SP & 0x00FF, offset);
+			REG.Flags.Z = 0;
+			REG.Flags.N = 0;
+
+			REG.HL = REG.SP + offset;
+			break;
+		}
+		}
+
+		return 0;
 	}
 
 	uint8_t SharpSM83::LD_IO(const opcode code)
@@ -105,7 +242,7 @@ namespace gbemu {
 			++(*m_TableREGP_SP[code.getP()]);
 			break;
 		}
-		case 5: {
+		case 4: {
 			REG.Flags.N = 0;
 			if (code.getY() == 6) // INC [HL]
 			{
@@ -423,7 +560,7 @@ namespace gbemu {
 
 	uint8_t SharpSM83::JR(const opcode code)
 	{
-		uint8_t relAddress = fetch();
+		int8_t relAddress = fetch();
 
 		if (code.getY() == 3) // JR r8
 		{
