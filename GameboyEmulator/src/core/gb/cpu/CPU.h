@@ -67,36 +67,10 @@ namespace gbemu {
 
 		bool carryOccured16Add(uint16_t lhs, uint16_t rhs);
 
-		int8_t toSigned(uint8_t value);
+		int8_t fetchSigned();
 
 
-		inline void setBit(uint8_t& value, uint8_t bit, bool set)
-		{
-			uint8_t mask = 0xFF & (static_cast<uint8_t>(set) << (bit - 1));
-			value &= mask;
-		}
-
-		inline void setFlagZ(bool set)
-		{
-			setBit(REG.Flags.Value, 8, set);
-		}
-		inline void setFlagN(bool set)
-		{
-			setBit(REG.Flags.Value, 7, set);
-		}
-		inline void setFlagH(bool set)
-		{
-			setBit(REG.Flags.Value, 6, set);
-		}
-		inline void setFlagC(bool set)
-		{
-			setBit(REG.Flags.Value, 5, set);
-		}
-
-
-
-
-		//Unprefixed instrictions. Can return the additional amount of machine cycles needed for the instruction
+		//Unprefixed instrictions. Can return additional amount of machine cycles needed for the instruction
 		uint8_t NOP(const opcode code); uint8_t LD(const opcode code); uint8_t INC(const opcode code); uint8_t RLA(const opcode code); uint8_t RLCA(const opcode code);
 		uint8_t ADD(const opcode code); uint8_t JR(const opcode code); uint8_t DEC(const opcode code); uint8_t RRA(const opcode code); uint8_t RRCA(const opcode code);
 		uint8_t SUB(const opcode code); uint8_t OR(const opcode code); uint8_t AND(const opcode code); uint8_t XOR(const opcode code); uint8_t PUSH(const opcode code);
