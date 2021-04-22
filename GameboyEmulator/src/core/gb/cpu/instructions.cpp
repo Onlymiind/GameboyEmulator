@@ -128,9 +128,6 @@ namespace gbemu {
 			case 6: {
 				uint8_t value = fetch();
 
-				//if (code.getY() == 1 && value == 0x00) __debugbreak();
-				//if (code.getY() == 1 && value == 0xF0) __debugbreak();
-
 				if (code.getY() == 6) write(REG.HL, value); // LD [HL], d8
 				else *m_TableREG8[code.getY()] = value;     // LD reg8[code.y], d8
 
@@ -141,7 +138,7 @@ namespace gbemu {
 			break;
 		}
 		case 3: { // LD HL, SP + r8
-			int8_t offset = toSigned(fetch());
+			int8_t offset = fetchSigned();
 
 			REG.Flags.H = halfCarryOccured8Add(REG.SP & 0x00FF, offset);
 			REG.Flags.C = carryOccured8Add(REG.SP & 0x00FF, offset);
@@ -291,7 +288,7 @@ namespace gbemu {
 			if (code.getZ() == 0) //ADD SP, r8
 			{
 				REG.Flags.Z = 0;
-				int8_t value = toSigned(fetch());
+				int8_t value = fetchSigned();
 
 				REG.Flags.H = halfCarryOccured8Add(REG.SP & 0x00FF, value); //According to specification H flag should be set if overflow from bit 3
 				REG.Flags.C = carryOccured8Add(REG.SP & 0x00FF, value); //Carry flag should be set if overflow from bit 7
@@ -511,9 +508,7 @@ namespace gbemu {
 
 	uint8_t SharpSM83::JR(const opcode code)
 	{
-		int8_t relAddress = toSigned(fetch());
-
-		//std::cout << "PC: " << REG.PC << " ADDR: " << std::hex << REG.PC + relAddress << " ";
+		int8_t relAddress = fetchSigned();
 
 		if (code.getY() == 3) // JR r8
 		{
@@ -557,7 +552,6 @@ namespace gbemu {
 
 	uint8_t SharpSM83::RST(const opcode code)
 	{
-		//std::cout << toHexOutput(REG.PC) << "\n";
 		pushStack(REG.PC);
 		REG.PC = static_cast<uint16_t>(code.getY() * 8);
 		return 0;
@@ -566,7 +560,6 @@ namespace gbemu {
 	uint8_t SharpSM83::CALL(const opcode code)
 	{
 		uint16_t address = fetchWord();
-		//std::cout << std::hex << address;
 
 		switch (code.getZ()) {
 		case 4: { // CALL cond[code.getY()], a16

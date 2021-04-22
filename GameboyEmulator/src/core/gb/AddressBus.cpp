@@ -18,10 +18,6 @@ namespace gbemu {
 
 		if (it != m_Memory.end()) it->write(address, data);
 
-		if (address == 0xFF02 && data == 0x81) {
-			uint8_t value = read(0xFF01);
-
-			std::cout << value;
-		}
+		if (address == 0xFF02 && data == 0x81) { std::cout << read(0xFF01); }
 	}
 }

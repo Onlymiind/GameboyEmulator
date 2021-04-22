@@ -168,9 +168,10 @@ namespace gbemu {
 		return result;
 	}
 
-	int8_t SharpSM83::toSigned(uint8_t value)
+	int8_t SharpSM83::fetchSigned()
 	{
-		int8_t result = reinterpret_cast<int8_t&>(value);
+		uint8_t u_value = fetch();
+		int8_t result = reinterpret_cast<int8_t&>(u_value);
 		return result;
 	}
 
