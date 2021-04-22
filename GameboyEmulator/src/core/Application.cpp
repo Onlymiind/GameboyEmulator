@@ -1,6 +1,6 @@
 #include "Application.h"
 #include "utils/Utils.h"
-#include "core/gb/CPU.h"
+#include "core/gb/cpu/CPU.h"
 #include "core/gb/AddressBus.h"
 #include "core/gb/RAM.h"
 #include "core/gb/MemoryController.h"
@@ -44,7 +44,7 @@ namespace gbemu {
 	void Application::init()
 	{
 		m_RAM = std::make_unique<RAM>(0x8000, 0xFFFF);
-		m_ROM = std::make_unique<ROM>(FileManager::readFile("../TestRoms/blargg/cpu_instrs/individual/06-ld r,r.gb"));
+		m_ROM = std::make_unique<ROM>(FileManager::readFile("../TestRoms/blargg/cpu_instrs/individual/07-jr,jp,call,ret,rst.gb"));
 
 		m_Bus.connect(MemoryController(0x0000, 0x7FFF, BIND_READ(*m_ROM, &ROM::read), BIND_WRITE(*m_ROM, &ROM::write)));
 		m_Bus.connect(MemoryController(0x8000, 0xFFFF, BIND_READ(*m_RAM, &RAM::read), BIND_WRITE(*m_RAM, &RAM::write)));
@@ -65,7 +65,15 @@ namespace gbemu {
 				m_Execute = false;
 			}
 		}
-		else m_CPU->tick();
+		else
+		{
+			for (uint8_t i{ 0 }; i < m_InstructionPerFrame; ++i)
+			{
+				if (m_CPU->isFinished()) m_CPU->tick();
+				while (!m_CPU->isFinished()) m_CPU->tick();
+			}
+		}
+
 
 		sf::CircleShape circle(40);
 		circle.setFillColor(sf::Color::Red);

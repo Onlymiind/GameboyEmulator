@@ -1,91 +1,18 @@
-#include "core/gb/CPU.h"
-#include "core/gb/AddressBus.h"
+#include "core/gb/cpu/CPU.h"
 #include "utils/Utils.h"
 
 #include <climits>
 #include <iostream>
 #include <cstdint>
-#include <string_view>
-#include <sstream>
-#include <string>
-#include <array>
-#include <functional>
 
 
 namespace gbemu {
 
 
-	SharpSM83::SharpSM83(AddressBus& bus) :
-		m_Bus(bus), m_CyclesToFinish(0)
-	{}
-
-
-	void SharpSM83::tick()
-	{
-		if (m_CyclesToFinish == 0) {
-
-			const opcode code = fetch();
-			//TODO: HALT state (with bug)
-			//TODO: Check if opcode is invalid
-			if (code.code == 0xCB) 
-			{
-				switch (code.getX()) {
-				case 0: {
-					m_CyclesToFinish = m_TableBitOperations[code.getY()](this, code);
-					break;
-				}
-				case 1: {
-					m_CyclesToFinish = BIT(code);
-					break;
-				}
-				case 2: {
-					m_CyclesToFinish = RES(code);
-					break;
-				}
-				case 3: {
-					m_CyclesToFinish = SET(code);
-					break;
-				}
-				}
-			}
-			else 
-			{
-				m_CyclesToFinish = m_TableLookup[code.code].MachineCycles + m_TableLookup[code.code].Implementation(this, code);
-				std::cout << m_TableLookup[code.code].Mnemonic << "\n";
-			}
-
-		}
-
-		if (m_EnableIME) { // Enable jumping to interrupt vectors if enabling it is scheduled by EI
-			IME = true;
-			m_EnableIME = false;
-		}
-
-		--m_CyclesToFinish;
-	}
-
-	std::string SharpSM83::registersOut()
-	{
-		std::stringstream stream{};
-		
-		stream << "CPU registers:\n";
-
-		stream << "A: "; toHexOutput(stream, REG.A); stream << " F: "; toHexOutput(stream, static_cast<uint8_t>(REG.AF & 0x00FF)); stream << "\n";
-
-		stream << "B: "; toHexOutput(stream, REG.B); stream << " C: "; toHexOutput(stream, REG.C); stream << "\n";
-		stream << "D: "; toHexOutput(stream, REG.D); stream << " E: "; toHexOutput(stream, REG.E); stream << "\n";
-		stream << "H: "; toHexOutput(stream, REG.H); stream << " L: "; toHexOutput(stream, REG.L); stream << "\n";
-
-		stream << "SP: "; toHexOutput(stream, REG.SP); stream << "\n";
-		stream << "PC: "; toHexOutput(stream, REG.PC); stream << "\n";
-
-		return stream.str();
-	}
-
 	uint8_t SharpSM83::NONE(const opcode code)
 	{
 		return 0;
-	}	  
+	}
 
 	uint8_t SharpSM83::NOP(const opcode code)
 	{
@@ -147,16 +74,26 @@ namespace gbemu {
 			break;
 		}
 		case 3: {
-			uint16_t address = fetch();
-			address |= static_cast<uint16_t>(fetch()) << 8;
+			switch (code.getZ()) {
+			case 1: { // LD SP, HL
 
-			switch (code.getY()) {
-			case 5: { // LD [a16], A
-				write(address, REG.A);
+				REG.SP = REG.HL;
+
 				break;
 			}
-			case 7: { // LD A, [a16]
-				REG.A = read(address);
+			case 2: {
+				uint16_t address = fetchWord();
+
+				switch (code.getY()) {
+				case 5: { // LD [a16], A
+					write(address, REG.A);
+					break;
+				}
+				case 7: { // LD A, [a16]
+					REG.A = read(address);
+					break;
+				}
+				}
 				break;
 			}
 			}
@@ -174,15 +111,25 @@ namespace gbemu {
 		switch (code.getX()) {
 		case 0: {
 			switch (code.getZ()) {
+			case 0: { //LD [a16], SP
+				uint16_t address = fetchWord();
+
+				write(address, REG.SP & 0x00FF);
+				++address;
+				write(address, (REG.SP & 0xFF00) >> 8);
+				break;
+			}
 			case 1: {                     // LD reg16[code.p], d16
-				uint16_t value = fetch();
-				value |= static_cast<uint16_t>(fetch()) << 8;
+				uint16_t value = fetchWord();
 
 				*m_TableREGP_SP[code.getP()] = value;
 				break;
 			}
 			case 6: {
 				uint8_t value = fetch();
+
+				//if (code.getY() == 1 && value == 0x00) __debugbreak();
+				//if (code.getY() == 1 && value == 0xF0) __debugbreak();
 
 				if (code.getY() == 6) write(REG.HL, value); // LD [HL], d8
 				else *m_TableREG8[code.getY()] = value;     // LD reg8[code.y], d8
@@ -194,7 +141,8 @@ namespace gbemu {
 			break;
 		}
 		case 3: { // LD HL, SP + r8
-			uint8_t offset = fetch();
+			int8_t offset = toSigned(fetch());
+
 			REG.Flags.H = halfCarryOccured8Add(REG.SP & 0x00FF, offset);
 			REG.Flags.C = carryOccured8Add(REG.SP & 0x00FF, offset);
 			REG.Flags.Z = 0;
@@ -343,7 +291,7 @@ namespace gbemu {
 			if (code.getZ() == 0) //ADD SP, r8
 			{
 				REG.Flags.Z = 0;
-				uint8_t value = fetch();
+				int8_t value = toSigned(fetch());
 
 				REG.Flags.H = halfCarryOccured8Add(REG.SP & 0x00FF, value); //According to specification H flag should be set if overflow from bit 3
 				REG.Flags.C = carryOccured8Add(REG.SP & 0x00FF, value); //Carry flag should be set if overflow from bit 7
@@ -366,10 +314,11 @@ namespace gbemu {
 		return 0;
 	}
 
-	uint8_t SharpSM83::ADC(const opcode code)
+	uint8_t SharpSM83::ADC(const opcode code) // ADC d8 fails
 	{
 		REG.Flags.N = 0;
 		uint8_t value{ 0 };
+		uint8_t regA = REG.A;
 
 		switch (code.getX()) {
 		case 2: {
@@ -380,12 +329,12 @@ namespace gbemu {
 		case 3: { value = fetch(); break; } // ADC d8
 		}
 
-		REG.Flags.H = halfCarryOccured8Add(REG.A, value) || halfCarryOccured8Add(REG.A, (value + REG.Flags.C));
-		REG.Flags.C = carryOccured8Add(REG.A, value) || carryOccured8Add(REG.A, (value + REG.Flags.C));
-
 		REG.A += value + REG.Flags.C;
-
 		REG.Flags.Z = REG.A == 0;
+		REG.Flags.H = halfCarryOccured8Add(regA, value) || halfCarryOccured8Add(regA, (value + REG.Flags.C));
+		REG.Flags.C = carryOccured8Add(regA, value) || carryOccured8Add(regA, (value + REG.Flags.C));
+
+
 		return 0;
 	}
 
@@ -413,10 +362,11 @@ namespace gbemu {
 		return 0;
 	}
 
-	uint8_t SharpSM83::SBC(const opcode code)
+	uint8_t SharpSM83::SBC(const opcode code) //SBC d8 fails
 	{
 		REG.Flags.N = 1;
 		uint8_t value{ 0 };
+		uint8_t regA = REG.A;
 
 		switch (code.getX()) {
 		case 2: {
@@ -427,12 +377,12 @@ namespace gbemu {
 		case 3: { value = fetch(); break; } // SBC d8
 		}
 
-		REG.Flags.H = halfCarryOccured8Sub(REG.A, value) || halfCarryOccured8Sub(REG.A, (value + REG.Flags.C));
-		REG.Flags.C = carryOccured8Sub(REG.A, value) || carryOccured8Sub(REG.A, (value + REG.Flags.C));
-
 		REG.A -= value + REG.Flags.C;
-
 		REG.Flags.Z = REG.A == 0;
+		REG.Flags.H = halfCarryOccured8Sub(regA, value) || halfCarryOccured8Sub(regA, (value + REG.Flags.C));
+		REG.Flags.C = carryOccured8Sub(regA, value) || carryOccured8Sub(regA, (value + REG.Flags.C));
+
+
 		return 0;
 	}
 
@@ -538,10 +488,9 @@ namespace gbemu {
 		switch (code.getZ()) {
 		case 1: {REG.PC = REG.HL; break; } // JP HL
 		case 2: { //JP cond[code.getY()], a16
-			uint16_t address = fetch();
-			address |= static_cast<uint16_t>(fetch()) << 8;
+			uint16_t address = fetchWord();
 
-			if (m_TableConditions[code.getY()](REG.Flags.Value)) 
+			if (m_TableConditions[code.getY()](REG.Flags.Value))
 			{
 				REG.PC = address;
 				return 1;
@@ -549,8 +498,8 @@ namespace gbemu {
 			break;
 		}
 		case 3: { // JP a16
-			uint16_t address = fetch();
-			address |= static_cast<uint16_t>(fetch()) << 8;
+			uint16_t address = fetchWord();
+
 			REG.PC = address;
 			break;
 		}
@@ -560,7 +509,9 @@ namespace gbemu {
 
 	uint8_t SharpSM83::JR(const opcode code)
 	{
-		int8_t relAddress = fetch();
+		int8_t relAddress = toSigned(fetch());
+
+		//std::cout << "PC: " << REG.PC << " ADDR: " << std::hex << REG.PC + relAddress << " ";
 
 		if (code.getY() == 3) // JR r8
 		{
@@ -580,18 +531,31 @@ namespace gbemu {
 
 	uint8_t SharpSM83::PUSH(const opcode code)
 	{
-		pushStack(*m_TableREGP_AF[code.getP()]);
+		if (code.getP() == 3) { // PUSH AF
+			pushStack(REG.AF & 0xFFF0);
+		}
+		else {
+			pushStack(*m_TableREGP_AF[code.getP()]);
+		}
 		return 0;
 	}
 
 	uint8_t SharpSM83::POP(const opcode code)
 	{
-		*m_TableREGP_AF[code.getP()] = popStack();
+		if (code.getP() == 3) //POP AF
+		{
+			REG.AF = popStack() & 0xFFF0;
+		}
+		else { //POP regAF[code.p]
+			*m_TableREGP_AF[code.getP()] = popStack();
+		}
+
 		return 0;
 	}
 
 	uint8_t SharpSM83::RST(const opcode code)
 	{
+		//std::cout << toHexOutput(REG.PC) << "\n";
 		pushStack(REG.PC);
 		REG.PC = static_cast<uint16_t>(code.getY() * 8);
 		return 0;
@@ -599,8 +563,8 @@ namespace gbemu {
 
 	uint8_t SharpSM83::CALL(const opcode code)
 	{
-		uint16_t address{ fetch() };
-		address |= static_cast<uint16_t>(fetch()) << 8;
+		uint16_t address = fetchWord();
+		//std::cout << std::hex << address;
 
 		switch (code.getZ()) {
 		case 4: { // CALL cond[code.getY()], a16
@@ -672,7 +636,25 @@ namespace gbemu {
 
 	uint8_t SharpSM83::DAA(const opcode code)
 	{
-		return uint8_t();
+		if (REG.Flags.N)
+		{
+			if (REG.Flags.C) REG.A -= 0x60;
+			if (REG.Flags.H) REG.A -= 0x06;
+		}
+		else
+		{
+			if (REG.Flags.C || REG.A > 0x99)
+			{
+				REG.A += 0x60;
+				REG.Flags.C = 1;
+			}
+			if (REG.Flags.H || (REG.A & 0x0F) > 0x09) REG.A += 0x06;
+		}
+
+		REG.Flags.H = 0;
+		REG.Flags.Z = REG.A == 0;
+
+		return 0;
 	}
 
 	uint8_t SharpSM83::CPL(const opcode code)
@@ -687,7 +669,7 @@ namespace gbemu {
 	{
 		REG.Flags.Z = 0;
 		REG.Flags.N = 0;
-		REG.Flags.C ^= 1;
+		REG.Flags.C = !REG.Flags.C;
 		return 0;
 	}
 
@@ -940,7 +922,7 @@ namespace gbemu {
 		{
 			result = read(REG.HL) & (1 << code.getY());
 			REG.Flags.Z = result == 0;
-			return 3; 
+			return 3;
 		}
 		else //BIT n, reg8[code.getZ()]
 		{
@@ -955,12 +937,12 @@ namespace gbemu {
 		uint8_t mask = ~(1 << code.getY());
 
 		if (code.getZ() == 6) // RES n, [HL]
-		{ 
+		{
 			write(REG.HL, (read(REG.HL) & mask));
 			return 4;
 		}
 		else // RES n, reg8[code.getZ()]
-		{ 
+		{
 			*m_TableREG8[code.getZ()] &= mask;
 			return 2;
 		}

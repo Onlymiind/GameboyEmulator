@@ -1,8 +1,8 @@
 #pragma once
-#include "gb/RAM.h"
-#include "gb/ROM.h"
-#include "gb/AddressBus.h"
-#include "gb/CPU.h"
+#include "core/gb/RAM.h"
+#include "core/gb/ROM.h"
+#include "core/gb/AddressBus.h"
+#include "core/gb/cpu/CPU.h"
 
 #include <SFML/Graphics.hpp>
 
@@ -37,7 +37,7 @@ namespace gbemu {
 		AddressBus m_Bus;
 		std::unique_ptr<SharpSM83> m_CPU;
 
-
+		const uint8_t m_InstructionPerFrame{ 100 };
 		bool m_IsRunning;
 		bool m_StepMode;
 		bool m_Execute;

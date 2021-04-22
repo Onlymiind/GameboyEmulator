@@ -17,5 +17,11 @@ namespace gbemu {
 		auto it = std::find_if(m_Memory.begin(), m_Memory.end(), [address](const MemoryController& controller) { return controller.isInRange(address); });
 
 		if (it != m_Memory.end()) it->write(address, data);
+
+		if (address == 0xFF02 && data == 0x81) {
+			uint8_t value = read(0xFF01);
+
+			std::cout << value;
+		}
 	}
 }
