@@ -314,7 +314,7 @@ namespace gbemu {
 		return 0;
 	}
 
-	uint8_t SharpSM83::ADC(const opcode code) // ADC d8 fails
+	uint8_t SharpSM83::ADC(const opcode code)
 	{
 		REG.Flags.N = 0;
 		uint8_t value{ 0 };
@@ -326,13 +326,15 @@ namespace gbemu {
 			else { value = *m_TableREG8[code.getZ()]; }     // ADC reg8[code.getZ()]
 			break;
 		}
-		case 3: { value = fetch(); break; } // ADC d8
+		case 3: { 
+			value = fetch(); 
+			break; } // ADC d8
 		}
 
 		REG.A += value + REG.Flags.C;
 		REG.Flags.Z = REG.A == 0;
-		REG.Flags.H = halfCarryOccured8Add(regA, value) || halfCarryOccured8Add(regA, (value + REG.Flags.C));
-		REG.Flags.C = carryOccured8Add(regA, value) || carryOccured8Add(regA, (value + REG.Flags.C));
+		REG.Flags.H = ((regA & 0x0F) + (value &0x0F) + REG.Flags.C) > 0x0F;
+		REG.Flags.C = static_cast<uint16_t>(regA) + value + REG.Flags.C > 0xFF;
 
 
 		return 0;
@@ -379,8 +381,8 @@ namespace gbemu {
 
 		REG.A -= value + REG.Flags.C;
 		REG.Flags.Z = REG.A == 0;
-		REG.Flags.H = halfCarryOccured8Sub(regA, value) || halfCarryOccured8Sub(regA, (value + REG.Flags.C));
-		REG.Flags.C = carryOccured8Sub(regA, value) || carryOccured8Sub(regA, (value + REG.Flags.C));
+		REG.Flags.H = (regA & 0x0F) < ((value & 0x0F) + REG.Flags.C);
+		REG.Flags.C = regA < (static_cast<uint16_t>(value) + REG.Flags.C);
 
 
 		return 0;
@@ -667,16 +669,16 @@ namespace gbemu {
 
 	uint8_t SharpSM83::CCF(const opcode code)
 	{
-		REG.Flags.Z = 0;
 		REG.Flags.N = 0;
+		REG.Flags.H = 0;
 		REG.Flags.C = !REG.Flags.C;
 		return 0;
 	}
 
 	uint8_t SharpSM83::SCF(const opcode code)
 	{
-		REG.Flags.Z = 0;
 		REG.Flags.N = 0;
+		REG.Flags.H = 0;
 		REG.Flags.C = 1;
 		return 0;
 	}
@@ -703,9 +705,8 @@ namespace gbemu {
 	uint8_t SharpSM83::RLCA(const opcode code)
 	{
 		REG.Flags.Value = 0;
-		REG.Flags.C = (REG.A & 0x80) != 0;
+		REG.Flags.C = (REG.A & 0b10000000) != 0;
 		REG.A = (REG.A << 1) | (REG.A >> (sizeof(uint8_t) * CHAR_BIT - 1));
-		REG.Flags.Z = REG.A == 0;
 
 		return 0;
 	}
@@ -713,9 +714,8 @@ namespace gbemu {
 	uint8_t SharpSM83::RRCA(const opcode code)
 	{
 		REG.Flags.Value = 0;
-		REG.Flags.C = (REG.A & 0x80) != 0;
+		REG.Flags.C = (REG.A & 0b00000001) != 0;
 		REG.A = (REG.A >> 1) | (REG.A << (sizeof(uint8_t) * CHAR_BIT - 1));
-		REG.Flags.Z = REG.A == 0;
 
 		return 0;
 	}
