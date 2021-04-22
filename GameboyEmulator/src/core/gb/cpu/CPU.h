@@ -70,6 +70,30 @@ namespace gbemu {
 		int8_t toSigned(uint8_t value);
 
 
+		inline void setBit(uint8_t& value, uint8_t bit, bool set)
+		{
+			uint8_t mask = 0xFF & (static_cast<uint8_t>(set) << (bit - 1));
+			value &= mask;
+		}
+
+		inline void setFlagZ(bool set)
+		{
+			setBit(REG.Flags.Value, 8, set);
+		}
+		inline void setFlagN(bool set)
+		{
+			setBit(REG.Flags.Value, 7, set);
+		}
+		inline void setFlagH(bool set)
+		{
+			setBit(REG.Flags.Value, 6, set);
+		}
+		inline void setFlagC(bool set)
+		{
+			setBit(REG.Flags.Value, 5, set);
+		}
+
+
 
 
 		//Unprefixed instrictions. Can return the additional amount of machine cycles needed for the instruction
@@ -199,7 +223,7 @@ namespace gbemu {
 			{"OR B",     &SharpSM83::OR,  1}, {"OR C",     &SharpSM83::OR,  1}, {"OR D",     &SharpSM83::OR,  1}, {"OR E",     &SharpSM83::OR,  1}, {"OR H",     &SharpSM83::OR,  1}, {"OR L",     &SharpSM83::OR,  1}, {"OR [HL]",     &SharpSM83::OR,  2}, {"OR A",     &SharpSM83::OR,  1}, {"CP B",     &SharpSM83::CP,  1}, {"CP C",     &SharpSM83::CP,  1}, {"CP D",     &SharpSM83::CP,  1}, {"CP E",     &SharpSM83::CP,  1}, {"CP H",     &SharpSM83::CP,  1}, {"CP L",     &SharpSM83::CP,  1}, {"CP [HL]",     &SharpSM83::CP,  2}, {"CP A",     &SharpSM83::CP,  1},
 			
 			{"RET NZ",             &SharpSM83::RET,    2}, {"POP BC", &SharpSM83::POP, 3}, {"JP NZ, a16",         &SharpSM83::JP,    3}, {"JP a16", &SharpSM83::JP, 4}, {"CALL NZ, a16", &SharpSM83::CALL, 3}, {"PUSH BC", &SharpSM83::PUSH, 4}, {"ADD A, d8", &SharpSM83::ADD, 2}, {"RST 00H", &SharpSM83::RST, 4}, {"RET Z",          &SharpSM83::RET,     2}, {"RET",       &SharpSM83::RET,  4}, {"JP Z, a16",   &SharpSM83::JP, 3}, {"CB",   nullptr,        1}, {"CALL Z, a16", &SharpSM83::CALL, 3}, {"CALL a16", &SharpSM83::CALL, 6}, {"ADC A, d8", &SharpSM83::ADC, 2}, {"RST 08H", &SharpSM83::RST, 4},
-			{"RET NC",             &SharpSM83::RET,    2}, {"POP DE", &SharpSM83::POP, 3}, {"JP NC, a16",         &SharpSM83::JP,    3}, {"NONE",   nullptr,        0}, {"CALL NC, a16", &SharpSM83::CALL, 3}, {"PUSH DE", &SharpSM83::PUSH, 4}, {"SUB d8",    &SharpSM83::SUB, 2}, {"RST 10H", &SharpSM83::RST, 4}, {"RET C",          &SharpSM83::RET,     2}, {"RETI",      &SharpSM83::RETI, 4}, {"JP C, a16",   &SharpSM83::JP, 3}, {"NONE", nullptr,        0}, {"CALL C, a16", &SharpSM83::CALL, 3}, {"NONE",     nullptr,          0}, {"SBC A, d8", &SharpSM83::ADC, 2}, {"RST 18H", &SharpSM83::RST, 4},
+			{"RET NC",             &SharpSM83::RET,    2}, {"POP DE", &SharpSM83::POP, 3}, {"JP NC, a16",         &SharpSM83::JP,    3}, {"NONE",   nullptr,        0}, {"CALL NC, a16", &SharpSM83::CALL, 3}, {"PUSH DE", &SharpSM83::PUSH, 4}, {"SUB d8",    &SharpSM83::SUB, 2}, {"RST 10H", &SharpSM83::RST, 4}, {"RET C",          &SharpSM83::RET,     2}, {"RETI",      &SharpSM83::RETI, 4}, {"JP C, a16",   &SharpSM83::JP, 3}, {"NONE", nullptr,        0}, {"CALL C, a16", &SharpSM83::CALL, 3}, {"NONE",     nullptr,          0}, {"SBC A, d8", &SharpSM83::SBC, 2}, {"RST 18H", &SharpSM83::RST, 4},
 			{"LD [$FF00 + a8], A", &SharpSM83::LD_IO,  3}, {"POP HL", &SharpSM83::POP, 3}, {"LD [$FF00 + C], A",  &SharpSM83::LD_IO, 2}, {"NONE",   nullptr,        0}, {"NONE",         nullptr,          0}, {"PUSH HL", &SharpSM83::PUSH, 4}, {"AND d8",    &SharpSM83::AND, 2}, {"RST 20H", &SharpSM83::RST, 4}, {"ADD SP, r8",     &SharpSM83::ADD,     4}, {"JP HL",     &SharpSM83::JP,   1}, {"LD [a16], A", &SharpSM83::LD, 4}, {"NONE", nullptr,        0}, {"NONE",        nullptr,          0}, {"NONE",     nullptr,          0}, {"XOR d8",    &SharpSM83::XOR, 2}, {"RST 28H", &SharpSM83::RST, 4},
 			{"LD A, [$FF00 + a8]", &SharpSM83::LD_IO,  3}, {"POP AF", &SharpSM83::POP, 3}, {"LD A, [$FF00 + C]",  &SharpSM83::LD_IO, 2}, {"DI",     &SharpSM83::DI, 1}, {"NONE",         nullptr,          0}, {"PUSH AF", &SharpSM83::PUSH, 4}, {"OR d8",     &SharpSM83::OR,  2}, {"RST 30H", &SharpSM83::RST, 4}, {"LD HL, SP + r8", &SharpSM83::LD_IMM,  3}, {"LD SP, HL", &SharpSM83::LD,   2}, {"LD A, [a16]", &SharpSM83::LD, 4}, {"EI",   &SharpSM83::EI, 1}, {"NONE",        nullptr,          0}, {"NONE",     nullptr,          0}, {"CP d8",     &SharpSM83::CP,  2}, {"RST 38H", &SharpSM83::RST, 4}
 		} };
