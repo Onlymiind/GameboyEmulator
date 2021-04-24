@@ -365,3 +365,10 @@ FodyWeavers.xsd
 /GameboyEmulator.sln
 /GameboyEmulator/GameboyEmulator.vcxproj.filters
 /GameboyEmulator/GameboyEmulator.vcxproj
+/GameboyEmulator/dependencies/imgui/bin_int/Debug-windows-x86_64/ImGui
+/GameboyEmulator/dependencies/GLAD/bin_int/Debug-windows-x86_64/Glad/Glad.tlog
+/GameboyEmulator/dependencies/GLAD/bin_int/Debug-windows-x86_64/Glad
+/bin_int/Debug-windows-x86_64/GameboyEmulator
+/GameboyEmulator/dependencies/imgui/ImGui.vcxproj
+/GameboyEmulator/dependencies/GLAD/Glad.vcxproj.filters
+/GameboyEmulator/dependencies/GLAD/Glad.vcxproj
