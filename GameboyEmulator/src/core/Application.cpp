@@ -128,12 +128,12 @@ namespace gbemu {
 		}
 
 
-		glm::vec4 clearColor{ 1.0f, 1.0f, 1.0f, 1.0f };
+		glm::vec4 clearColor{ 0.25f, 0.10f, 0.25f, 1.0f };
 		glm::u8vec4 unnormColor = unnormalizeColor(clearColor);
 
 		SDL_Color color;
 
-		int res = SDL_SetRenderDrawColor(m_Renderer, 0, 0xFF, 0xFF, 0xFF);
+		int res = SDL_SetRenderDrawColor(m_Renderer, unnormColor.r, unnormColor.g, unnormColor.b, unnormColor.a);
 		int result = SDL_RenderClear(m_Renderer);
 
 		ImGui_ImplOpenGL3_NewFrame();
@@ -153,28 +153,22 @@ namespace gbemu {
 			SDL_GLContext backup_current_context = SDL_GL_GetCurrentContext();
 			ImGui::UpdatePlatformWindows();
 			ImGui::RenderPlatformWindowsDefault();
-			SDL_GL_MakeCurrent(backup_current_window, backup_current_context);
+			//SDL_GL_MakeCurrent(backup_current_window, backup_current_context);
 		}
 
-		SDL_UpdateWindowSurface(m_Window);
+		SDL_RenderPresent(m_Renderer);
 
 	}
 
 	void Application::pollEvents()
 	{
-		/*sf::Event event{};
-		while (m_Window.pollEvent(event))
-		{
-			ImGui::SFML::ProcessEvent(event);
+		SDL_Event event{};
+		while (SDL_PollEvent(&event)) {
 
-			if (event.type == sf::Event::Closed) m_IsRunning = false;
+			ImGui_ImplSDL2_ProcessEvent(&event);
+			if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE) m_IsRunning = false;
 
-			else if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Space) m_StepMode = !m_StepMode;
-			else if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::A)
-			{
-				m_Execute = true;
-			}
-		}*/
+		}
 	}
 
 	void Application::cleanup()
