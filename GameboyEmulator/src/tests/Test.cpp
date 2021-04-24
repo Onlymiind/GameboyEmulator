@@ -1,7 +1,6 @@
 #include "tests/Test.h"
 
 #include "imgui.h"
-#include "imgui-SFML.h"
 
 namespace gbemu {
 
