@@ -4,7 +4,8 @@
 #include "core/gb/AddressBus.h"
 #include "core/gb/cpu/CPU.h"
 
-#include <SFML/Graphics.hpp>
+#define SDL_MAIN_HANDLED
+#include <SDL2/SDL.h>
 
 #include <memory>
 
@@ -30,7 +31,9 @@ namespace gbemu {
 
 	private:
 
-		sf::RenderWindow m_Window;
+		SDL_Window*   m_Window;
+		SDL_Surface*  m_Surface;
+		SDL_Renderer* m_Renderer;
 
 		std::unique_ptr<RAM> m_RAM;
 		std::unique_ptr<ROM> m_ROM;
