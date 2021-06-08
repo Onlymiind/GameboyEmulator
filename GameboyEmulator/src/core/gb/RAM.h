@@ -4,7 +4,7 @@
 #define KBYTE 1024
 
 
-namespace gbemu {
+namespace gb {
 
 
 

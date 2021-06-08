@@ -12,7 +12,7 @@
 #include <functional>
 
 
-namespace gbemu {
+namespace gb {
 
 
 	SharpSM83::SharpSM83(AddressBus& bus) :

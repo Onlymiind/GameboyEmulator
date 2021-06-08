@@ -2,7 +2,7 @@
 
 #include "imgui.h"
 
-namespace gbemu {
+namespace gb {
 
 
 

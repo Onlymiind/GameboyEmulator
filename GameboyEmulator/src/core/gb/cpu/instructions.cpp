@@ -6,7 +6,7 @@
 #include <cstdint>
 
 
-namespace gbemu {
+namespace gb {
 
 
 	uint8_t SharpSM83::NONE(SharpSM83& cpu, const opcode code)

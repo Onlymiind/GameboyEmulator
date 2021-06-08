@@ -8,7 +8,7 @@
 #include <array>
 #include <functional>
 
-namespace gbemu {
+namespace gb {
 
 	/// <summary>
 	/// Struct to support easy opcode decomposition;

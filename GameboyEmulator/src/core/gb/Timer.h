@@ -3,7 +3,7 @@
 
 
 
-namespace gbemu {
+namespace gb {
 
 	class Timer {
 	public:
