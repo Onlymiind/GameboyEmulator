@@ -9,13 +9,14 @@ outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
 include "GameboyEmulator/dependencies/imgui"
 include "GameboyEmulator/dependencies/GLAD"
+include "GameboyEmulator/dependencies/GLFW"
 
 project "GameboyEmulator"
 location "GameboyEmulator"
     kind "ConsoleApp"
     language "C++"
     cppdialect "C++17"
-    staticruntime "Off"
+    staticruntime "On"
 
     targetdir ("bin/" ..outputdir.. "/%{prj.name}")
     objdir ("bin_int/" ..outputdir.. "/%{prj.name}")
@@ -29,6 +30,7 @@ location "GameboyEmulator"
 
     defines{
         "_CRT_SECURE_NO_WARNINGS",
+        "GLFW_INCLUDE_NONE"
     }
 
     includedirs{
@@ -36,22 +38,14 @@ location "GameboyEmulator"
         "%{prj.name}/dependencies/GLM",
         "%{prj.name}/dependencies/imgui",
         "%{prj.name}/dependencies/GLAD/include",
-        "%{prj.name}/dependencies/SDL2/include"
-    }
-
-    libdirs{
-        "%{prj.name}/dependencies/SDL2/lib"
+        "%{prj.name}/dependencies/GLFW/include"
     }
 
     links{
         "opengl32.lib",
-        "winmm.lib",
-        "Setupapi.lib",
-        "Imm32.lib",
-        "Version.lib",
         "ImGui",
         "Glad",
-        "SDL2-static.lib"
+        "GLFW"
     }
 
     filter "configurations:Debug"
