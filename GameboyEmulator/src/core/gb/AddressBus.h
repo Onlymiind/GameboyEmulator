@@ -5,7 +5,7 @@
 #include <vector>
 
 
-namespace gbemu {
+namespace gb {
 
 
 	class AddressBus {

@@ -1,7 +1,7 @@
 #include "core/gb/AddressBus.h"
 #include <iostream>
 
-namespace gbemu {
+namespace gb {
 
 
 	uint8_t AddressBus::read(uint16_t address)

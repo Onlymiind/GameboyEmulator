@@ -7,7 +7,7 @@
 #include <utility>
 #include <functional>
 
-namespace gbemu {
+namespace gb {
 
 
 	class Test {

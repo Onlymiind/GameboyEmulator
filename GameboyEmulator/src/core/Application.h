@@ -10,7 +10,7 @@
 #include <memory>
 
 
-namespace gbemu {
+namespace gb {
 
 
 

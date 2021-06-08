@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <utility>
 
-namespace gbemu {
+namespace gb {
 
 
 

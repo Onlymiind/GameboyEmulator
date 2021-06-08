@@ -2,7 +2,7 @@
 
 
 int main() {
-	gbemu::Application app{};
+	gb::Application app{};
 
 	app.run();
 

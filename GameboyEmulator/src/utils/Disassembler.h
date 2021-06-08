@@ -4,7 +4,7 @@
 #include <string>
 #include <array>
 
-namespace gbemu{
+namespace gb{
 
 	class Disassembler {
 	public:

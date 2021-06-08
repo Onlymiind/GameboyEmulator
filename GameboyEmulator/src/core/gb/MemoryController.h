@@ -2,7 +2,7 @@
 #include <cstdint>
 #include <functional>
 
-namespace gbemu {
+namespace gb {
 
 
 	class MemoryController {

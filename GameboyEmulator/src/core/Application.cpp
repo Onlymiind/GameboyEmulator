@@ -24,7 +24,7 @@
 #define BIND_READ(x, func) std::bind(func, &x, std::placeholders::_1)
 #define BIND_WRITE(x, func) std::bind(func, &x, std::placeholders::_1, std::placeholders::_2)
 
-namespace gbemu {
+namespace gb {
 
 
 
