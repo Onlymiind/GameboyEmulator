@@ -36,8 +36,6 @@ namespace gbemu {
 	void Menu::render()
 	{
 
-		//ImGui::SFML::Update(window);
-
 	}
 
 }

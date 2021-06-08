@@ -2,7 +2,7 @@ project "ImGui"
     kind "StaticLib"
     language "C++"
     cppdialect "C++17"
-    staticruntime "Off"
+    staticruntime "On"
 
     targetdir ("bin/" ..outputdir.. "/%{prj.name}")
     objdir ("bin_int/" ..outputdir.. "/%{prj.name}")
@@ -20,16 +20,6 @@ project "ImGui"
         "imgui_demo.cpp",
         "imgui_tables.cpp",
     }
-
-    includedirs{
-        "../SDL2/include/SDL2",
-        "."
-    }
-    libdirs{
-        "../SDL2/lib"
-    }
-
-
 
     filter "system:windows"
         systemversion "latest"
