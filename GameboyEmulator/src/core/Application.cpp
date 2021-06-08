@@ -6,15 +6,16 @@
 #include "core/gb/MemoryController.h"
 #include "core/gb/ROM.h"
 #include "utils/FileManager.h"
+#include "core/gb/Timer.h"
 
 
 #include "glm/vec4.hpp"
 #include "imgui.h"
-#include <glad/glad.h>
-#include "external/imgui_impl_sdl.h"
+#include "external/imgui_impl_glfw.h"
 #include "external/imgui_impl_opengl3.h"
 
-#include <SDL2/SDL.h>
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
 
 #include <iostream>
 #include <iomanip>
@@ -26,8 +27,12 @@
 namespace gbemu {
 
 
+
+
+
+
 	Application::Application() :
-		m_Window(nullptr), m_RAM(nullptr), m_ROM(nullptr), m_Bus(), m_CPU(nullptr), m_IsRunning(true), m_StepMode(false), m_Execute(false)
+		m_Window(nullptr), m_TestMenu(), m_RAM(nullptr), m_ROM(nullptr), m_Bus(), m_CPU(nullptr), m_IsRunning(true), m_StepMode(false), m_Execute(false)
 	{
 		init();
 	}
@@ -48,31 +53,31 @@ namespace gbemu {
 	void Application::init()
 	{
 
-		SDL_Init(SDL_INIT_EVERYTHING);
-		m_Window = SDL_CreateWindow("GameboyEmulator", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 400, 400, SDL_WINDOW_OPENGL);
-		m_Surface = SDL_GetWindowSurface(m_Window);
-		m_Renderer = SDL_CreateRenderer(m_Window, -1, 0);
-		SDL_GLContext context = SDL_GL_CreateContext(m_Window);
-		SDL_GL_MakeCurrent(m_Window, context);
+		glfwInit();
 
+		glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_TRUE);
+		m_Window = glfwCreateWindow(400, 400, "GameboyEmulator", nullptr, nullptr);
+		glfwMakeContextCurrent(m_Window);
 
-		int result = gladLoadGLLoader(static_cast<GLADloadproc>(SDL_GL_GetProcAddress));
+		glfwSetWindowUserPointer(m_Window, this);
+		glfwSetWindowCloseCallback(m_Window, onWinowClosed);
+
+		glfwSwapInterval(0);
+
+		int result = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 		gladLoadGL();
-		
 
-		IMGUI_CHECKVERSION();
 		ImGui::CreateContext();
 		ImGuiIO& io = ImGui::GetIO(); (void)io;
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
 		//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
-		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
+		//io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
 		//io.ConfigViewportsNoAutoMerge = true;
 		//io.ConfigViewportsNoTaskBarIcon = true;
 
 		// Setup Dear ImGui style
 		ImGui::StyleColorsDark();
-		//ImGui::StyleColorsClassic();
 
 		// When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
 		ImGuiStyle& style = ImGui::GetStyle();
@@ -82,8 +87,10 @@ namespace gbemu {
 			style.Colors[ImGuiCol_WindowBg].w = 1.0f;
 		}
 
-		ImGui_ImplSDL2_InitForOpenGL(m_Window, SDL_GL_GetCurrentContext());
-		ImGui_ImplOpenGL3_Init("#version 460");
+		ImGui_ImplGlfw_InitForOpenGL(m_Window, true);
+		ImGui_ImplOpenGL3_Init("#version 410");
+
+		Timer timer{};
 
 
 		m_RAM = std::make_unique<RAM>(0x8000, 0xFFFF);
@@ -97,15 +104,7 @@ namespace gbemu {
 
 	void Application::update()
 	{
-		//static sf::Clock clock{};
-		bool demo{ true };
-
-
-
-
-
-
-
+		constexpr uint32_t i = sizeof(SharpSM83);
 
 		if (m_StepMode) {
 			if (m_Execute) 
@@ -129,53 +128,46 @@ namespace gbemu {
 
 
 		glm::vec4 clearColor{ 0.25f, 0.10f, 0.25f, 1.0f };
-		glm::u8vec4 unnormColor = unnormalizeColor(clearColor);
-
-		SDL_Color color;
-
-		int res = SDL_SetRenderDrawColor(m_Renderer, unnormColor.r, unnormColor.g, unnormColor.b, unnormColor.a);
-		int result = SDL_RenderClear(m_Renderer);
+		glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
+		glClear(GL_COLOR_BUFFER_BIT);
 
 		ImGui_ImplOpenGL3_NewFrame();
-		ImGui_ImplSDL2_NewFrame(m_Window);
+		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
-		ImGui::ShowDemoWindow();
+
+		m_TestMenu.updateGUI();
+
+
+		ImGui::Begin("Cpu registers");
+		
+		ImGui::Text(m_CPU->registersOut().c_str());
+
+		ImGui::End();
 
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-
 		ImGuiIO io = ImGui::GetIO();
-
 		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
 		{
-			SDL_Window* backup_current_window = SDL_GL_GetCurrentWindow();
-			SDL_GLContext backup_current_context = SDL_GL_GetCurrentContext();
+			GLFWwindow* backup_current_context = glfwGetCurrentContext();
 			ImGui::UpdatePlatformWindows();
 			ImGui::RenderPlatformWindowsDefault();
-			//SDL_GL_MakeCurrent(backup_current_window, backup_current_context);
+			glfwMakeContextCurrent(backup_current_context);
 		}
+		ImGui::GetDrawData();
 
-		SDL_RenderPresent(m_Renderer);
-
+		glfwSwapBuffers(m_Window);
 	}
 
 	void Application::pollEvents()
 	{
-		SDL_Event event{};
-		while (SDL_PollEvent(&event)) {
-
-			ImGui_ImplSDL2_ProcessEvent(&event);
-			if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE) m_IsRunning = false;
-
-		}
+		glfwPollEvents();
 	}
 
 	void Application::cleanup()
 	{
-		std::cout << m_CPU->registersOut() << "\n";
-		SDL_DestroyWindow(m_Window);
-		SDL_Quit();
+		glfwDestroyWindow(m_Window);
+		glfwTerminate();
 	}
 }
 

@@ -3,9 +3,9 @@
 #include "core/gb/ROM.h"
 #include "core/gb/AddressBus.h"
 #include "core/gb/cpu/CPU.h"
+#include "tests/Test.h"
 
-#define SDL_MAIN_HANDLED
-#include <SDL2/SDL.h>
+#include <GLFW/glfw3.h>
 
 #include <memory>
 
@@ -29,11 +29,18 @@ namespace gbemu {
 		void pollEvents();
 		void cleanup();
 
+		static inline void onWinowClosed(GLFWwindow* window) 
+		{
+			Application* app = reinterpret_cast<Application*>(glfwGetWindowUserPointer(window));
+			app->m_IsRunning = false;
+		}
+
 	private:
 
-		SDL_Window*   m_Window;
-		SDL_Surface*  m_Surface;
-		SDL_Renderer* m_Renderer;
+		GLFWwindow* m_Window;
+
+		Menu m_TestMenu;
+
 
 		std::unique_ptr<RAM> m_RAM;
 		std::unique_ptr<ROM> m_ROM;

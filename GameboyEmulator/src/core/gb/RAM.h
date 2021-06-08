@@ -11,7 +11,7 @@ namespace gbemu {
 	class RAM {
 	public:
 		RAM(uint16_t firstAddress, uint16_t lastAddress) :
-			m_Memory(lastAddress - firstAddress + 1), m_FirstAddress(firstAddress), m_LastAddress(lastAddress)
+			m_Memory(static_cast<size_t>(lastAddress) - firstAddress + 1), m_FirstAddress(firstAddress), m_LastAddress(lastAddress)
 		{}
 		~RAM() = default;
 

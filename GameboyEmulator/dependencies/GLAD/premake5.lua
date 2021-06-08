@@ -1,7 +1,7 @@
 project "Glad"
     kind "StaticLib"
     language "C"
-    staticruntime "Off"
+    staticruntime "On"
 
     targetdir ("bin/"..outputdir.."/%{prj.name}")
     objdir ("bin_int/"..outputdir.."/%{prj.name}")

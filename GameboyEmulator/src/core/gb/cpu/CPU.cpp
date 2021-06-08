@@ -27,37 +27,13 @@ namespace gbemu {
 			opcode code = fetch();
 			//TODO: HALT state (with bug)
 			//TODO: Check if opcode is invalid
-			if (code.code == 0xCB) 
-			{
-				code.code = fetch();
-				switch (code.getX()) {
-				case 0: {
-					m_CyclesToFinish = m_TableBitOperations[code.getY()](this, code);
-					break;
-				}
-				case 1: {
-					m_CyclesToFinish = BIT(code);
-					break;
-				}
-				case 2: {
-					m_CyclesToFinish = RES(code);
-					break;
-				}
-				case 3: {
-					m_CyclesToFinish = SET(code);
-					break;
-				}
-				}
-			}
-			else 
-			{
-				//std::cout << m_TableLookup[code.code].Mnemonic << "\n";
-				m_CyclesToFinish = m_TableLookup[code.code].MachineCycles + m_TableLookup[code.code].Implementation(this, code);
-			}
+			m_CyclesToFinish = dispatch(code);
 
 		}
 
-		if (m_EnableIME) { // Enable jumping to interrupt vectors if enabling it is scheduled by EI
+		if (m_EnableIME) 
+		{ 
+			// Enable jumping to interrupt vectors if it is scheduled by EI
 			IME = true;
 			m_EnableIME = false;
 		}
@@ -120,6 +96,70 @@ namespace gbemu {
 	void SharpSM83::write(uint16_t address, uint8_t data)
 	{
 		m_Bus.write(address, data);
+	}
+
+	uint8_t SharpSM83::dispatch(opcode code)
+	{
+		uint8_t cycles{ 0 };
+		if (code.code == 0xCB)
+		{
+			code.code = fetch();
+			switch (code.getX()) {
+			case 0: {
+				m_CyclesToFinish = m_TableBitOperations[code.getY()](this, code);
+				break;
+			}
+			case 1: {
+				m_CyclesToFinish = BIT(code);
+				break;
+			}
+			case 2: {
+				m_CyclesToFinish = RES(code);
+				break;
+			}
+			case 3: {
+				m_CyclesToFinish = SET(code);
+				break;
+			}
+			}
+		}
+		else
+		{
+			uint32_t offset{ code.code % k_BlockSize };
+
+			switch (code.getX())
+			{
+			case 0:
+			{
+				cycles = m_TableLookup[offset](*this, code);
+				break;
+			}
+			case 1:
+			{
+				if (code.getZ() == 6 && code.getY() == 6)
+				{
+					cycles = HALT(*this, code);
+				}
+				else
+				{
+					cycles = LD_REG8(*this, code);
+				}
+				break;
+			}
+			case 2:
+			{
+				cycles = m_TableALU[code.getY()](*this, code);
+				break;
+			}
+			case 3:
+			{
+				cycles = m_TableLookup[static_cast<size_t>(k_BlockSize) + offset](*this, code);
+				break;
+			}
+			}
+		}
+
+		return cycles;
 	}
 
 	uint8_t SharpSM83::read(uint16_t address)

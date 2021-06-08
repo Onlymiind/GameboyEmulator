@@ -36,7 +36,7 @@ namespace gbemu {
 
 		const std::vector<std::pair<std::string_view, std::function<Test* ()>>> m_TestBase =
 		{ {
-
+			{"Don't press, no constructor yet", []() {return (Test*)nullptr; }}
 		} };
 	};
 }
