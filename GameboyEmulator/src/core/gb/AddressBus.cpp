@@ -1,5 +1,6 @@
 #include "core/gb/AddressBus.h"
 #include <iostream>
+#include <string>
 
 namespace gb {
 
@@ -18,6 +19,9 @@ namespace gb {
 
 		if (it != m_Memory.end()) it->write(address, data);
 
-		if (address == 0xFF02 && data == 0x81) { std::cout << read(0xFF01); }
+		if (address == 0xFF02 && data == 0x81) 
+		{
+			std::cout << read(0xFF01);
+		}
 	}
 }

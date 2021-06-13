@@ -240,4 +240,17 @@ namespace gb {
 		return result;
 	}
 
+	void SharpSM83::reset()
+	{
+		REG.AF = 0;
+		REG.BC = 0;
+		REG.DE = 0;
+		REG.HL = 0;
+
+		REG.SP = 0xFFFE;
+		REG.PC = 0x0100;
+
+		IME = false;
+	}
+
 }

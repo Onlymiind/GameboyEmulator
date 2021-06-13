@@ -16,7 +16,7 @@ location "GameboyEmulator"
     kind "ConsoleApp"
     language "C++"
     cppdialect "C++17"
-    staticruntime "On"
+    staticruntime "Off"
 
     targetdir ("bin/" ..outputdir.. "/%{prj.name}")
     objdir ("bin_int/" ..outputdir.. "/%{prj.name}")
@@ -30,7 +30,8 @@ location "GameboyEmulator"
 
     defines{
         "_CRT_SECURE_NO_WARNINGS",
-        "GLFW_INCLUDE_NONE"
+        "GLFW_INCLUDE_NONE",
+        "SFML_STATIC"
     }
 
     includedirs{
@@ -38,11 +39,17 @@ location "GameboyEmulator"
         "%{prj.name}/dependencies/GLM",
         "%{prj.name}/dependencies/imgui",
         "%{prj.name}/dependencies/GLAD/include",
-        "%{prj.name}/dependencies/GLFW/include"
+        "%{prj.name}/dependencies/GLFW/include",
+        "%{prj.name}/dependencies/SFML/include"
+    }
+
+    libdirs{
+        "%{prj.name}/dependencies/SFML/lib"
     }
 
     links{
         "opengl32.lib",
+        "winmm.lib",
         "ImGui",
         "Glad",
         "GLFW"
@@ -54,10 +61,20 @@ location "GameboyEmulator"
             "MIND_ENABLE_ASSERT"
         }
 
+        links{
+            "sfml-system-s-d.lib",
+            "sfml-window-s-d.lib"
+        }
+
         runtime "Debug"
         symbols "On"
     filter "configurations:Release"
         defines "MIND_RELEASE"
+
+        links{
+            "sfml-system-s.lib",
+            "sfml-window-s.lib"
+        }
 
         runtime "Release"
         optimize "On"
