@@ -6,6 +6,7 @@
 #include <string_view>
 #include <string>
 #include <array>
+#include <unordered_map>
 #include <functional>
 
 namespace gb {
@@ -24,6 +25,8 @@ namespace gb {
 		inline uint8_t getZ() const { return (code & 0b00000111) >> 0; }
 		inline uint8_t getP() const { return (code & 0b00110000) >> 4; }
 		inline uint8_t getQ() const { return (code & 0b00001000) >> 3; }
+		
+		inline uint8_t getLowerNibble() const { return code & 0x0F; }
 
 		uint8_t code;
 	};
@@ -150,7 +153,7 @@ namespace gb {
 		bool m_EnableIME{ false };
 
 
-	private: //LOOKUP
+	private: //OPCODE DECODING
 
 		//8-bit registers lookup
 		const std::array<uint8_t*, 8> m_TableREG8 = 
@@ -190,24 +193,40 @@ namespace gb {
 			&SharpSM83::SWAP, &SharpSM83::SRL
 		};
 
-		//static constexpr uint32_t i = sizeof(std::array<std::function<uint8_t(SharpSM83*, const opcode)>, 8>);
+		const std::unordered_map<uint8_t, uint8_t(*)(SharpSM83&, const opcode)> m_ColumnToImplUpper = 
+		{
+			{ 0x01, SharpSM83::LD_IMM }, { 0x02, SharpSM83::LD }, { 0x03, SharpSM83::INC }, { 0x04, SharpSM83::INC }, { 0x05, SharpSM83::DEC }, { 0x06, SharpSM83::LD_IMM },
+			{ 0x09, SharpSM83::ADD }, { 0x0A, SharpSM83::LD }, { 0x0B, SharpSM83::DEC }, { 0x0C, SharpSM83::INC }, { 0x0D, SharpSM83::DEC }, { 0x0E, SharpSM83::LD_IMM }
+		};
 
-		const std::array<uint8_t(*)(SharpSM83&, const opcode), 128> m_TableLookup =
-		{ {
-			/*NOP      */ SharpSM83::NOP,  /*LD BC, d16*/ SharpSM83::LD_IMM, /*LD [BC] A */ SharpSM83::LD, /*INC BC*/ SharpSM83::INC, /*INC B   */ SharpSM83::INC, /*DEC B   */ SharpSM83::DEC, /*LD B, d8   */ SharpSM83::LD_IMM, /*RLCA*/ SharpSM83::RLCA, /*LD [a16], SP*/ SharpSM83::LD_IMM, /*ADD HL, BC*/ SharpSM83::ADD, /*LD A, [BC] */ SharpSM83::LD, /*DEC BC*/ SharpSM83::DEC, /*INC C*/ SharpSM83::INC, /*DEC C*/ SharpSM83::DEC, /*LD C d8*/ SharpSM83::LD_IMM, /*RRCA*/ SharpSM83::RRCA,
-			/*STOP     */ SharpSM83::STOP, /*LD DE, d16*/ SharpSM83::LD_IMM, /*LD [DE] A */ SharpSM83::LD, /*INC DE*/ SharpSM83::INC, /*INC D   */ SharpSM83::INC, /*DEC D   */ SharpSM83::DEC, /*LD D, d8   */ SharpSM83::LD_IMM, /*RLA */ SharpSM83::RLA,  /*JR r8       */ SharpSM83::JR,     /*ADD HL, DE*/ SharpSM83::ADD, /*LD A, [DE] */ SharpSM83::LD, /*DEC DE*/ SharpSM83::DEC, /*INC E*/ SharpSM83::INC, /*DEC E*/ SharpSM83::DEC, /*LD E d8*/ SharpSM83::LD_IMM, /*RRA */ SharpSM83::RRA,
-			/*JR NZ, r8*/ SharpSM83::JR,   /*LD HL, d16*/ SharpSM83::LD_IMM, /*LD [HL+] A*/ SharpSM83::LD, /*INC HL*/ SharpSM83::INC, /*INC H   */ SharpSM83::INC, /*DEC H   */ SharpSM83::DEC, /*LD H, d8   */ SharpSM83::LD_IMM, /*DAA */ SharpSM83::DAA,  /*JR Z, r8    */ SharpSM83::JR,     /*ADD HL, HL*/ SharpSM83::ADD, /*LD A, [HL+]*/ SharpSM83::LD, /*DEC HL*/ SharpSM83::DEC, /*INC L*/ SharpSM83::INC, /*DEC L*/ SharpSM83::DEC, /*LD L d8*/ SharpSM83::LD_IMM, /*CPL */ SharpSM83::CPL,
-			/*JR NC, r8*/ SharpSM83::JR,   /*LD SP, d16*/ SharpSM83::LD_IMM, /*LD [HL-] A*/ SharpSM83::LD, /*INC SP*/ SharpSM83::INC, /*INC [HL]*/ SharpSM83::INC, /*DEC [HL]*/ SharpSM83::DEC, /*LD [HL], d8*/ SharpSM83::LD_IMM, /*SCF */ SharpSM83::SCF,  /*JR C, r8    */ SharpSM83::JR,     /*ADD HL, SP*/ SharpSM83::ADD, /*LD A, [HL-]*/ SharpSM83::LD, /*DEC SP*/ SharpSM83::DEC, /*INC A*/ SharpSM83::INC, /*DEC A*/ SharpSM83::DEC, /*LD A d8*/ SharpSM83::LD_IMM, /*CCF */ SharpSM83::CCF,
-			
-			/*8-bit load and HALT*/
+		const std::unordered_map<uint8_t, uint8_t(*)(SharpSM83&, const opcode)> m_ColumnToImplLower =
+		{
+			{ 0x01, SharpSM83::POP }, { 0x05, SharpSM83::PUSH }, { 0x07, SharpSM83::RST }, { 0x0F, SharpSM83::RST }
+		};
 
-			/*ALU instructions*/
+		const std::unordered_map<uint8_t, uint8_t(*)(SharpSM83&, const opcode)> m_RandomInstructions = 
+		{
+			{ 0x00, SharpSM83::NOP }, { 0x07, SharpSM83::RLCA }, { 0x08, SharpSM83::LD_IMM }, { 0x0F, SharpSM83::RRCA },
 			
-			/*RET NZ            */ SharpSM83::RET,   /*POP BC*/ SharpSM83::POP, /*JP NZ, a16       */  SharpSM83::JP,    /*JP a16*/ SharpSM83::JP, /*CALL NZ, a16*/ SharpSM83::CALL, /*PUSH BC*/ SharpSM83::PUSH, /*ADD A, d8*/ SharpSM83::ADD, /*RST 00H*/ SharpSM83::RST, /*RET Z         */ SharpSM83::RET,    /*RET      */ SharpSM83::RET,  /*JP Z, a16  */ SharpSM83::JP, /*CB  */ nullptr,       /*CALL Z, a16*/ SharpSM83::CALL, /*CALL a16*/ SharpSM83::CALL, /*ADC A, d8*/ SharpSM83::ADC, /*RST 08H*/ SharpSM83::RST,
-			/*RET NC            */ SharpSM83::RET,   /*POP DE*/ SharpSM83::POP, /*JP NC, a16       */  SharpSM83::JP,    /*NONE  */ nullptr,       /*CALL NC, a16*/ SharpSM83::CALL, /*PUSH DE*/ SharpSM83::PUSH, /*SUB d8   */ SharpSM83::SUB, /*RST 10H*/ SharpSM83::RST, /*RET C         */ SharpSM83::RET,    /*RETI     */ SharpSM83::RETI, /*JP C, a16  */ SharpSM83::JP, /*NONE*/ nullptr,       /*CALL C, a16*/ SharpSM83::CALL, /*NONE    */ nullptr,         /*SBC A, d8*/ SharpSM83::SBC, /*RST 18H*/ SharpSM83::RST,
-			/*LD [$FF00 + a8], A*/ SharpSM83::LD_IO, /*POP HL*/ SharpSM83::POP, /*LD [$FF00 + C], A*/  SharpSM83::LD_IO, /*NONE  */ nullptr,       /*NONE        */ nullptr,         /*PUSH HL*/ SharpSM83::PUSH, /*AND d8   */ SharpSM83::AND, /*RST 20H*/ SharpSM83::RST, /*ADD SP, r8    */ SharpSM83::ADD,    /*JP HL    */ SharpSM83::JP,   /*LD [a16], A*/ SharpSM83::LD, /*NONE*/ nullptr,       /*NONE       */ nullptr,         /*NONE    */ nullptr,         /*XOR d8   */ SharpSM83::XOR, /*RST 28H*/ SharpSM83::RST,
-			/*LD A, [$FF00 + a8]*/ SharpSM83::LD_IO, /*POP AF*/ SharpSM83::POP, /*LD A, [$FF00 + C]*/  SharpSM83::LD_IO, /*DI    */ SharpSM83::DI, /*NONE        */ nullptr,         /*PUSH AF*/ SharpSM83::PUSH, /*OR d8    */ SharpSM83::OR,  /*RST 30H*/ SharpSM83::RST, /*LD HL, SP + r8*/ SharpSM83::LD_IMM, /*LD SP, HL*/ SharpSM83::LD,   /*LD A, [a16]*/ SharpSM83::LD, /*EI  */ SharpSM83::EI, /*NONE       */ nullptr,         /*NONE    */ nullptr,         /*CP d8    */ SharpSM83::CP,  /*RST 38H*/ SharpSM83::RST 
-		} };
+			{ 0x10, SharpSM83::STOP }, { 0x17, SharpSM83::RLA }, { 0x18, SharpSM83::JR }, { 0x1F, SharpSM83::RRA },
+			
+			{ 0x20, SharpSM83::JR }, { 0x27, SharpSM83::DAA }, { 0x28, SharpSM83::JR }, { 0x2F, SharpSM83::CPL },
+			
+			{ 0x30, SharpSM83::JR }, { 0x37, SharpSM83::SCF }, { 0x38, SharpSM83::JR }, { 0x3F, SharpSM83::CCF },
+
+			{ 0xC0, SharpSM83::RET }, { 0xC2, SharpSM83::JP }, { 0xC3, SharpSM83::JP }, { 0xC4, SharpSM83::CALL },
+			{ 0xC8, SharpSM83::RET }, { 0xC9, SharpSM83::RET }, { 0xCA, SharpSM83::JP }, { 0xCC, SharpSM83::CALL },
+			{ 0xCD, SharpSM83::CALL }, 
+			
+			{ 0xD0, SharpSM83::RET }, { 0xD2, SharpSM83::JP }, { 0xD4, SharpSM83::CALL }, { 0xD8, SharpSM83::RET },
+			{ 0xD9, SharpSM83::RETI }, {0xDA, SharpSM83::JP }, { 0xDC, SharpSM83::CALL }, 
+			
+			{ 0xE0, SharpSM83::LD_IO }, { 0xE2, SharpSM83::LD_IO }, { 0xE8, SharpSM83::ADD }, { 0xE9, SharpSM83::JP }, 
+			{ 0xEA, SharpSM83::LD },
+			
+			{ 0xF0, SharpSM83::LD_IO }, { 0xF2, SharpSM83::LD_IO }, { 0xF3, SharpSM83::DI }, { 0xF8, SharpSM83::LD_IMM }, 
+			{ 0xF9, SharpSM83::LD }, { 0xFA, SharpSM83::LD }, { 0xFB, SharpSM83::EI },
+		};
 
 
 	private: //STUFF
@@ -215,8 +234,5 @@ namespace gb {
 		AddressBus& m_Bus;
 
 		uint8_t m_CyclesToFinish;
-
-		//Used to get correct offset for lookup tables during decoding
-		static constexpr uint32_t k_BlockSize = 256 / 4;
 	};
 }

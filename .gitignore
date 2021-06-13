@@ -372,3 +372,10 @@ FodyWeavers.xsd
 /GameboyEmulator/dependencies/imgui/ImGui.vcxproj
 /GameboyEmulator/dependencies/GLAD/Glad.vcxproj.filters
 /GameboyEmulator/dependencies/GLAD/Glad.vcxproj
+/GameboyEmulator/dependencies/GLFW/bin_int/Debug-windows-x86_64/GLFW/GLFW.tlog
+/GameboyEmulator/dependencies/GLFW/bin_int/Debug-windows-x86_64/GLFW/GLFW.lib.recipe
+/GameboyEmulator/dependencies/GLFW/CMake
+/GameboyEmulator/dependencies/GLFW/docs
+/GameboyEmulator/dependencies/GLFW/examples
+/GameboyEmulator/dependencies/GLFW/tests
+/GameboyEmulator/imgui.ini

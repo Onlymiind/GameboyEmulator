@@ -125,13 +125,23 @@ namespace gb {
 		}
 		else
 		{
-			uint32_t offset{ code.code % k_BlockSize };
 
 			switch (code.getX())
 			{
 			case 0:
 			{
-				cycles = m_TableLookup[offset](*this, code);
+				if (m_ColumnToImplUpper.count(code.getLowerNibble()))
+				{
+					cycles = m_ColumnToImplUpper.at(code.getLowerNibble())(*this, code);
+				}
+				else if (m_RandomInstructions.count(code.code))
+				{
+					cycles = m_RandomInstructions.at(code.code)(*this, code);
+				}
+				else
+				{
+					__debugbreak();
+				}
 				break;
 			}
 			case 1:
@@ -153,7 +163,22 @@ namespace gb {
 			}
 			case 3:
 			{
-				cycles = m_TableLookup[static_cast<size_t>(k_BlockSize) + offset](*this, code);
+				if (m_ColumnToImplLower.count(code.getLowerNibble()))
+				{
+					cycles = m_ColumnToImplLower.at(code.getLowerNibble())(*this, code);
+				}
+				else if (code.getZ() == 6)
+				{
+					cycles = m_TableALU[code.getY()](*this, code);
+				}
+				else if (m_RandomInstructions.count(code.code))
+				{
+					cycles = m_RandomInstructions.at(code.code)(*this, code);
+				}
+				else
+				{
+					__debugbreak();
+				}
 				break;
 			}
 			}
