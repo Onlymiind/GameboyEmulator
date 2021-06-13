@@ -44,6 +44,8 @@ namespace gb {
 
 		inline bool isFinished() const { return m_CyclesToFinish == 0; }
 
+		void reset();
+
 	private:
 
 		uint8_t dispatch(opcode code);

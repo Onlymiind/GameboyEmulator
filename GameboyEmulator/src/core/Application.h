@@ -8,6 +8,8 @@
 #include <GLFW/glfw3.h>
 
 #include <memory>
+#include <filesystem>
+#include <iostream>
 
 
 namespace gb {
@@ -21,6 +23,8 @@ namespace gb {
 
 
 		void run();
+		void reset();
+		void finishedCallback() { m_EmulatorRunning = false; std::cout << "Done\n"; }
 
 	private:
 
@@ -49,7 +53,11 @@ namespace gb {
 
 		const uint8_t m_InstructionPerFrame{ 100 };
 		bool m_IsRunning;
+		bool m_EmulatorRunning;
 		bool m_StepMode;
 		bool m_Execute;
+
+
+		std::filesystem::path m_TestPath{ "../TestRoms/blargg/cpu_instrs/individual/" };
 	};
 }

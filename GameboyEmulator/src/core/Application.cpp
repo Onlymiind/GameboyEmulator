@@ -16,24 +16,19 @@
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <SFML/Window.hpp>
 
 #include <iostream>
 #include <iomanip>
 #include <memory>
+#include <filesystem>
 
 #define BIND_READ(x, func) std::bind(func, &x, std::placeholders::_1)
 #define BIND_WRITE(x, func) std::bind(func, &x, std::placeholders::_1, std::placeholders::_2)
 
 namespace gb {
 
-	const std::string g_TestsAdress = "../TestRoms/blargg/cpu_instrs/individual/";
 	const std::string g_TestsExtension = ".gb";
-
-	const std::array<std::string, 11> g_Tests = 
-	{
-		"01-special", "02-interrupts", "03-op sp,hl", "04-op r,imm", "05-op rp", "06-ld r,r",
-		"07-jr,jp,call,ret,rst", "08-mics instrs", "09-op r,r", "10-bit ops", "11-op a(hl)"
-	};
 
 
 	Application::Application() :
@@ -50,14 +45,19 @@ namespace gb {
 	void Application::run()
 	{
 		while (m_IsRunning) {
-			update();
-			pollEvents();
+			if (m_EmulatorRunning)
+			{
+				update();
+			}
+			else
+			{
+				reset();
+			}
 		}
 	}
 
 	void Application::init()
 	{
-
 		//glfwInit();
 
 		//glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_TRUE);
@@ -95,12 +95,13 @@ namespace gb {
 		//ImGui_ImplGlfw_InitForOpenGL(m_Window, true);
 		//ImGui_ImplOpenGL3_Init("#version 410");
 
-		Timer timer{};
+		m_EmulatorRunning = true;
 
-		constexpr uint32_t i = sizeof(SharpSM83);
+		std::string testName;
+		std::getline(std::cin, testName);
 
 		m_RAM = std::make_unique<RAM>(0x8000, 0xFFFF);
-		m_ROM = std::make_unique<ROM>(FileManager::readFile(g_TestsAdress + g_Tests[3] + g_TestsExtension));
+		m_ROM = std::make_unique<ROM>(FileManager::readFile(m_TestPath.string() + testName + g_TestsExtension));
 
 		m_Bus.connect(MemoryController(0x0000, 0x7FFF, BIND_READ(*m_ROM, &ROM::read), BIND_WRITE(*m_ROM, &ROM::write)));
 		m_Bus.connect(MemoryController(0x8000, 0xFFFF, BIND_READ(*m_RAM, &RAM::read), BIND_WRITE(*m_RAM, &RAM::write)));
@@ -110,9 +111,14 @@ namespace gb {
 
 	void Application::update()
 	{
-		constexpr uint32_t i = sizeof(SharpSM83);
-
 		m_CPU->tick();
+
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape))
+		{
+			m_EmulatorRunning = false;
+		}
+
+
 
 		/*if (m_StepMode) {
 			if (m_Execute) 
@@ -164,6 +170,17 @@ namespace gb {
 		}
 
 		glfwSwapBuffers(m_Window);*/
+	}
+
+	void Application::reset()
+	{
+		std::cout << "\nEnter ROM name\n";
+
+		std::string fileName;
+		std::getline(std::cin, fileName);
+		m_ROM->setData(FileManager::readFile(m_TestPath.string() + fileName + g_TestsExtension));
+		m_CPU->reset();
+		m_EmulatorRunning = true;
 	}
 
 	void Application::pollEvents()
