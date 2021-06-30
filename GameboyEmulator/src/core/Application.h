@@ -14,30 +14,21 @@
 
 namespace gb {
 
-
-
-	class Application {
+	class Application 
+	{
 	public:
 		Application();
 		~Application();
 
 
 		void run();
-		void reset();
-		void finishedCallback() { m_EmulatorRunning = false; std::cout << "Done\n"; }
 
 	private:
 
 		void init();
 		void update();
-		void pollEvents();
+		void pollCommands();
 		void cleanup();
-
-		static inline void onWinowClosed(GLFWwindow* window) 
-		{
-			Application* app = reinterpret_cast<Application*>(glfwGetWindowUserPointer(window));
-			app->m_IsRunning = false;
-		}
 
 	private:
 
@@ -58,6 +49,47 @@ namespace gb {
 		bool m_Execute;
 
 
-		std::filesystem::path m_TestPath{ "../TestRoms/blargg/cpu_instrs/individual/" };
+		std::string m_TestPath{ "../TestRoms/blargg/cpu_instrs/individual/" };
+		const std::string m_Extension = ".gb";
+	};
+
+	enum class CommandType
+	{
+		None, Help, Quit, SetRomDir, RunRom, List, Config
+	};
+
+	struct Command
+	{
+		CommandType Type;
+		std::string Argument;
+	};
+
+	std::istream& operator >> (std::istream& is, Command& cmd);
+
+	class Parser
+	{
+	public:
+		Parser() = default;
+		~Parser() = default;
+
+		Command parse(const std::string& text) const;
+
+	private:
+
+		struct CommandInfo
+		{
+			std::string_view Name;
+			CommandType Type;
+			bool HasArguments;
+		};
+
+		std::string getArguments(const std::string& text, const CommandInfo& info) const;
+
+		const std::array<CommandInfo, 6> m_Commands =
+		{ {
+			{"-help", CommandType::Help, false}, {"-quit", CommandType::Quit, false},
+			{"-romdir", CommandType::SetRomDir, true}, {"-run", CommandType::RunRom, true},
+			{"-list", CommandType::List, false}, {"-config", CommandType::Config, false}
+		} };
 	};
 }
