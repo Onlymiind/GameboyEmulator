@@ -12,6 +12,9 @@ namespace gb {
 		ROM(std::vector<uint8_t>&& data) :
 			m_Data(std::move(data)) 
 		{}
+
+		ROM() = default;
+
 		~ROM() = default;
 
 		inline void setData(std::vector<uint8_t>&& data) { m_Data = std::move(data); }
