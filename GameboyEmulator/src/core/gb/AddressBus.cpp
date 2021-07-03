@@ -1,7 +1,6 @@
 #include "core/gb/AddressBus.h"
 #include "utils/Utils.h"
 
-#include <iostream>
 #include <string>
 #include <sstream>
 #include <exception>

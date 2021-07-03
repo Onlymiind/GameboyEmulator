@@ -77,15 +77,18 @@ namespace gb {
 
 	void Application::update()
 	{
-		try
+		do
 		{
-			m_CPU->tick();
-		}
-		catch(std::exception err)
-		{
-			m_EmulatorRunning = false;
-			std::cout << "Execution terminated. Error:\n" << err.what() << "\n" << m_CPU->registersOut() << "\n";
-		}
+			try
+			{
+				m_CPU->tick();
+			}
+			catch(std::exception err)
+			{
+				m_EmulatorRunning = false;
+				std::cout << "Execution terminated. Error:\n" << err.what() << "\n" << m_CPU->registersOut() << "\n";
+			}
+		} while (!m_CPU->isFinished());
 
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape))
 		{
