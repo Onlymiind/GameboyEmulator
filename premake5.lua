@@ -7,10 +7,6 @@ workspace "GameboyEmulator"
     }
 outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
-include "GameboyEmulator/dependencies/imgui"
-include "GameboyEmulator/dependencies/GLAD"
-include "GameboyEmulator/dependencies/GLFW"
-
 project "GameboyEmulator"
 location "GameboyEmulator"
     kind "ConsoleApp"
@@ -37,9 +33,6 @@ location "GameboyEmulator"
     includedirs{
         "%{prj.name}/src",
         "%{prj.name}/dependencies/GLM",
-        "%{prj.name}/dependencies/imgui",
-        "%{prj.name}/dependencies/GLAD/include",
-        "%{prj.name}/dependencies/GLFW/include",
         "%{prj.name}/dependencies/SFML/include"
     }
 
@@ -51,9 +44,6 @@ location "GameboyEmulator"
         "opengl32.lib",
         "freetype.lib",
         "winmm.lib",
-        "ImGui",
-        "Glad",
-        "GLFW"
     }
 
     filter "configurations:Debug"
