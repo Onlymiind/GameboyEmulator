@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <functional>
+#include <iostream>
 
 namespace gb {
 
@@ -16,8 +17,8 @@ namespace gb {
 
 		~MemoryController() = default;
 
-		inline uint8_t read(uint16_t address) { return m_ReadCallback(address); }
-		inline void write(uint16_t address, uint8_t data) { m_WriteCallback(address, data); }
+		inline uint8_t read(uint16_t address) { return m_ReadCallback(address - m_MinAddress); }
+		inline void write(uint16_t address, uint8_t data) { m_WriteCallback(address - m_MinAddress, data); }
 
 		inline bool isInRange(uint16_t address) const { return address >= m_MinAddress && address <= m_MaxAddress; }
 	private:

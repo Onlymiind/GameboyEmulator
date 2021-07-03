@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <vector>
 #include <functional>
+#include <string>
 
 
 namespace gb {
@@ -22,6 +23,8 @@ namespace gb {
 		uint8_t read(uint16_t address);
 		void write(uint16_t address, uint8_t data);
 	private:
+		std::string getErrorDescription(uint16_t address, int value = -1);
+
 		std::vector<MemoryController> m_Memory;
 	};
 
