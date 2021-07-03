@@ -1,7 +1,5 @@
 #include "tests/Test.h"
 
-#include "imgui.h"
-
 namespace gb {
 
 
@@ -14,23 +12,7 @@ namespace gb {
 
 	void Menu::updateGUI()
 	{
-		ImGui::Begin("Test window");
-		if (p_Test)
-		{
-			p_Test->updateGUI();
-			if (ImGui::Button("Back")) p_Test.release();
-		}
-		else
-		{
-			for (const auto& [name, constructor] : m_TestBase)
-			{
-				if (ImGui::Button(name.data()))
-				{
-					p_Test.reset(constructor());
-				}
-			}
-		}
-		ImGui::End();
+
 	}
 
 	void Menu::render()
