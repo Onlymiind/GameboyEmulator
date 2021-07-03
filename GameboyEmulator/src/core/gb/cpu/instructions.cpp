@@ -1,8 +1,7 @@
 #include "core/gb/cpu/CPU.h"
 #include "utils/Utils.h"
 
-#include <climits>
-#include <iostream>
+
 #include <cstdint>
 
 

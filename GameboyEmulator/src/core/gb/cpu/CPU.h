@@ -6,7 +6,7 @@
 #include <string_view>
 #include <string>
 #include <array>
-#include <unordered_map>
+#include <map>
 #include <functional>
 
 namespace gb {
@@ -195,18 +195,18 @@ namespace gb {
 			&SharpSM83::SWAP, &SharpSM83::SRL
 		};
 
-		const std::unordered_map<uint8_t, uint8_t(*)(SharpSM83&, const opcode)> m_ColumnToImplUpper = 
+		const std::map<uint8_t, uint8_t(*)(SharpSM83&, const opcode)> m_ColumnToImplUpper = 
 		{
 			{ 0x01, SharpSM83::LD_IMM }, { 0x02, SharpSM83::LD }, { 0x03, SharpSM83::INC }, { 0x04, SharpSM83::INC }, { 0x05, SharpSM83::DEC }, { 0x06, SharpSM83::LD_IMM },
 			{ 0x09, SharpSM83::ADD }, { 0x0A, SharpSM83::LD }, { 0x0B, SharpSM83::DEC }, { 0x0C, SharpSM83::INC }, { 0x0D, SharpSM83::DEC }, { 0x0E, SharpSM83::LD_IMM }
 		};
 
-		const std::unordered_map<uint8_t, uint8_t(*)(SharpSM83&, const opcode)> m_ColumnToImplLower =
+		const std::map<uint8_t, uint8_t(*)(SharpSM83&, const opcode)> m_ColumnToImplLower =
 		{
 			{ 0x01, SharpSM83::POP }, { 0x05, SharpSM83::PUSH }, { 0x07, SharpSM83::RST }, { 0x0F, SharpSM83::RST }
 		};
 
-		const std::unordered_map<uint8_t, uint8_t(*)(SharpSM83&, const opcode)> m_RandomInstructions = 
+		const std::map<uint8_t, uint8_t(*)(SharpSM83&, const opcode)> m_RandomInstructions = 
 		{
 			{ 0x00, SharpSM83::NOP }, { 0x07, SharpSM83::RLCA }, { 0x08, SharpSM83::LD_IMM }, { 0x0F, SharpSM83::RRCA },
 			
