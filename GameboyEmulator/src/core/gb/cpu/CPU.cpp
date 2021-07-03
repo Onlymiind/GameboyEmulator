@@ -10,6 +10,7 @@
 #include <string>
 #include <array>
 #include <functional>
+#include <exception>
 
 
 namespace gb {
@@ -54,7 +55,7 @@ namespace gb {
 		stream << "H: "; toHexOutput(stream, REG.H); stream << " L: "; toHexOutput(stream, REG.L); stream << "\n";
 
 		stream << "SP: "; toHexOutput(stream, REG.SP); stream << "\n";
-		stream << "PC: "; toHexOutput(stream, REG.PC); stream << "\n";
+		stream << "PC: "; toHexOutput(stream, REG.PC); stream;
 
 		return stream.str();
 	}
@@ -138,10 +139,6 @@ namespace gb {
 				{
 					cycles = m_RandomInstructions.at(code.code)(*this, code);
 				}
-				else
-				{
-					__debugbreak();
-				}
 				break;
 			}
 			case 1:
@@ -177,7 +174,11 @@ namespace gb {
 				}
 				else
 				{
-					__debugbreak();
+					std::stringstream err;
+					err << "Invalid CPU instruction: ";
+					toHexOutput(err, code.code);
+
+					throw std::invalid_argument(err.str());
 				}
 				break;
 			}

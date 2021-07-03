@@ -49,6 +49,7 @@ location "GameboyEmulator"
 
     links{
         "opengl32.lib",
+        "freetype.lib",
         "winmm.lib",
         "ImGui",
         "Glad",
@@ -63,7 +64,8 @@ location "GameboyEmulator"
 
         links{
             "sfml-system-s-d.lib",
-            "sfml-window-s-d.lib"
+            "sfml-window-s-d.lib",
+            "sfml-graphics-s-d.lib"
         }
 
         runtime "Debug"
@@ -73,7 +75,8 @@ location "GameboyEmulator"
 
         links{
             "sfml-system-s.lib",
-            "sfml-window-s.lib"
+            "sfml-window-s.lib",
+            "sfml-graphics-s.lib"
         }
 
         runtime "Release"

@@ -5,6 +5,7 @@
 #include <sstream>
 #include <string>
 #include <iomanip>
+#include <cstdint>
 
 inline glm::u8vec4 unnormalizeColor(glm::vec4 color)
 {	
@@ -13,6 +14,7 @@ inline glm::u8vec4 unnormalizeColor(glm::vec4 color)
 	return unnormalized;
 }
 
+size_t computeSizeFromAddresses(uint16_t first, uint16_t last);
 
 template<typename T, typename std::enable_if < std::is_integral<T>{}, bool >::type = true >
 inline std::string toHexOutput(T value)

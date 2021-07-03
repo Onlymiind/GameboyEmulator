@@ -3,13 +3,10 @@
 #include "core/gb/ROM.h"
 #include "core/gb/AddressBus.h"
 #include "core/gb/cpu/CPU.h"
+#include "core/gb/IO.h"
 #include "tests/Test.h"
 
-#include <GLFW/glfw3.h>
-
 #include <memory>
-#include <filesystem>
-#include <iostream>
 
 
 namespace gb {
@@ -23,6 +20,8 @@ namespace gb {
 
 		void run();
 
+		void draw();
+
 	private:
 
 		void init();
@@ -32,13 +31,10 @@ namespace gb {
 
 	private:
 
-		GLFWwindow* m_Window;
-
-		Menu m_TestMenu;
-
-
 		std::unique_ptr<RAM> m_RAM;
 		std::unique_ptr<ROM> m_ROM;
+		std::unique_ptr<RAM> m_Leftover;
+		IORegisters m_GBIO;
 		AddressBus m_Bus;
 		std::unique_ptr<SharpSM83> m_CPU;
 
@@ -55,7 +51,7 @@ namespace gb {
 
 	enum class CommandType
 	{
-		None, Help, Quit, SetRomDir, RunRom, List, Config
+		None, Invalid, Help, Quit, SetRomDir, RunRom, List, Config
 	};
 
 	struct Command
@@ -89,7 +85,7 @@ namespace gb {
 		{ {
 			{"-help", CommandType::Help, false}, {"-quit", CommandType::Quit, false},
 			{"-romdir", CommandType::SetRomDir, true}, {"-run", CommandType::RunRom, true},
-			{"-list", CommandType::List, false}, {"-config", CommandType::Config, false}
+			{"-ls", CommandType::List, false}, {"-config", CommandType::Config, false}
 		} };
 	};
 }

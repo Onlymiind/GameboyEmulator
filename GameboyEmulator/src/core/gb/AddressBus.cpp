@@ -1,6 +1,10 @@
 #include "core/gb/AddressBus.h"
+#include "utils/Utils.h"
+
 #include <iostream>
 #include <string>
+#include <sstream>
+#include <exception>
 
 namespace gb {
 
@@ -9,7 +13,11 @@ namespace gb {
 	{
 		auto it = std::find_if(m_Memory.begin(), m_Memory.end(), [address](const MemoryController& controller) { return controller.isInRange(address); });
 
-		if (it == m_Memory.end()) return 0x00;
+		if (it == m_Memory.end())
+		{
+			throw std::out_of_range(getErrorDescription(address));
+		}
+
 		return it->read(address);
 	}
 
@@ -17,11 +25,30 @@ namespace gb {
 	{
 		auto it = std::find_if(m_Memory.begin(), m_Memory.end(), [address](const MemoryController& controller) { return controller.isInRange(address); });
 
-		if (it != m_Memory.end()) it->write(address, data);
-
-		if (address == 0xFF02 && data == 0x81) 
+		if (it == m_Memory.end())
 		{
-			std::cout << read(0xFF01);
+			throw std::out_of_range(getErrorDescription(address, data));
 		}
+
+		it->write(address, data);
+	}
+	std::string AddressBus::getErrorDescription(uint16_t address, int value)
+	{
+		std::stringstream err;
+		
+		if (value == -1)
+		{
+			err << "Attempting to read from invalid memory address: ";
+			toHexOutput(err, address);
+		}
+		else
+		{
+			err << "Attempting to write to invalid memory address: ";
+			toHexOutput(err, address);
+			err << ". Data: ";
+			toHexOutput(err, value);
+		}
+
+		return err.str();
 	}
 }
