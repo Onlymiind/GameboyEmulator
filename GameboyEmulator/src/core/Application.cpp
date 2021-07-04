@@ -94,15 +94,6 @@ namespace gb {
 		{
 			m_EmulatorRunning = false;
 		}
-
-		static bool wasPressed = false;
-
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::R) && !wasPressed)
-		{
-			std::cout << m_CPU->registersOut() << "\n";
-		}
-
-		wasPressed = sf::Keyboard::isKeyPressed(sf::Keyboard::R);
 	}
 
 	void Application::pollCommands()
@@ -141,8 +132,7 @@ namespace gb {
 				<< "-config - show current ROM directory\n"
 				<< "-quit - quit the emulator\n"
 				<< "During execution:\n"
-				<< "ESC - stop execution\n"
-				<< "R - output CPU registers\n";
+				<< "ESC - stop execution\n";
 			break;
 		case CommandType::SetRomDir:
 			m_TestPath = cmd.Argument;
