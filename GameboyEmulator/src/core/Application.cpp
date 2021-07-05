@@ -61,11 +61,15 @@ namespace gb {
 		m_Leftover = std::make_unique<RAM>(computeSizeFromAddresses(0xFF80, 0xFFFF));
 		m_ROM = std::make_unique<ROM>();
 
-		m_Bus.connect(MemoryController(0x0000, 0x7FFF, BIND_READ(*m_ROM, &ROM::read), BIND_WRITE(*m_ROM, &ROM::write)));
-		m_Bus.connect(MemoryController(0x8000, 0xFEFF, BIND_READ(*m_RAM, &RAM::read), BIND_WRITE(*m_RAM, &RAM::write)));
-		m_Bus.connect(MemoryController(0xFF80, 0xFFFF, BIND_READ(*m_Leftover, &RAM::read), BIND_WRITE(*m_Leftover, &RAM::write)));
-		m_Bus.connect(MemoryController(0xFF00, 0xFF7F, BIND_READ(m_GBIO, &IORegisters::read), BIND_WRITE(m_GBIO, &IORegisters::write)));
-		
+		m_Bus.connect(MemoryController(0x0000, 0x7FFF, *m_ROM));
+		m_Bus.connect(MemoryController(0x8000, 0xFEFF, *m_RAM));
+		m_Bus.connect(MemoryController(0xFF80, 0xFFFF, m_GBIO));
+		m_Bus.connect(MemoryController(0xFF00, 0xFF7F, *m_Leftover));
+	
+		m_Bus.write(0x8000, 0xff);
+
+		std::cout << std::hex << +m_Bus.read(0x8000) << "  " << std::hex << +m_RAM->read(0) << std::endl;
+
 		m_CPU = std::make_unique<SharpSM83>(m_Bus);
 
 		std::cout << R"(
