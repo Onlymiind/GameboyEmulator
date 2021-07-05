@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <cstddef>
 #include <vector>
 
 #define KBYTE 1024
@@ -11,7 +12,7 @@ namespace gb {
 
 	class RAM {
 	public:
-		RAM(size_t size) :
+		RAM(size_t size):
 			m_Memory(size)
 		{}
 		~RAM() = default;

@@ -65,7 +65,7 @@ namespace gb {
 		m_Bus.connect(MemoryController(0x8000, 0xFEFF, BIND_READ(*m_RAM, &RAM::read), BIND_WRITE(*m_RAM, &RAM::write)));
 		m_Bus.connect(MemoryController(0xFF80, 0xFFFF, BIND_READ(*m_Leftover, &RAM::read), BIND_WRITE(*m_Leftover, &RAM::write)));
 		m_Bus.connect(MemoryController(0xFF00, 0xFF7F, BIND_READ(m_GBIO, &IORegisters::read), BIND_WRITE(m_GBIO, &IORegisters::write)));
-
+		
 		m_CPU = std::make_unique<SharpSM83>(m_Bus);
 
 		std::cout << R"(
@@ -79,15 +79,7 @@ namespace gb {
 	{
 		do
 		{
-			try
-			{
-				m_CPU->tick();
-			}
-			catch(std::exception err)
-			{
-				m_EmulatorRunning = false;
-				std::cout << "Execution terminated. Error:\n" << err.what() << "\n" << m_CPU->registersOut() << "\n";
-			}
+			m_CPU->tick();
 		} while (!m_CPU->isFinished());
 
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape))
@@ -173,7 +165,6 @@ namespace gb {
 		std::string cmd;
 		std::getline(is, cmd);
 
-		std::transform(cmd.begin(), cmd.end(), cmd.begin(), [](const char c) { return std::tolower(c); });
 
 		command = Parser().parse(cmd);
 

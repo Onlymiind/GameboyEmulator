@@ -10,7 +10,6 @@
 #include <string>
 #include <array>
 #include <functional>
-#include <exception>
 
 
 namespace gb {
@@ -174,11 +173,6 @@ namespace gb {
 				}
 				else
 				{
-					std::stringstream err;
-					err << "Invalid CPU instruction: ";
-					toHexOutput(err, code.code);
-
-					throw std::invalid_argument(err.str());
 				}
 				break;
 			}

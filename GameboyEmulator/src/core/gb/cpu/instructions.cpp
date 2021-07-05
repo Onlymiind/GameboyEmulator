@@ -3,7 +3,7 @@
 
 
 #include <cstdint>
-
+#include <climits>
 
 namespace gb {
 
