@@ -63,12 +63,8 @@ namespace gb {
 
 		m_Bus.connect(MemoryController(0x0000, 0x7FFF, *m_ROM));
 		m_Bus.connect(MemoryController(0x8000, 0xFEFF, *m_RAM));
-		m_Bus.connect(MemoryController(0xFF80, 0xFFFF, m_GBIO));
-		m_Bus.connect(MemoryController(0xFF00, 0xFF7F, *m_Leftover));
-	
-		m_Bus.write(0x8000, 0xff);
-
-		std::cout << std::hex << +m_Bus.read(0x8000) << "  " << std::hex << +m_RAM->read(0) << std::endl;
+		m_Bus.connect(MemoryController(0xFF80, 0xFFFF, *m_Leftover));
+		m_Bus.connect(MemoryController(0xFF00, 0xFF7F, m_GBIO));
 
 		m_CPU = std::make_unique<SharpSM83>(m_Bus);
 
