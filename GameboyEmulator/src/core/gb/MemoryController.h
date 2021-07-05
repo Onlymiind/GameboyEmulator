@@ -1,7 +1,9 @@
 #pragma once
+#include "core/gb/MemoryObject.h"
+
+
 #include <type_traits>
 #include <cstdint>
-#include <functional>
 
 
 
@@ -11,16 +13,17 @@ namespace gb {
 	class MemoryController {
 	public:
 
-		MemoryController(uint16_t minAddress, uint16_t maxAddress,
-			std::function<uint8_t(uint16_t)> readCallback, std::function<void(uint16_t, uint8_t)> writeCallback) :
-			m_MinAddress(minAddress), m_MaxAddress(maxAddress), m_ReadCallback(readCallback), m_WriteCallback(writeCallback) 
+		MemoryController(uint16_t minAddress, uint16_t maxAddress, MemoryObject& object)
+			: m_MinAddress(minAddress), m_MaxAddress(maxAddress), m_MemoryObject(object) 
 		{}
-		MemoryController(const MemoryController& other) = default;
+		MemoryController(const MemoryController& other)
+			: m_MinAddress(other.m_MinAddress), m_MaxAddress(other.m_MaxAddress), m_MemoryObject(other.m_MemoryObject)
+		{}
 
 		~MemoryController() = default;
 
-		inline uint8_t read(uint16_t address) const  { return m_ReadCallback(address - m_MinAddress); }
-		inline void write(uint16_t address, uint8_t data) const  { m_WriteCallback(address - m_MinAddress, data); }
+		inline uint8_t read(uint16_t address) const  { return m_MemoryObject.read(address - m_MinAddress); }
+		inline void write(uint16_t address, uint8_t data) const  { m_MemoryObject.write(address - m_MinAddress, data); }
 
 		inline bool isInRange(uint16_t address) const { return address >= m_MinAddress && address <= m_MaxAddress; }
 
@@ -41,9 +44,7 @@ namespace gb {
 	private:
 
 		uint16_t m_MinAddress, m_MaxAddress;
-
-		std::function<uint8_t(uint16_t)> m_ReadCallback;
-		std::function<void(uint16_t, uint8_t)> m_WriteCallback;
+		MemoryObject& m_MemoryObject;
 	};
 
 	struct ControllerComparator
