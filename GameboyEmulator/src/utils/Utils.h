@@ -1,18 +1,10 @@
 #pragma once
-#include "glm/vec4.hpp"
 
 #include <type_traits>
 #include <sstream>
 #include <string>
 #include <iomanip>
 #include <cstdint>
-
-inline glm::u8vec4 unnormalizeColor(glm::vec4 color)
-{	
-	glm::u8vec4 unnormalized(color * 255.0f);
-
-	return unnormalized;
-}
 
 size_t computeSizeFromAddresses(uint16_t first, uint16_t last);
 
