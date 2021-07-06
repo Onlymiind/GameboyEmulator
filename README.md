@@ -1,2 +1,2 @@
 # GameboyEmulator
-A gameboy original emulator
+A gameboy (DMG) emulator.
