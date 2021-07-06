@@ -22,9 +22,7 @@ set(SFML_STATIC_LIBRARIES ON)
 target_compile_features(emulator PUBLIC cxx_std_17)
 
 
-if(LINUX)
-	set(TARGET emulator PROPERTY CXX_STANDART 17)
-	set(TARGET emulator PROPERTY CXX_STANDART_REQUIRED ON)
+if(UNIX)
 	target_link_libraries(emulator sfml-system sfml-window sfml-graphics)
 elseif(WIN32)
 	add_compile_definitions(SFML_STATIC)
