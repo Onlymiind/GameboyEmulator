@@ -690,20 +690,20 @@ namespace gb {
 
 	uint8_t SharpSM83::DAA(SharpSM83& cpu, const opcode code)
 	{
-		if (cpu.REG.Flags.N)
+		uint8_t correction = 0;
+
+		if (cpu.REG.Flags.C || (!cpu.REG.Flags.N && cpu.REG.A > 0x99))
 		{
-			if (cpu.REG.Flags.C) cpu.REG.A -= 0x60;
-			if (cpu.REG.Flags.H) cpu.REG.A -= 0x06;
+			correction |= 0x60;
+			cpu.REG.Flags.C = 1;
 		}
-		else
+		if (cpu.REG.Flags.H || (!cpu.REG.Flags.N && (cpu.REG.A & 0x0F) > 0x09))
 		{
-			if (cpu.REG.Flags.C || cpu.REG.A > 0x99)
-			{
-				cpu.REG.A += 0x60;
-				cpu.REG.Flags.C = 1;
-			}
-			if (cpu.REG.Flags.H || (cpu.REG.A & 0x0F) > 0x09) cpu.REG.A += 0x06;
+			correction |= 0x06;
 		}
+
+		if (cpu.REG.Flags.N) cpu.REG.A -= correction;
+		else cpu.REG.A += correction;
 
 		cpu.REG.Flags.H = 0;
 		cpu.REG.Flags.Z = cpu.REG.A == 0;
