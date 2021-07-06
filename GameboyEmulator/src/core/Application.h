@@ -6,6 +6,7 @@
 #include "core/gb/IO.h"
 
 #include <memory>
+#include <string_view>
 
 
 namespace gb {

@@ -1,4 +1,3 @@
-
 project(GameboyEmulator)
 
 add_executable(emulator 
@@ -15,13 +14,25 @@ add_executable(emulator
 include_directories(
 	${PROJECT_SOURCE_DIR}/src
 	${PROJECT_SOURCE_DIR}/dependencies/GLM)
+if(WIN32)
+	include_directories(emulator ${PROJECT_SOURCE_DIR}/dependencies/SFML/include)
+endif()
 
-set(CMAKE_CXX_SANDART 17)
-set(SFML_STATIC_LIBRARIES TRUE)
-set(CMAKE_CXX_FLAGS_RELEASE TRUE)
+set(SFML_STATIC_LIBRARIES ON)
+target_compile_features(emulator PUBLIC cxx_std_17)
 
 
-target_link_libraries(emulator sfml-system sfml-window sfml-graphics)
+if(LINUX)
+	set(TARGET emulator PROPERTY CXX_STANDART 17)
+	set(TARGET emulator PROPERTY CXX_STANDART_REQUIRED ON)
+	target_link_libraries(emulator sfml-system sfml-window sfml-graphics)
+elseif(WIN32)
+	add_compile_definitions(SFML_STATIC)
+	target_link_directories(emulator PRIVATE ${PROJECT_SOURCE_DIR}/dependencies/SFML/lib)
+	target_link_libraries(emulator sfml-system-s sfml-window-s sfml-graphics-s)
+	target_link_libraries(emulator opengl32)
+	target_link_libraries(emulator winmm)
+endif()
 
 
 
