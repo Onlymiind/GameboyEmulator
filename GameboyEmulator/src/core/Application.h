@@ -31,12 +31,12 @@ namespace gb {
 
 	private:
 
-		std::unique_ptr<RAM> m_RAM;
-		std::unique_ptr<ROM> m_ROM;
-		std::unique_ptr<RAM> m_Leftover;
+		RAM m_RAM;
+		ROM m_ROM;
+		RAM m_Leftover;
 		IORegisters m_GBIO;
 		AddressBus m_Bus;
-		std::unique_ptr<SharpSM83> m_CPU;
+		SharpSM83 m_CPU;
 
 		const uint8_t m_InstructionPerFrame{ 100 };
 		bool m_IsRunning;

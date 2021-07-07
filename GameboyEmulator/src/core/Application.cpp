@@ -16,6 +16,8 @@
 #include <filesystem>
 #include <algorithm>
 #include <exception>
+#include <future>
+#include <chrono>
 
 #define BIND_READ(x, func) std::bind(func, &x, std::placeholders::_1)
 #define BIND_WRITE(x, func) std::bind(func, &x, std::placeholders::_1, std::placeholders::_2)
@@ -28,8 +30,8 @@ namespace gb {
 	}
 
 	Application::Application() :
-		m_RAM(nullptr), m_ROM(nullptr), m_Leftover(nullptr), m_GBIO(),
-		m_Bus(), m_CPU(nullptr), m_IsRunning(true), m_StepMode(false), m_Execute(false),
+		m_RAM(computeSizeFromAddresses(0x8000, 0xFEFF)), m_ROM(), m_Leftover(computeSizeFromAddresses(0xFF80, 0xFFFF)), m_GBIO(),
+		m_Bus(), m_CPU(m_Bus), m_IsRunning(true), m_StepMode(false), m_Execute(false),
 		m_EmulatorRunning(false)
 	{
 		init();
@@ -57,16 +59,10 @@ namespace gb {
 
 	void Application::init()
 	{
-		m_RAM = std::make_unique<RAM>(computeSizeFromAddresses(0x8000, 0xFEFF));
-		m_Leftover = std::make_unique<RAM>(computeSizeFromAddresses(0xFF80, 0xFFFF));
-		m_ROM = std::make_unique<ROM>();
-
-		m_Bus.connect(MemoryController(0x0000, 0x7FFF, *m_ROM));
-		m_Bus.connect(MemoryController(0x8000, 0xFEFF, *m_RAM));
-		m_Bus.connect(MemoryController(0xFF80, 0xFFFF, *m_Leftover));
+		m_Bus.connect(MemoryController(0x0000, 0x7FFF, m_ROM));
+		m_Bus.connect(MemoryController(0x8000, 0xFEFF, m_RAM));
+		m_Bus.connect(MemoryController(0xFF80, 0xFFFF, m_Leftover));
 		m_Bus.connect(MemoryController(0xFF00, 0xFF7F, m_GBIO));
-
-		m_CPU = std::make_unique<SharpSM83>(m_Bus);
 
 		std::cout << R"(
 ****************************
@@ -77,14 +73,22 @@ namespace gb {
 
 	void Application::update()
 	{
+		static auto result = std::async(std::launch::async, sf::Keyboard::isKeyPressed, sf::Keyboard::Escape);
+
+
 		do
 		{
-			m_CPU->tick();
-		} while (!m_CPU->isFinished());
-
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape))
+			m_CPU.tick();
+		} while (!m_CPU.isFinished());
+		
+		auto status = result.wait_for(std::chrono::microseconds(0));
+		if (status == std::future_status::ready)
 		{
-			m_EmulatorRunning = false;
+			if(result.get())
+			{
+				m_EmulatorRunning = false;
+			}
+			result = std::async(std::launch::async, sf::Keyboard::isKeyPressed, sf::Keyboard::Escape);
 		}
 	}
 
@@ -136,8 +140,8 @@ namespace gb {
 
 			if (std::filesystem::exists(m_TestPath + cmd.Argument + m_Extension))
 			{
-				m_ROM->setData(FileManager::readFile(m_TestPath + cmd.Argument + m_Extension));
-				m_CPU->reset();
+				m_ROM.setData(FileManager::readFile(m_TestPath + cmd.Argument + m_Extension));
+				m_CPU.reset();
 				m_EmulatorRunning = true;
 			}
 			else
