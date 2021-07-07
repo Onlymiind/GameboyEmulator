@@ -2,9 +2,9 @@
 
 
 int main() {
-	gb::Application app{};
+	gb::Application* app = new gb::Application;
 
-	app.run();
+	app->run();
 
 	return 0;
 }
