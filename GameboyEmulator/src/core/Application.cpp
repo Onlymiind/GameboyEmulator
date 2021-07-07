@@ -132,6 +132,10 @@ namespace gb {
 			break;
 		case CommandType::SetRomDir:
 			m_TestPath = cmd.Argument;
+			if (m_TestPath.back() != '/' || m_TestPath.back() != '\\')
+			{
+				m_TestPath.push_back('/');
+			}
 			break;
 		case CommandType::Quit:
 			m_IsRunning = false;
