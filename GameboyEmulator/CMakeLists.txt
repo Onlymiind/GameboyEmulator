@@ -24,6 +24,7 @@ target_compile_features(emulator PUBLIC cxx_std_17)
 
 if(UNIX)
 	target_link_libraries(emulator sfml-system sfml-window sfml-graphics)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 elseif(WIN32)
 	add_compile_definitions(SFML_STATIC)
 	target_link_directories(emulator PRIVATE ${PROJECT_SOURCE_DIR}/dependencies/SFML/lib)

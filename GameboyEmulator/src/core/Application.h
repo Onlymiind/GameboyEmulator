@@ -31,18 +31,17 @@ namespace gb {
 
 	private:
 
-		std::unique_ptr<RAM> m_RAM;
-		std::unique_ptr<ROM> m_ROM;
-		std::unique_ptr<RAM> m_Leftover;
+		RAM m_RAM;
+		ROM m_ROM;
+		RAM m_Leftover;
 		IORegisters m_GBIO;
 		AddressBus m_Bus;
-		std::unique_ptr<SharpSM83> m_CPU;
+		SharpSM83 m_CPU;
 
 		const uint8_t m_InstructionPerFrame{ 100 };
 		bool m_IsRunning;
 		bool m_EmulatorRunning;
-		bool m_StepMode;
-		bool m_Execute;
+		bool m_JustStarted;
 
 
 		std::string m_TestPath{ "../TestRoms/blargg/cpu_instrs/individual/" };
@@ -79,7 +78,7 @@ namespace gb {
 			bool HasArguments;
 		};
 
-		std::string getArguments(const std::string& text, const CommandInfo& info) const;
+		std::string getArguments(const std::string& text, const CommandInfo& info, size_t cmdBegin) const;
 
 		const std::array<CommandInfo, 6> m_Commands =
 		{ {
