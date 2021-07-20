@@ -14,7 +14,7 @@ namespace gb
         ADC, JP, POP, RST, CALL,
         SBC, DI, RET, CPL, RETI,
         CCF, EI, DAA, SCF, HALT,
-        CP, STOP,
+        CP, STOP, LD_INC, LD_DEC,
 
         RLC, RRC, SLA, SRA,
         SRL, BIT, RES, SET,
@@ -38,7 +38,7 @@ namespace gb
     enum class Registers : uint8_t
     {
         None = 0,
-        A, F, B, C, D, E, H, L,
+        A, B, C, D, E, H, L,
         AF, BC, DE, HL, PC, SP
     };
 
@@ -63,6 +63,7 @@ namespace gb
 
     struct Instruction
     {
+        uint16_t ResetVector = 0;
         InstructionType Type = InstructionType::None;
         ArgumentInfo Source;
         ArgumentInfo Destination;
@@ -74,7 +75,8 @@ namespace gb
             return Type == other.Type &&
                 Source == other.Source &&
                 Destination == other.Destination &&
-                Condition == other.Condition;
+                Condition == other.Condition &&
+                ResetVector == other.ResetVector;
         }
     };
 

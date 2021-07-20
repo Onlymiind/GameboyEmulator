@@ -12,12 +12,18 @@ namespace gb
         Decoder() = default;
         ~Decoder() = default;
 
-        Instruction decodeUnprefixed(opcode code);
-        Instruction decodePrefixed(opcode code);
+        Instruction decodeUnprefixed(opcode code) const;
+        Instruction decodePrefixed(opcode code) const;
 
-        inline bool isPrefix(opcode code) { return code.code == 0xCB; }
+        inline bool isPrefix(opcode code) const { return code.code == 0xCB; }
     private:
-        void setRegister8Bit(uint8_t registerIndex, ArgumentInfo& registerInfo);
+        void setRegister8Bit(uint8_t registerIndex, ArgumentInfo& registerInfo) const;
+        void decodeRandomInstructions(opcode code, Instruction& instruction) const;
+        void decodeADD(opcode code, Instruction& instruction) const;
+        void decodeLD(opcode code, Instruction& instruction) const;
+        void decodeJR(opcode code, Instruction& instruction) const;
+        void decodeJP(opcode code, Instruction& instruction) const;
+        void decodeINC_DEC(opcode code, Instruction& instruction) const;
 
     private:
         const std::array<Registers, 8> m_8Bitregisters = 
