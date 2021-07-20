@@ -12,240 +12,254 @@
 #include <functional>
 
 
-namespace gb {
+namespace gb 
+{
+    SharpSM83::SharpSM83(AddressBus& bus, InterruptRegister& interruptEnable, InterruptRegister& interruptFlags) 
+        : m_InterruptEnable(interruptEnable), m_InterruptFlags(interruptFlags), m_Bus(bus), m_CyclesToFinish(0)
+    {}
 
 
-	SharpSM83::SharpSM83(AddressBus& bus) :
-		m_Bus(bus), m_CyclesToFinish(0)
-	{}
+    void SharpSM83::tick()
+    {
+        if (m_CyclesToFinish == 0)
+        {
+            uint8_t pending_interrupts = m_InterruptEnable.getFlags() & m_InterruptFlags.getFlags() & (~g_UnusedInterruptBits);
+            if(pending_interrupts)
+            {
+                //TODO: handle interrupt
+                //Can actually safely cast this to InterruptBits
+                InterruptFlags interrupt = static_cast<InterruptFlags>(pending_interrupts & -pending_interrupts);
+                if(IME)
+                {
+                    m_InterruptEnable.clearFlag(interrupt);
+                    //TODO: jump to interrupt vector
+                }
+            }
+            else
+            {
+                opcode code = fetch();
+                //TODO: HALT state (with bug)
+                //TODO: Check if opcode is invalid
+                m_CyclesToFinish = dispatch(code);
+            }
 
+        }
 
-	void SharpSM83::tick()
-	{
-		if (m_CyclesToFinish == 0) {
+        if (m_EnableIME) 
+        { 
+            // Enable jumping to interrupt vectors if it is scheduled by EI
+            IME = true;
+            m_EnableIME = false;
+        }
 
-			opcode code = fetch();
-			//TODO: HALT state (with bug)
-			//TODO: Check if opcode is invalid
-			m_CyclesToFinish = dispatch(code);
+        --m_CyclesToFinish;
+    }
 
-		}
+    std::string SharpSM83::registersOut()
+    {
+        std::stringstream stream{};
+        
+        stream << "CPU registers:\n";
 
-		if (m_EnableIME) 
-		{ 
-			// Enable jumping to interrupt vectors if it is scheduled by EI
-			IME = true;
-			m_EnableIME = false;
-		}
+        stream << "A: "; toHexOutput(stream, REG.A); stream << " F: "; toHexOutput(stream, static_cast<uint8_t>(REG.AF & 0x00FF)); stream << "\n";
 
-		--m_CyclesToFinish;
-	}
+        stream << "B: "; toHexOutput(stream, REG.B); stream << " C: "; toHexOutput(stream, REG.C); stream << "\n";
+        stream << "D: "; toHexOutput(stream, REG.D); stream << " E: "; toHexOutput(stream, REG.E); stream << "\n";
+        stream << "H: "; toHexOutput(stream, REG.H); stream << " L: "; toHexOutput(stream, REG.L); stream << "\n";
 
-	std::string SharpSM83::registersOut()
-	{
-		std::stringstream stream{};
-		
-		stream << "CPU registers:\n";
+        stream << "SP: "; toHexOutput(stream, REG.SP); stream << "\n";
+        stream << "PC: "; toHexOutput(stream, REG.PC); stream;
 
-		stream << "A: "; toHexOutput(stream, REG.A); stream << " F: "; toHexOutput(stream, static_cast<uint8_t>(REG.AF & 0x00FF)); stream << "\n";
+        return stream.str();
+    }
 
-		stream << "B: "; toHexOutput(stream, REG.B); stream << " C: "; toHexOutput(stream, REG.C); stream << "\n";
-		stream << "D: "; toHexOutput(stream, REG.D); stream << " E: "; toHexOutput(stream, REG.E); stream << "\n";
-		stream << "H: "; toHexOutput(stream, REG.H); stream << " L: "; toHexOutput(stream, REG.L); stream << "\n";
+    bool SharpSM83::halfCarryOccured8Add(uint8_t lhs, uint8_t rhs)
+    {
+        return (((lhs & 0x0F) + (rhs & 0x0F)) & 0x10) != 0;
+    }
 
-		stream << "SP: "; toHexOutput(stream, REG.SP); stream << "\n";
-		stream << "PC: "; toHexOutput(stream, REG.PC); stream;
+    bool SharpSM83::halfCarryOccured8Sub(uint8_t lhs, uint8_t rhs)
+    {
+        return (lhs & 0x0F) < (rhs & 0x0F);
+    }
 
-		return stream.str();
-	}
+    bool SharpSM83::carryOccured8Add(uint8_t lhs, uint8_t rhs)
+    {
+        uint16_t lhs16{ lhs }, rhs16{ rhs };
 
-	bool SharpSM83::halfCarryOccured8Add(uint8_t lhs, uint8_t rhs)
-	{
-		return (((lhs & 0x0F) + (rhs & 0x0F)) & 0x10) != 0;
-	}
+        return (lhs16 + rhs16) > 0x00FF;
+    }
 
-	bool SharpSM83::halfCarryOccured8Sub(uint8_t lhs, uint8_t rhs)
-	{
-		return (lhs & 0x0F) < (rhs & 0x0F);
-	}
+    bool SharpSM83::carryOccured8Sub(uint8_t lhs, uint8_t rhs)
+    {
+        return lhs < rhs;
+    }
 
-	bool SharpSM83::carryOccured8Add(uint8_t lhs, uint8_t rhs)
-	{
-		uint16_t lhs16{ lhs }, rhs16{ rhs };
+    bool SharpSM83::halfCarryOccured16Add(uint16_t lhs, uint16_t rhs)
+    {
+        return (((lhs & 0x0FFF) + (rhs & 0x0FFF)) & 0x1000) != 0;
+    }
 
-		return (lhs16 + rhs16) > 0x00FF;
-	}
+    bool SharpSM83::carryOccured16Add(uint16_t lhs, uint16_t rhs)
+    {
+        uint32_t lhs32{ lhs }, rhs32{ rhs };
 
-	bool SharpSM83::carryOccured8Sub(uint8_t lhs, uint8_t rhs)
-	{
-		return lhs < rhs;
-	}
+        return (lhs32 + rhs32) > 0xFFFF;
+    }
 
-	bool SharpSM83::halfCarryOccured16Add(uint16_t lhs, uint16_t rhs)
-	{
-		return (((lhs & 0x0FFF) + (rhs & 0x0FFF)) & 0x1000) != 0;
-	}
+    void SharpSM83::write(uint16_t address, uint8_t data)
+    {
+        m_Bus.write(address, data);
+    }
 
-	bool SharpSM83::carryOccured16Add(uint16_t lhs, uint16_t rhs)
-	{
-		uint32_t lhs32{ lhs }, rhs32{ rhs };
+    uint8_t SharpSM83::dispatch(opcode code)
+    {
+        uint8_t cycles{ 0 };
+        if (code.code == 0xCB)
+        {
+            code.code = fetch();
+            switch (code.getX()) {
+            case 0: {
+                m_CyclesToFinish = m_TableBitOperations[code.getY()](this, code);
+                break;
+            }
+            case 1: {
+                m_CyclesToFinish = BIT(code);
+                break;
+            }
+            case 2: {
+                m_CyclesToFinish = RES(code);
+                break;
+            }
+            case 3: {
+                m_CyclesToFinish = SET(code);
+                break;
+            }
+            }
+        }
+        else
+        {
 
-		return (lhs32 + rhs32) > 0xFFFF;
-	}
+            switch (code.getX())
+            {
+            case 0:
+            {
+                if (m_ColumnToImplUpper.count(code.getLowerNibble()))
+                {
+                    cycles = m_ColumnToImplUpper.at(code.getLowerNibble())(*this, code);
+                }
+                else if (m_RandomInstructions.count(code.code))
+                {
+                    cycles = m_RandomInstructions.at(code.code)(*this, code);
+                }
+                break;
+            }
+            case 1:
+            {
+                if (code.getZ() == 6 && code.getY() == 6)
+                {
+                    cycles = HALT(*this, code);
+                }
+                else
+                {
+                    cycles = LD_REG8(*this, code);
+                }
+                break;
+            }
+            case 2:
+            {
+                cycles = m_TableALU[code.getY()](*this, code);
+                break;
+            }
+            case 3:
+            {
+                if (m_ColumnToImplLower.count(code.getLowerNibble()))
+                {
+                    cycles = m_ColumnToImplLower.at(code.getLowerNibble())(*this, code);
+                }
+                else if (code.getZ() == 6)
+                {
+                    cycles = m_TableALU[code.getY()](*this, code);
+                }
+                else if (m_RandomInstructions.count(code.code))
+                {
+                    cycles = m_RandomInstructions.at(code.code)(*this, code);
+                }
+                else
+                {
+                }
+                break;
+            }
+            }
+        }
 
-	void SharpSM83::write(uint16_t address, uint8_t data)
-	{
-		m_Bus.write(address, data);
-	}
+        return cycles;
+    }
 
-	uint8_t SharpSM83::dispatch(opcode code)
-	{
-		uint8_t cycles{ 0 };
-		if (code.code == 0xCB)
-		{
-			code.code = fetch();
-			switch (code.getX()) {
-			case 0: {
-				m_CyclesToFinish = m_TableBitOperations[code.getY()](this, code);
-				break;
-			}
-			case 1: {
-				m_CyclesToFinish = BIT(code);
-				break;
-			}
-			case 2: {
-				m_CyclesToFinish = RES(code);
-				break;
-			}
-			case 3: {
-				m_CyclesToFinish = SET(code);
-				break;
-			}
-			}
-		}
-		else
-		{
+    uint8_t SharpSM83::read(uint16_t address)
+    {
+        return m_Bus.read(address);
+    }
 
-			switch (code.getX())
-			{
-			case 0:
-			{
-				if (m_ColumnToImplUpper.count(code.getLowerNibble()))
-				{
-					cycles = m_ColumnToImplUpper.at(code.getLowerNibble())(*this, code);
-				}
-				else if (m_RandomInstructions.count(code.code))
-				{
-					cycles = m_RandomInstructions.at(code.code)(*this, code);
-				}
-				break;
-			}
-			case 1:
-			{
-				if (code.getZ() == 6 && code.getY() == 6)
-				{
-					cycles = HALT(*this, code);
-				}
-				else
-				{
-					cycles = LD_REG8(*this, code);
-				}
-				break;
-			}
-			case 2:
-			{
-				cycles = m_TableALU[code.getY()](*this, code);
-				break;
-			}
-			case 3:
-			{
-				if (m_ColumnToImplLower.count(code.getLowerNibble()))
-				{
-					cycles = m_ColumnToImplLower.at(code.getLowerNibble())(*this, code);
-				}
-				else if (code.getZ() == 6)
-				{
-					cycles = m_TableALU[code.getY()](*this, code);
-				}
-				else if (m_RandomInstructions.count(code.code))
-				{
-					cycles = m_RandomInstructions.at(code.code)(*this, code);
-				}
-				else
-				{
-				}
-				break;
-			}
-			}
-		}
+    void SharpSM83::pushStack(uint16_t value)
+    {
+        uint8_t msb{ 0 }, lsb{ 0 };
 
-		return cycles;
-	}
+        lsb = static_cast<uint8_t>(value & 0x00FF);
+        msb = static_cast<uint8_t>((value & 0xFF00) >> 8);
 
-	uint8_t SharpSM83::read(uint16_t address)
-	{
-		return m_Bus.read(address);
-	}
+        --REG.SP;
+        write(REG.SP, msb);
+        --REG.SP;
+        write(REG.SP, lsb);
+    }
 
-	void SharpSM83::pushStack(uint16_t value)
-	{
-		uint8_t msb{ 0 }, lsb{ 0 };
+    uint8_t SharpSM83::fetch()
+    {
+        uint8_t value = read(REG.PC);
+        ++REG.PC;
+        return value;
+    }
 
-		lsb = static_cast<uint8_t>(value & 0x00FF);
-		msb = static_cast<uint8_t>((value & 0xFF00) >> 8);
+    uint16_t SharpSM83::fetchWord()
+    {
+        uint8_t lsb{ 0 }, msb{ 0 };
+        uint16_t value;
+        lsb = fetch();
+        msb = fetch();
+        value = (static_cast<uint16_t>(msb) << 8) | (static_cast<uint16_t>(lsb));
+        return value;
+    }
 
-		--REG.SP;
-		write(REG.SP, msb);
-		--REG.SP;
-		write(REG.SP, lsb);
-	}
+    uint16_t SharpSM83::popStack()
+    {
+        uint8_t msb{ 0 }, lsb{ 0 };
+        lsb = read(REG.SP);
+        ++REG.SP;
+        msb = read(REG.SP);
+        ++REG.SP;
+        uint16_t result = (static_cast<uint16_t>(msb) << 8) | static_cast<uint16_t>(lsb);
+        return result;
+    }
 
-	uint8_t SharpSM83::fetch()
-	{
-		uint8_t value = read(REG.PC);
-		++REG.PC;
-		return value;
-	}
+    int8_t SharpSM83::fetchSigned()
+    {
+        uint8_t u_value = fetch();
+        int8_t result = reinterpret_cast<int8_t&>(u_value);
+        return result;
+    }
 
-	uint16_t SharpSM83::fetchWord()
-	{
-		uint8_t lsb{ 0 }, msb{ 0 };
-		uint16_t value;
-		lsb = fetch();
-		msb = fetch();
-		value = (static_cast<uint16_t>(msb) << 8) | (static_cast<uint16_t>(lsb));
-		return value;
-	}
+    void SharpSM83::reset()
+    {
+        REG.AF = 0;
+        REG.BC = 0;
+        REG.DE = 0;
+        REG.HL = 0;
 
-	uint16_t SharpSM83::popStack()
-	{
-		uint8_t msb{ 0 }, lsb{ 0 };
-		lsb = read(REG.SP);
-		++REG.SP;
-		msb = read(REG.SP);
-		++REG.SP;
-		uint16_t result = (static_cast<uint16_t>(msb) << 8) | static_cast<uint16_t>(lsb);
-		return result;
-	}
+        REG.SP = 0xFFFE;
+        REG.PC = 0x0100;
 
-	int8_t SharpSM83::fetchSigned()
-	{
-		uint8_t u_value = fetch();
-		int8_t result = reinterpret_cast<int8_t&>(u_value);
-		return result;
-	}
-
-	void SharpSM83::reset()
-	{
-		REG.AF = 0;
-		REG.BC = 0;
-		REG.DE = 0;
-		REG.HL = 0;
-
-		REG.SP = 0xFFFE;
-		REG.PC = 0x0100;
-
-		IME = false;
-	}
+        IME = false;
+    }
 
 }

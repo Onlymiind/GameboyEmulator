@@ -1,6 +1,8 @@
 #pragma once
 #include "utils/Utils.h"
 #include "core/gb/AddressBus.h"
+#include "core/gb/InterruptRegister.h"
+#include "core/gb/cpu/Operation.h"
 
 #include <cstdint>
 #include <string_view>
@@ -11,29 +13,13 @@
 
 namespace gb {
 
-	/// <summary>
-	/// Struct to support easy opcode decomposition;
-	/// </summary>
-	struct opcode {
-		opcode() :
-			code(0) {}
-		opcode(uint8_t val) :
-			code(val) {}
 
-		inline uint8_t getX() const { return (code & 0b11000000) >> 6; }
-		inline uint8_t getY() const { return (code & 0b00111000) >> 3; }
-		inline uint8_t getZ() const { return (code & 0b00000111) >> 0; }
-		inline uint8_t getP() const { return (code & 0b00110000) >> 4; }
-		inline uint8_t getQ() const { return (code & 0b00001000) >> 3; }
-		
-		inline uint8_t getLowerNibble() const { return code & 0x0F; }
 
-		uint8_t code;
-	};
-
-	class SharpSM83 {
+	class SharpSM83 
+	{
+		using pfn_instruction = uint8_t(*)(SharpSM83&, const opcode);
 	public:
-		SharpSM83(AddressBus& bus);
+		SharpSM83(AddressBus& bus, InterruptRegister& interruptEnable, InterruptRegister& interruptFlags);
 		~SharpSM83() {}
 
 		void tick();
@@ -154,6 +140,8 @@ namespace gb {
 		bool IME{ false }; // Interrupt master enable
 		bool m_EnableIME{ false };
 
+		InterruptRegister& m_InterruptEnable;
+		InterruptRegister& m_InterruptFlags;
 
 	private: //OPCODE DECODING
 
@@ -181,7 +169,7 @@ namespace gb {
 			[](uint8_t flags) { return (flags & 0b00010000) != 0; }  //C-flag
 		};
 
-		const std::array<uint8_t(*)(SharpSM83&, const opcode), 8> m_TableALU =
+		const std::array<pfn_instruction, 8> m_TableALU =
 		{
 			SharpSM83::ADD, SharpSM83::ADC, SharpSM83::SUB, SharpSM83::SBC,
 			SharpSM83::AND, SharpSM83::XOR, SharpSM83::OR,  SharpSM83::CP
@@ -195,18 +183,18 @@ namespace gb {
 			&SharpSM83::SWAP, &SharpSM83::SRL
 		};
 
-		const std::map<uint8_t, uint8_t(*)(SharpSM83&, const opcode)> m_ColumnToImplUpper = 
+		const std::map<uint8_t, pfn_instruction> m_ColumnToImplUpper = 
 		{
 			{ 0x01, SharpSM83::LD_IMM }, { 0x02, SharpSM83::LD }, { 0x03, SharpSM83::INC }, { 0x04, SharpSM83::INC }, { 0x05, SharpSM83::DEC }, { 0x06, SharpSM83::LD_IMM },
 			{ 0x09, SharpSM83::ADD }, { 0x0A, SharpSM83::LD }, { 0x0B, SharpSM83::DEC }, { 0x0C, SharpSM83::INC }, { 0x0D, SharpSM83::DEC }, { 0x0E, SharpSM83::LD_IMM }
 		};
 
-		const std::map<uint8_t, uint8_t(*)(SharpSM83&, const opcode)> m_ColumnToImplLower =
+		const std::map<uint8_t, pfn_instruction> m_ColumnToImplLower =
 		{
 			{ 0x01, SharpSM83::POP }, { 0x05, SharpSM83::PUSH }, { 0x07, SharpSM83::RST }, { 0x0F, SharpSM83::RST }
 		};
 
-		const std::map<uint8_t, uint8_t(*)(SharpSM83&, const opcode)> m_RandomInstructions = 
+		const std::map<uint8_t, pfn_instruction> m_RandomInstructions = 
 		{
 			{ 0x00, SharpSM83::NOP }, { 0x07, SharpSM83::RLCA }, { 0x08, SharpSM83::LD_IMM }, { 0x0F, SharpSM83::RRCA },
 			

@@ -4,6 +4,7 @@
 #include "core/gb/AddressBus.h"
 #include "core/gb/cpu/CPU.h"
 #include "core/gb/IO.h"
+#include "core/gb/InterruptRegister.h"
 
 #include <memory>
 #include <string_view>
@@ -36,6 +37,8 @@ namespace gb {
 		RAM m_Leftover;
 		IORegisters m_GBIO;
 		AddressBus m_Bus;
+		InterruptRegister m_InterruptEnable;
+		InterruptRegister m_InterruptFlags;
 		SharpSM83 m_CPU;
 
 		const uint8_t m_InstructionPerFrame{ 100 };
