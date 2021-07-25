@@ -11,10 +11,8 @@
 #include <map>
 #include <functional>
 
-namespace gb {
-
-
-
+namespace gb 
+{
 	class SharpSM83 
 	{
 		using pfn_instruction = uint8_t(*)(SharpSM83&, const opcode);
