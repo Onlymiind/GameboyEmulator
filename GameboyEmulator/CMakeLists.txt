@@ -9,6 +9,7 @@ add_executable(emulator
 	src/core/gb/IO.cpp
 	src/core/gb/Timer.cpp
 	src/Source.cpp
+	src/core/gb/cpu/Decoder.cpp
 	)
 
 include_directories(

@@ -8,6 +8,7 @@
 #include "utils/FileManager.h"
 #include "core/gb/Timer.h"
 #include "core/gb/cpu/Operation.h"
+#include "core/gb/cpu/Decoder.h"
 
 #include <SFML/Window/Keyboard.hpp>
 

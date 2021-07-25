@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 
 namespace gb
 {
@@ -19,6 +20,12 @@ namespace gb
         RLC, RRC, SLA, SRA,
         SRL, BIT, RES, SET,
         RL, RR, SWAP
+    };
+
+    //Some LD instructions are quite different fron others, this enum is used to mark them
+    enum class LoadSubtype : uint8_t
+    {
+        Typical, LD_INC, LD_DEC, LD_IO, LD_SP, LD_Offset_SP
     };
 
     enum class ArgumentSource : uint8_t
@@ -63,10 +70,14 @@ namespace gb
 
     struct Instruction
     {
-        uint16_t ResetVector = 0;
-        InstructionType Type = InstructionType::None;
+        //Used only in RST instruction. In other cases is left uninitialized
+        std::optional<uint16_t> ResetVector;
+        //Used only in LD instructions. In other cases is left uninitialized
+        std::optional<LoadSubtype> LDSubtype;
+
         ArgumentInfo Source;
         ArgumentInfo Destination;
+        InstructionType Type = InstructionType::None;
         Conditions Condition = Conditions::None;
 
         //For Debugging
@@ -76,7 +87,8 @@ namespace gb
                 Source == other.Source &&
                 Destination == other.Destination &&
                 Condition == other.Condition &&
-                ResetVector == other.ResetVector;
+                ResetVector == other.ResetVector &&
+                LDSubtype == other.LDSubtype;
         }
     };
 

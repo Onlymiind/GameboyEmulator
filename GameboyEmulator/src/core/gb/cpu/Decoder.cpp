@@ -22,11 +22,6 @@ namespace gb
                     result.Type = m_ColumnsUpperQuarter.at(code.getLowerNibble());
                     decodeRandomInstructions(code, result);
                 }
-                else if (m_RandomInstructions.count(code.code))
-                {
-                    result.Type = m_RandomInstructions.at(code.code);
-                    decodeRandomInstructions(code, result);
-                }
                 break;
             }
             case 1:
@@ -38,20 +33,14 @@ namespace gb
                 else
                 {
                     result.Type = InstructionType::LD;
-                    setRegister8Bit(code.getY(), result.Destination);
-                    setRegister8Bit(code.getZ(), result.Source);
+                    setRegisterInfo(code.getY(), result.Destination);
+                    setRegisterInfo(code.getZ(), result.Source);
                 }
                 break;
             }
             case 2:
             {
-                result.Type = m_ALU[code.getY()];
-
-                result.Destination.Source = ArgumentSource::Register;
-                result.Destination.Type = ArgumentType::Unsigned8;
-                result.Destination.Register = Registers::A;
-
-                setRegister8Bit(code.getZ(), result.Source);
+                setALUInfo(code, result, false);
                 break;
             }
             case 3:
@@ -63,22 +52,23 @@ namespace gb
                 }
                 else if (code.getZ() == 6)
                 {
-                    result.Type = m_ALU[code.getY()];
-
-                    result.Destination.Source = ArgumentSource::Register;
-                    result.Destination.Type = ArgumentType::Unsigned8;
-                    result.Destination.Register = Registers::A;
-
-                    result.Source.Source = ArgumentSource::Immediate;
-                    result.Source.Type = ArgumentType::Unsigned8;
-                }
-                else if (m_RandomInstructions.count(code.code))
-                {
-                    result.Type = m_RandomInstructions.at(code.code);
-                    decodeRandomInstructions(code, result);
+                    setALUInfo(code, result, true);
                 }
                 
                 break;
+            }
+        }
+
+        if(result.Type == InstructionType::None)
+        {
+            result.Type = m_RandomInstructions.at(code.code);
+            if(result.Type == InstructionType::LD)
+            {
+                result = m_RandomLD.at(code.code);
+            }
+            else
+            {
+                decodeRandomInstructions(code, result);
             }
         }
 
@@ -87,9 +77,6 @@ namespace gb
 
     void Decoder::decodeRandomInstructions(opcode code, Instruction& instruction) const
     {
-        bool LD_INC = false;
-        bool LD_DEC = false;
-
         switch(instruction.Type)
         {
             case type::NOP:
@@ -141,159 +128,8 @@ namespace gb
                 decodeINC_DEC(code, instruction);
                 return;
             case type::LD:
-                switch(code.getX())
-                {
-                    case 1:
-                        switch(code.getZ())
-                        {
-                            case 0:
-                                instruction.Destination.Source = arg_src::IndirectImmediate;
-                                instruction.Destination.Type = arg_t::Unsigned16;
-
-                                instruction.Source.Source = arg_src::Register;
-                                instruction.Source.Type = arg_t::Unsigned16;
-                                instruction.Source.Register = reg::SP;
-                                break;
-                            case 1:
-                                instruction.Destination.Source = arg_src::Register;
-                                instruction.Destination.Type = arg_t::Unsigned16;
-                                instruction.Destination.Register = m_16BitRegisters_SP[code.getP()];
-
-                                instruction.Source.Source = arg_src::Immediate;
-                                instruction.Source.Type = arg_t::Unsigned16;
-                                break;
-                            case 2:
-                                switch(code.getP())
-                                {
-                                    case 0:
-                                        instruction.Destination.Register = reg::BC;
-                                        break;
-                                    case 1:
-                                        instruction.Destination.Register = reg::DE;
-                                        break;
-                                    case 2:
-                                        instruction.Destination.Register = reg::HL;
-                                        LD_INC = true;
-                                        break;
-                                    case 3:
-                                        instruction.Destination.Register = reg::HL;
-                                        LD_DEC = true;
-                                        break;
-                                }
-
-                                instruction.Source.Source = arg_src::Register;
-                                instruction.Source.Type = arg_t::Unsigned8;
-                                instruction.Source.Register = reg::A;
-
-                                instruction.Destination.Source = arg_src::Indirect;
-                                instruction.Destination.Type = arg_t::Unsigned8;
-
-                                if(code.getQ())
-                                {
-                                    std::swap(instruction.Destination, instruction.Source);
-                                }
-                                break;
-                            case 6:
-                                instruction.Source.Source = arg_src::Immediate;
-                                instruction.Source.Type = arg_t::Unsigned8;
-                                
-                                setRegister8Bit(code.getY(), instruction.Destination);
-                                break;
-                        }
-                        break;
-                    case 3:
-                        switch(code.getZ())
-                        {
-                            case 0:
-                                switch(code.getY())
-                                {
-                                    case 4:
-                                        instruction.Source.Source = arg_src::Register;
-                                        instruction.Source.Type = arg_t::Unsigned8;
-                                        instruction.Source.Register = reg::A;
-
-                                        instruction.Destination.Source = arg_src::IndirectImmediate;
-                                        instruction.Destination.Type = arg_t::Unsigned8;
-                                        break;
-                                    case 6:
-                                        instruction.Source.Source = arg_src::IndirectImmediate;
-                                        instruction.Source.Type = arg_t::Unsigned8;
-        
-                                        instruction.Destination.Source = arg_src::Register;
-                                        instruction.Destination.Type = arg_t::Unsigned8;
-                                        instruction.Destination.Register = reg::A;
-                                        break;
-                                    case 7:
-                                        instruction.Source.Source = arg_src::Immediate;
-                                        instruction.Source.Type = arg_t::Signed8;
-                                        instruction.Source.Register = reg::SP;
-        
-                                        instruction.Destination.Source = arg_src::Register;
-                                        instruction.Destination.Type = arg_t::Unsigned16;
-                                        instruction.Destination.Register = reg::HL;
-                                        break;
-                                }
-                            case 1:
-                                instruction.Source.Source = arg_src::Register;
-                                instruction.Source.Type = arg_t::Unsigned16;
-                                instruction.Source.Register = reg::HL;
-
-                                instruction.Destination.Source = arg_src::Register;
-                                instruction.Destination.Type = arg_t::Unsigned16;
-                                instruction.Destination.Register = reg::SP;
-                                break;
-                            case 2:
-                                switch(code.getY())
-                                {
-                                    case 4:
-                                        instruction.Source.Source = arg_src::Register;
-                                        instruction.Source.Type = arg_t::Unsigned8;
-                                        instruction.Source.Register = reg::A;
-
-                                        instruction.Destination.Source = arg_src::Indirect;
-                                        instruction.Destination.Type = arg_t::Unsigned8;
-                                        instruction.Destination.Register = reg::C;
-                                        break;
-                                    case 5:
-                                        instruction.Source.Source = arg_src::Register;
-                                        instruction.Source.Type = arg_t::Unsigned8;
-                                        instruction.Source.Register = reg::A;
-        
-                                        instruction.Destination.Source = arg_src::IndirectImmediate;
-                                        instruction.Destination.Type = arg_t::Unsigned16;
-                                        break;
-                                    case 6:
-                                        instruction.Source.Source = arg_src::Indirect;
-                                        instruction.Source.Type = arg_t::Unsigned8;
-                                        instruction.Source.Register = reg::C;
-        
-                                        instruction.Destination.Source = arg_src::Register;
-                                        instruction.Destination.Type = arg_t::Unsigned8;
-                                        instruction.Destination.Register = reg::A;
-                                        break;
-                                    case 7:
-                                        instruction.Source.Source = arg_src::IndirectImmediate;
-                                        instruction.Source.Type = arg_t::Unsigned16;
-        
-                                        instruction.Destination.Source = arg_src::Register;
-                                        instruction.Destination.Type = arg_t::Unsigned8;
-                                        instruction.Destination.Register = reg::A;
-                                        break;
-                                }
-                                break;
-                        }
-                        break;
-                }
-                break;
-        }
-
-        if(LD_DEC)
-        {
-            instruction.Type = type::LD_DEC;
-        }
-        else if(LD_INC)
-        {
-            instruction.Type = type::LD_INC;
+                decodeLD(code, instruction);
+                return;
         }
     }
 
@@ -323,7 +159,46 @@ namespace gb
 
     void Decoder::decodeLD(opcode code, Instruction& instruction) const
     {
+        switch(code.getZ())
+        {
+            case 2:
+                switch(code.getP())
+                {
+                    case 0:
+                        instruction.Destination.Register = reg::BC;
+                        break;
+                    case 1:
+                        instruction.Destination.Register = reg::DE;
+                        break;
+                    case 2:
+                        instruction.Destination.Register = reg::HL;
+                        instruction.LDSubtype = LoadSubtype::LD_INC;
+                        break;
+                    case 3:
+                        instruction.Destination.Register = reg::HL;
+                        instruction.LDSubtype = LoadSubtype::LD_DEC;
+                        break;
+                }
 
+                instruction.Source.Source = arg_src::Register;
+                instruction.Source.Type = arg_t::Unsigned8;
+                instruction.Source.Register = reg::A;
+
+                instruction.Destination.Source = arg_src::Indirect;
+                instruction.Destination.Type = arg_t::Unsigned8;
+
+                if(code.getQ())
+                {
+                    std::swap(instruction.Destination, instruction.Source);
+                }
+                break;
+            case 6:
+                instruction.Source.Source = arg_src::Immediate;
+                instruction.Source.Type = arg_t::Unsigned8;
+                                
+                setRegisterInfo(code.getY(), instruction.Destination);
+                break;
+        }
     }
 
     void Decoder::decodeJR(opcode code, Instruction& instruction) const
@@ -365,7 +240,7 @@ namespace gb
                 instruction.Source.Register = m_16BitRegisters_SP[code.getP()];
                 break;
             case 4:
-                setRegister8Bit(code.getY(), instruction.Source);
+                setRegisterInfo(code.getY(), instruction.Source);
                 break;
         }
         instruction.Destination = instruction.Source;
@@ -384,35 +259,54 @@ namespace gb
             }
             case 1: 
             {
-                result.Type = InstructionType::BIT;
+                result.Type = type::BIT;
                 break;
             }
             case 2: 
             {
-                result.Type = InstructionType::RES;
+                result.Type = type::RES;
                 break;
             }
             case 3: 
             {
-                result.Type = InstructionType::SET;
+                result.Type = type::SET;
                 break;
             }
         }
 
-        setRegister8Bit(code.getZ(), result.Source);
+        setRegisterInfo(code.getZ(), result.Source);
         result.Destination = result.Source;
 
         return result;
     }
 
-    void Decoder::setRegister8Bit(uint8_t registerIndex, ArgumentInfo& registerInfo) const
+    void Decoder::setRegisterInfo(uint8_t registerIndex, ArgumentInfo& registerInfo) const
     {
         registerInfo.Register = m_8Bitregisters[registerIndex];
-        registerInfo.Type = ArgumentType::Unsigned8;
+        registerInfo.Type = arg_t::Unsigned8;
 
-        if(registerInfo.Register == Registers::HL)
+        if(registerInfo.Register == reg::HL)
         {
-            registerInfo.Source = ArgumentSource::Indirect;
+            registerInfo.Source = arg_src::Indirect;
+        }
+    }
+
+    void Decoder::setALUInfo(opcode code, Instruction& instruction, bool hasImmediate) const
+    {
+        instruction.Type = m_ALU[code.getY()];
+
+        instruction.Destination.Source = arg_src::Register;
+        instruction.Destination.Type = arg_t::Unsigned8;
+        instruction.Destination.Register = reg::A;
+                    
+        if(hasImmediate)
+        {
+            instruction.Source.Source = arg_src::Immediate;
+            instruction.Source.Type = arg_t::Unsigned8;
+        }
+        else
+        {
+            setRegisterInfo(code.getZ(), instruction.Source);
         }
     }
 }
