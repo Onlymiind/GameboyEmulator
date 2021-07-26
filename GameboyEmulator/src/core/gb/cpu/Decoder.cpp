@@ -15,15 +15,6 @@ namespace gb
 
         switch (code.getX())
         {
-            case 0:
-            {
-                if (m_ColumnsUpperQuarter.count(code.getLowerNibble()))
-                {
-                    result.Type = m_ColumnsUpperQuarter.at(code.getLowerNibble());
-                    decodeRandomInstructions(code, result);
-                }
-                break;
-            }
             case 1:
             {
                 if (code.getZ() == 6 && code.getY() == 6)
@@ -45,30 +36,36 @@ namespace gb
             }
             case 3:
             {
-                if (m_ColumnsLowerQuarter.count(code.getLowerNibble()))
-                {
-                    result.Type = m_ColumnsLowerQuarter.at(code.getLowerNibble());
-                    decodeRandomInstructions(code, result);
-                }
-                else if (code.getZ() == 6)
+                if (code.getZ() == 6)
                 {
                     setALUInfo(code, result, true);
                 }
-                
                 break;
             }
         }
 
         if(result.Type == InstructionType::None)
         {
-            result.Type = m_RandomInstructions.at(code.code);
-            if(result.Type == InstructionType::LD)
+            bool isRandomLD = false;
+            if(m_Columns.count(code.code))
             {
-                result = m_RandomLD.at(code.code);
+                result.Type = m_Columns.at(code.code);
             }
             else
             {
+                result.Type = m_RandomInstructions.at(code.code);
+                if(result.Type == InstructionType::LD)
+                {
+                    isRandomLD = true;
+                }
+            }
+            if(!isRandomLD)
+            {
                 decodeRandomInstructions(code, result);
+            }
+            else
+            {
+                result = m_RandomLD.at(code.code);
             }
         }
 
@@ -282,10 +279,14 @@ namespace gb
 
     void Decoder::setRegisterInfo(uint8_t registerIndex, ArgumentInfo& registerInfo) const
     {
-        registerInfo.Register = m_8Bitregisters[registerIndex];
+        registerInfo.Register = m_8BitRegisters[registerIndex];
         registerInfo.Type = arg_t::Unsigned8;
 
-        if(registerInfo.Register == reg::HL)
+        if(registerInfo.Register != reg::HL)
+        {
+            registerInfo.Source = arg_src::Register;
+        }
+        else
         {
             registerInfo.Source = arg_src::Indirect;
         }
