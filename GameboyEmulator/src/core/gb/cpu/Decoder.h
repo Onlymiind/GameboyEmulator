@@ -1,14 +1,30 @@
 #pragma once
 #include "core/gb/cpu/Operation.h"
 
+#include <cstdint>
+#include <cstddef>
 #include <array>
 #include <unordered_map>
-#include <optional>
 
 namespace gb
 {
     class Decoder
     {
+        struct column_hash
+        {
+            inline size_t operator()(uint8_t value) const
+            {
+                return value & 0b1100'1111;
+            }
+        };
+        struct collideable_equal
+        {
+            inline bool operator()(const uint8_t& lhs, const uint8_t& rhs) const
+            {
+                return column_hash{}(lhs) == column_hash{}(rhs);
+            }
+        };
+        
     public:
         Decoder() = default;
         ~Decoder() = default;
@@ -28,7 +44,7 @@ namespace gb
         void decodeINC_DEC(opcode code, Instruction& instruction) const;
 
     private:
-        const std::array<Registers, 8> m_8Bitregisters = 
+        const std::array<Registers, 8> m_8BitRegisters = 
         {
             Registers::B,  Registers::C,
             Registers::D,  Registers::E,
@@ -65,17 +81,14 @@ namespace gb
             InstructionType::SWAP, InstructionType::SRL
         };
 
-        const std::unordered_map<uint8_t, InstructionType> m_ColumnsUpperQuarter = 
+        const std::unordered_map<uint8_t, InstructionType, column_hash, collideable_equal> m_Columns = 
         {
             { 0x01, InstructionType::LD }, { 0x02, InstructionType::LD }, { 0x03, InstructionType::INC },
             { 0x04, InstructionType::INC }, { 0x05, InstructionType::DEC }, { 0x06, InstructionType::LD },
             { 0x09, InstructionType::ADD }, { 0x0A, InstructionType::LD }, { 0x0B, InstructionType::DEC },
-            { 0x0C, InstructionType::INC }, { 0x0D, InstructionType::DEC }, { 0x0E, InstructionType::LD }
-        };
-
-        const std::unordered_map<uint8_t, InstructionType> m_ColumnsLowerQuarter =
-        {
-            { 0x01, InstructionType::POP }, { 0x05, InstructionType::PUSH }, { 0x07, InstructionType::RST }, { 0x0F, InstructionType::RST }
+            { 0x0C, InstructionType::INC }, { 0x0D, InstructionType::DEC }, { 0x0E, InstructionType::LD },
+            { 0xC1, InstructionType::POP }, { 0xC5, InstructionType::PUSH }, { 0xC7, InstructionType::RST },
+            { 0xCF, InstructionType::RST }
         };
 
         const std::unordered_map<uint8_t, InstructionType> m_RandomInstructions = 
@@ -107,84 +120,84 @@ namespace gb
         {
             {0x08, 
                 {
-                    {}, //Reset Vector
+                    {}, //Reset vector
                     LoadSubtype::LD_SP, //LD Subtype
+                    {}, //Condition
                     {ArgumentSource::Register, ArgumentType::Unsigned16, Registers::SP}, //Source
                     {ArgumentSource::IndirectImmediate, ArgumentType::Unsigned16, Registers::None}, //Destination
-                    InstructionType::LD, //Instruction type
-                    Conditions::None //Condition
+                    InstructionType::LD //Instruction type
                 }},
             {0xE0, 
                 {
                     {},
                     LoadSubtype::LD_IO,
+                    {},
                     {ArgumentSource::Register, ArgumentType::Unsigned8, Registers::A},
                     {ArgumentSource::IndirectImmediate, ArgumentType::Unsigned8, Registers::None},
-                    InstructionType::LD,
-                    Conditions::None
+                    InstructionType::LD
                 }}, 
             {0xF0, 
                 {
                     {},
                     LoadSubtype::LD_IO,
+                    {},
                     {ArgumentSource::IndirectImmediate, ArgumentType::Unsigned8, Registers::None},
                     {ArgumentSource::Register, ArgumentType::Unsigned8, Registers::A},
-                    InstructionType::LD,
-                    Conditions::None
+                    InstructionType::LD
                 }},
             {0xE2, 
                 {
                     {},
                     LoadSubtype::LD_IO,
+                    {},
                     {ArgumentSource::Register, ArgumentType::Unsigned8, Registers::A},
                     {ArgumentSource::Indirect, ArgumentType::Unsigned8, Registers::C},
-                    InstructionType::LD,
-                    Conditions::None
+                    InstructionType::LD
                 }},
             {0xF2, 
                 {
                     {},
                     LoadSubtype::LD_IO,
+                    {},
                     {ArgumentSource::Indirect, ArgumentType::Unsigned8, Registers::C},
                     {ArgumentSource::Register, ArgumentType::Unsigned8, Registers::A},
-                    InstructionType::LD,
-                    Conditions::None
+                    InstructionType::LD
                 }},
             {0xF8, 
                 {
                     {},
                     LoadSubtype::LD_Offset_SP,
+                    {},
                     {ArgumentSource::Immediate, ArgumentType::Signed8, Registers::None},
                     {ArgumentSource::Register, ArgumentType::Unsigned16, Registers::HL},
-                    InstructionType::LD,
-                    Conditions::None
+                    InstructionType::LD
                 }},
             {0xF9, 
                 {
                     {},
                     LoadSubtype::Typical,
+                    {},
                     {ArgumentSource::Register, ArgumentType::Unsigned16, Registers::HL},
                     {ArgumentSource::Register, ArgumentType::Unsigned16, Registers::SP},
-                    InstructionType::LD,
-                    Conditions::None
+                    InstructionType::LD
                 }},
             {0xEA, 
                 {
                     {},
                     LoadSubtype::Typical,
+                    {},
                     {ArgumentSource::Register, ArgumentType::Unsigned8, Registers::A},
                     {ArgumentSource::IndirectImmediate, ArgumentType::Unsigned16, Registers::None},
-                    InstructionType::LD,
-                    Conditions::None
+                    InstructionType::LD
                 }},
             {0xFA, 
                 {
                     {},
                     LoadSubtype::Typical,
+                    {},
                     {ArgumentSource::IndirectImmediate, ArgumentType::Unsigned16, Registers::None},
                     {ArgumentSource::Register, ArgumentType::Unsigned8, Registers::A},
-                    InstructionType::LD,
-                    Conditions::None
+                    InstructionType::LD
                 }}
         };
     };

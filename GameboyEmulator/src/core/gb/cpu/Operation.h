@@ -25,7 +25,8 @@ namespace gb
     //Some LD instructions are quite different fron others, this enum is used to mark them
     enum class LoadSubtype : uint8_t
     {
-        Typical, LD_INC, LD_DEC, LD_IO, LD_SP, LD_Offset_SP
+        Typical = 0, 
+        LD_INC, LD_DEC, LD_IO, LD_SP, LD_Offset_SP
     };
 
     enum class ArgumentSource : uint8_t
@@ -51,8 +52,6 @@ namespace gb
 
     enum class Conditions : uint8_t
     {
-        None = 0,
-
         NotZero, Zero, NotCarry, Carry
     };
 
@@ -75,10 +74,12 @@ namespace gb
         //Used only in LD instructions. In other cases is left uninitialized
         std::optional<LoadSubtype> LDSubtype;
 
+        std::optional<Conditions> Condition;
+
         ArgumentInfo Source;
         ArgumentInfo Destination;
+
         InstructionType Type = InstructionType::None;
-        Conditions Condition = Conditions::None;
 
         //For Debugging
         inline bool operator == (Instruction other)
