@@ -68,7 +68,7 @@ namespace gb
         }
     };
 
-    struct Instr
+    struct UnprefixedInstruction
     {
         //Used only in RST instruction. In other cases is left uninitialized
         std::optional<uint16_t> ResetVector;
@@ -83,7 +83,7 @@ namespace gb
         InstructionType Type = InstructionType::None;
 
         //For Debugging
-        inline bool operator == (Instr other)
+        inline bool operator == (UnprefixedInstruction other)
         {
             return Type == other.Type &&
                 Source == other.Source &&
@@ -91,6 +91,20 @@ namespace gb
                 Condition == other.Condition &&
                 ResetVector == other.ResetVector &&
                 LDSubtype == other.LDSubtype;
+        }
+    };
+
+    struct PrefixedInstruction
+    {
+        InstructionType Type = InstructionType::None;
+
+        Registers Target = Registers::None;
+
+        std::optional<uint8_t> Bit;
+
+        inline bool operator == (PrefixedInstruction other)
+        {
+            return Type == other.Type && Target == other.Target && Bit == other.Bit;
         }
     };
 
