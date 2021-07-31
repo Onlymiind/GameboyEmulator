@@ -159,6 +159,13 @@ namespace gb
     {
         switch(code.getZ())
         {
+            case 1:
+                instruction.Destination.Register = m_16BitRegisters_SP[code.getP()];
+                instruction.Destination.Source = arg_src::Register;
+                instruction.Destination.Type = arg_t::Unsigned16;
+
+                instruction.Source.Source = arg_src::Immediate;
+                instruction.Source.Type = arg_t::Unsigned16;
             case 2:
                 switch(code.getP())
                 {
@@ -196,6 +203,11 @@ namespace gb
                                 
                 setRegisterInfo(code.getY(), instruction.Destination);
                 break;
+        }
+
+        if(!instruction.LDSubtype)
+        {
+            instruction.LDSubtype = LoadSubtype::Typical;
         }
     }
 
