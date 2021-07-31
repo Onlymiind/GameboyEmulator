@@ -24,6 +24,7 @@ namespace gb
                 else
                 {
                     result.Type = InstructionType::LD;
+                    result.LDSubtype = LoadSubtype::Typical;
                     setRegisterInfo(code.getY(), result.Destination);
                     setRegisterInfo(code.getZ(), result.Source);
                 }
