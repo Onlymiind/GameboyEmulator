@@ -9,9 +9,9 @@ namespace gb
     using arg_t = ArgumentType;
     using reg = Registers;
 
-    Instr Decoder::decodeUnprefixed(opcode code) const
+    UnprefixedInstruction Decoder::decodeUnprefixed(opcode code) const
     {
-        Instr result;
+        UnprefixedInstruction result;
 
         switch (code.getX())
         {
@@ -72,7 +72,7 @@ namespace gb
         return result;
     }
 
-    void Decoder::decodeRandomInstructions(opcode code, Instr& instruction) const
+    void Decoder::decodeRandomInstructions(opcode code, UnprefixedInstruction& instruction) const
     {
         switch(instruction.Type)
         {
@@ -130,7 +130,7 @@ namespace gb
         }
     }
 
-    void Decoder::decodeADD(opcode code, Instr& instruction) const
+    void Decoder::decodeADD(opcode code, UnprefixedInstruction& instruction) const
     {
         switch(code.getZ())
         {
@@ -154,7 +154,7 @@ namespace gb
         }
     }
 
-    void Decoder::decodeLD(opcode code, Instr& instruction) const
+    void Decoder::decodeLD(opcode code, UnprefixedInstruction& instruction) const
     {
         switch(code.getZ())
         {
@@ -198,7 +198,7 @@ namespace gb
         }
     }
 
-    void Decoder::decodeJR(opcode code, Instr& instruction) const
+    void Decoder::decodeJR(opcode code, UnprefixedInstruction& instruction) const
     {
         if(code.getY() != 3)
         {
@@ -208,7 +208,7 @@ namespace gb
         instruction.Source.Type = arg_t::Signed8;
     }
 
-    void Decoder::decodeJP(opcode code, Instr& instruction) const
+    void Decoder::decodeJP(opcode code, UnprefixedInstruction& instruction) const
     {
         switch(code.getZ())
         {
@@ -227,7 +227,7 @@ namespace gb
         }
     }
 
-    void Decoder::decodeINC_DEC(opcode code, Instr& instruction) const
+    void Decoder::decodeINC_DEC(opcode code, UnprefixedInstruction& instruction) const
     {
         switch(code.getZ())
         {
@@ -243,9 +243,9 @@ namespace gb
         instruction.Destination = instruction.Source;
     }
 
-    Instr Decoder::decodePrefixed(opcode code) const
+    PrefixedInstruction Decoder::decodePrefixed(opcode code) const
     {
-        Instr result;
+        PrefixedInstruction result;
 
         switch (code.getX())
         {
@@ -257,22 +257,23 @@ namespace gb
             case 1: 
             {
                 result.Type = type::BIT;
+                result.Bit = code.getY();
                 break;
             }
             case 2: 
             {
                 result.Type = type::RES;
+                result.Bit = code.getY();
                 break;
             }
             case 3: 
             {
                 result.Type = type::SET;
+                result.Bit = code.getY();
                 break;
             }
         }
-
-        setRegisterInfo(code.getZ(), result.Source);
-        result.Destination = result.Source;
+        result.Target = m_8BitRegisters[code.getZ()];
 
         return result;
     }
@@ -292,7 +293,7 @@ namespace gb
         }
     }
 
-    void Decoder::setALUInfo(opcode code, Instr& instruction, bool hasImmediate) const
+    void Decoder::setALUInfo(opcode code, UnprefixedInstruction& instruction, bool hasImmediate) const
     {
         instruction.Type = m_ALU[code.getY()];
 

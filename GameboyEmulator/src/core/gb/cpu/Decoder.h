@@ -29,19 +29,19 @@ namespace gb
         Decoder() = default;
         ~Decoder() = default;
 
-        Instr decodeUnprefixed(opcode code) const;
-        Instr decodePrefixed(opcode code) const;
+        UnprefixedInstruction decodeUnprefixed(opcode code) const;
+        PrefixedInstruction decodePrefixed(opcode code) const;
 
         inline bool isPrefix(opcode code) const { return code.code == 0xCB; }
     private:
         void setRegisterInfo(uint8_t registerIndex, ArgumentInfo& registerInfo) const;
-        void setALUInfo(opcode code, Instr& instruction, bool hasImmediate) const;
-        void decodeRandomInstructions(opcode code, Instr& instruction) const;
-        void decodeADD(opcode code, Instr& instruction) const;
-        void decodeLD(opcode code, Instr& instruction) const;
-        void decodeJR(opcode code, Instr& instruction) const;
-        void decodeJP(opcode code, Instr& instruction) const;
-        void decodeINC_DEC(opcode code, Instr& instruction) const;
+        void setALUInfo(opcode code, UnprefixedInstruction& instruction, bool hasImmediate) const;
+        void decodeRandomInstructions(opcode code, UnprefixedInstruction& instruction) const;
+        void decodeADD(opcode code, UnprefixedInstruction& instruction) const;
+        void decodeLD(opcode code, UnprefixedInstruction& instruction) const;
+        void decodeJR(opcode code, UnprefixedInstruction& instruction) const;
+        void decodeJP(opcode code, UnprefixedInstruction& instruction) const;
+        void decodeINC_DEC(opcode code, UnprefixedInstruction& instruction) const;
 
     private:
         const std::array<Registers, 8> m_8BitRegisters = 
@@ -116,7 +116,7 @@ namespace gb
         };
 
         //Some LD instructions are a pain to decode, so it is done with this lookup table
-        const std::unordered_map<uint8_t, Instr> m_RandomLD = 
+        const std::unordered_map<uint8_t, UnprefixedInstruction> m_RandomLD = 
         {
             {0x08, 
                 {
@@ -125,7 +125,7 @@ namespace gb
                     {}, //Condition
                     {ArgumentSource::Register, ArgumentType::Unsigned16, Registers::SP}, //Source
                     {ArgumentSource::IndirectImmediate, ArgumentType::Unsigned16, Registers::None}, //Destination
-                    InstructionType::LD //Instr type
+                    InstructionType::LD //UnprefixedInstruction type
                 }},
             {0xE0, 
                 {
