@@ -52,6 +52,7 @@ namespace gb
 
     enum class Conditions : uint8_t
     {
+        None = 0,
         NotZero, Zero, NotCarry, Carry
     };
 
@@ -67,7 +68,7 @@ namespace gb
         }
     };
 
-    struct Instruction
+    struct Instr
     {
         //Used only in RST instruction. In other cases is left uninitialized
         std::optional<uint16_t> ResetVector;
@@ -82,7 +83,7 @@ namespace gb
         InstructionType Type = InstructionType::None;
 
         //For Debugging
-        inline bool operator == (Instruction other)
+        inline bool operator == (Instr other)
         {
             return Type == other.Type &&
                 Source == other.Source &&
@@ -92,6 +93,8 @@ namespace gb
                 LDSubtype == other.LDSubtype;
         }
     };
+
+
 
     //Struct for easy opcode decomposition;
     struct opcode 

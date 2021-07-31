@@ -9,9 +9,9 @@ namespace gb
     using arg_t = ArgumentType;
     using reg = Registers;
 
-    Instruction Decoder::decodeUnprefixed(opcode code) const
+    Instr Decoder::decodeUnprefixed(opcode code) const
     {
-        Instruction result;
+        Instr result;
 
         switch (code.getX())
         {
@@ -72,7 +72,7 @@ namespace gb
         return result;
     }
 
-    void Decoder::decodeRandomInstructions(opcode code, Instruction& instruction) const
+    void Decoder::decodeRandomInstructions(opcode code, Instr& instruction) const
     {
         switch(instruction.Type)
         {
@@ -130,7 +130,7 @@ namespace gb
         }
     }
 
-    void Decoder::decodeADD(opcode code, Instruction& instruction) const
+    void Decoder::decodeADD(opcode code, Instr& instruction) const
     {
         switch(code.getZ())
         {
@@ -154,7 +154,7 @@ namespace gb
         }
     }
 
-    void Decoder::decodeLD(opcode code, Instruction& instruction) const
+    void Decoder::decodeLD(opcode code, Instr& instruction) const
     {
         switch(code.getZ())
         {
@@ -198,7 +198,7 @@ namespace gb
         }
     }
 
-    void Decoder::decodeJR(opcode code, Instruction& instruction) const
+    void Decoder::decodeJR(opcode code, Instr& instruction) const
     {
         if(code.getY() != 3)
         {
@@ -208,7 +208,7 @@ namespace gb
         instruction.Source.Type = arg_t::Signed8;
     }
 
-    void Decoder::decodeJP(opcode code, Instruction& instruction) const
+    void Decoder::decodeJP(opcode code, Instr& instruction) const
     {
         switch(code.getZ())
         {
@@ -227,7 +227,7 @@ namespace gb
         }
     }
 
-    void Decoder::decodeINC_DEC(opcode code, Instruction& instruction) const
+    void Decoder::decodeINC_DEC(opcode code, Instr& instruction) const
     {
         switch(code.getZ())
         {
@@ -243,9 +243,9 @@ namespace gb
         instruction.Destination = instruction.Source;
     }
 
-    Instruction Decoder::decodePrefixed(opcode code) const
+    Instr Decoder::decodePrefixed(opcode code) const
     {
-        Instruction result;
+        Instr result;
 
         switch (code.getX())
         {
@@ -292,7 +292,7 @@ namespace gb
         }
     }
 
-    void Decoder::setALUInfo(opcode code, Instruction& instruction, bool hasImmediate) const
+    void Decoder::setALUInfo(opcode code, Instr& instruction, bool hasImmediate) const
     {
         instruction.Type = m_ALU[code.getY()];
 
