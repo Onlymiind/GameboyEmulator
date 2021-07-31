@@ -1,5 +1,7 @@
 #include "core/gb/InterruptRegister.h"
 
+#include "Common.h"
+
 #include <cassert>
 #include <cstdint>
 #include <iostream>
@@ -31,8 +33,7 @@ void TestInterruptRegister()
 
 int main()
 {
-    TestInterruptRegister();
-    std::cout << "OK\n";
+    RUN_TEST(TestInterruptRegister);
     return 0;
 }
 
