@@ -128,6 +128,8 @@ namespace gb
             case type::LD:
                 decodeLD(code, instruction);
                 return;
+            default:
+                return;
         }
     }
 
@@ -166,6 +168,7 @@ namespace gb
 
                 instruction.Source.Source = arg_src::Immediate;
                 instruction.Source.Type = arg_t::Unsigned16;
+                break;
             case 2:
                 switch(code.getP())
                 {

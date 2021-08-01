@@ -10,19 +10,19 @@
 #include <cstdint>
 #include <iomanip>
 
-const std::vector<std::pair<uint8_t, gb::UnprefixedInstruction>> g_UnprefixedSample = 
-{
+constexpr std::array<std::pair<uint8_t, gb::UnprefixedInstruction>, 10> g_UnprefixedSample = 
+{{
     {0x00, {{},{},{},{},{}, gb::InstructionType::NOP}},
     {0x40, {{}, gb::LoadSubtype::Typical, {}, {gb::ArgumentSource::Register, gb::ArgumentType::Unsigned8, gb::Registers::B}, {gb::ArgumentSource::Register, gb::ArgumentType::Unsigned8, gb::Registers::B}, gb::InstructionType::LD}},
     {0x82, {{}, {}, {}, {gb::ArgumentSource::Register, gb::ArgumentType::Unsigned8, gb::Registers::D}, {gb::ArgumentSource::Register, gb::ArgumentType::Unsigned8, gb::Registers::A}, gb::InstructionType::ADD}},
     {0xC6, {{}, {}, {}, {gb::ArgumentSource::Immediate, gb::ArgumentType::Unsigned8, gb::Registers::None}, {gb::ArgumentSource::Register, gb::ArgumentType::Unsigned8, gb::Registers::A}, gb::InstructionType::ADD}},
     {0xE0, {{}, gb::LoadSubtype::LD_IO, {}, {gb::ArgumentSource::Register, gb::ArgumentType::Unsigned8, gb::Registers::A}, {gb::ArgumentSource::IndirectImmediate, gb::ArgumentType::Unsigned8, gb::Registers::None}, gb::InstructionType::LD}},
     {0x31, {{}, gb::LoadSubtype::Typical, {}, {gb::ArgumentSource::Immediate, gb::ArgumentType::Unsigned16, gb::Registers::None}, {gb::ArgumentSource::Register, gb::ArgumentType::Unsigned16, gb::Registers::SP}, gb::InstructionType::LD}},
-    {0xC2, {}},
-    {0xFF, {}},
-    {0x18, {}},
-    {0x76, {}}
-};
+    {0xC2, {{}, {}, gb::Conditions::NotZero, {gb::ArgumentSource::Immediate, gb::ArgumentType::Unsigned16, gb::Registers::None}, {}, gb::InstructionType::JP}},
+    {0xFF, {0x38, {}, {}, {}, {}, gb::InstructionType::RST}},
+    {0x18, {{}, {}, {}, {gb::ArgumentSource::Immediate, gb::ArgumentType::Signed8, gb::Registers::None}, {}, gb::InstructionType::JR}},
+    {0x76, {{}, {}, {}, {}, {}, gb::InstructionType::HALT}}
+}};
 
 void TestPrefix()
 {
