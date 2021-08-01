@@ -62,7 +62,7 @@ namespace gb
         ArgumentType Type = ArgumentType::None;
         Registers Register = Registers::None;
 
-        inline bool operator ==(ArgumentInfo other)
+        inline bool operator ==(ArgumentInfo other) const
         {
             return Source == other.Source && Type == other.Type && Register == other.Register;
         }
@@ -83,7 +83,7 @@ namespace gb
         InstructionType Type = InstructionType::None;
 
         //For Debugging
-        inline bool operator == (UnprefixedInstruction other)
+        inline bool operator == (UnprefixedInstruction other) const
         {
             return Type == other.Type &&
                 Source == other.Source &&
