@@ -6,7 +6,7 @@
 #include <cassert>
 #include <iostream>
 #include <utility>
-#include <vector>
+#include <array>
 #include <cstdint>
 #include <iomanip>
 
