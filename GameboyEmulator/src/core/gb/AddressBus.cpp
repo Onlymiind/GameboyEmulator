@@ -8,7 +8,7 @@
 namespace gb {
 
 
-	uint8_t AddressBus::read(uint16_t address)
+	uint8_t AddressBus::read(uint16_t address) const
 	{
 		auto it = m_Memory.find(address);
 		if (it != m_Memory.end())
@@ -19,7 +19,7 @@ namespace gb {
 
 	}
 
-	void AddressBus::write(uint16_t address, uint8_t data)
+	void AddressBus::write(uint16_t address, uint8_t data) const
 	{
 		auto it = m_Memory.find(address);
 		if (it != m_Memory.end())

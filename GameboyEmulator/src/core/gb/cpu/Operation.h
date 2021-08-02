@@ -5,7 +5,7 @@
 
 namespace gb
 {
-    enum class InstructionType : uint8_t
+    enum class UnprefixedType : uint8_t
     {
         None = 0,
 
@@ -15,8 +15,11 @@ namespace gb
         ADC, JP, POP, RST, CALL,
         SBC, DI, RET, CPL, RETI,
         CCF, EI, DAA, SCF, HALT,
-        CP, STOP, LD_INC, LD_DEC,
+        CP, STOP
+    };
 
+    enum class PrefixedType : uint8_t
+    {
         RLC, RRC, SLA, SRA,
         SRL, BIT, RES, SET,
         RL, RR, SWAP
@@ -80,7 +83,7 @@ namespace gb
         ArgumentInfo Source;
         ArgumentInfo Destination;
 
-        InstructionType Type = InstructionType::None;
+        UnprefixedType Type = UnprefixedType::None;
 
         //For Debugging
         inline bool operator == (UnprefixedInstruction other) const
@@ -96,7 +99,7 @@ namespace gb
 
     struct PrefixedInstruction
     {
-        InstructionType Type = InstructionType::None;
+        PrefixedType Type;
 
         Registers Target = Registers::None;
 

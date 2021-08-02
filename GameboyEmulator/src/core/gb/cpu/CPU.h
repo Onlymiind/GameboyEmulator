@@ -3,6 +3,7 @@
 #include "core/gb/AddressBus.h"
 #include "core/gb/InterruptRegister.h"
 #include "core/gb/cpu/Operation.h"
+#include "core/gb/cpu/Decoder.h"
 
 #include <cstdint>
 #include <string_view>
@@ -17,7 +18,7 @@ namespace gb
     {
         using pfn_instruction = uint8_t(*)(SharpSM83&, const opcode);
     public:
-        SharpSM83(AddressBus& bus, InterruptRegister& interruptEnable, InterruptRegister& interruptFlags);
+        SharpSM83(const AddressBus& bus, InterruptRegister& interruptEnable, InterruptRegister& interruptFlags, const Decoder& decoder);
         ~SharpSM83() {}
 
         void tick();
@@ -33,6 +34,9 @@ namespace gb
     private:
 
         uint8_t dispatch(opcode code);
+
+        uint8_t dispatchPrefixed(PrefixedInstruction instr);
+        uint8_t dispatchUnprefixed(UnprefixedInstruction instr);
 
         uint8_t read(uint16_t address);
 
@@ -168,12 +172,12 @@ namespace gb
         const std::array<uint16_t*, 4> m_TableREGP_AF = { &REG.BC, &REG.DE, &REG.HL, &REG.AF };
 
         //Conditions lookup
-        const std::array<std::function<bool(uint8_t)>, 4> m_TableConditions = 
+        const std::array<Conditions, 4> m_Conditions = 
         { 
-            [](uint8_t flags) { return (flags & 0b10000000) == 0; }, //Not Z-flag
-            [](uint8_t flags) { return (flags & 0b10000000) != 0; }, //Z-flag
-            [](uint8_t flags) { return (flags & 0b00010000) == 0; }, //Not C-flag
-            [](uint8_t flags) { return (flags & 0b00010000) != 0; }  //C-flag
+            Conditions::NotZero, //Not Z-flag
+            Conditions::Zero, //Z-flag
+            Conditions::NotCarry, //Not C-flag
+            Conditions::Carry  //C-flag
         };
 
         const std::array<pfn_instruction, 8> m_TableALU =
@@ -228,7 +232,8 @@ namespace gb
 
     private: //STUFF
 
-        AddressBus& m_Bus;
+        const AddressBus& m_Bus;
+        const Decoder& m_Decoder;
 
         uint8_t m_CyclesToFinish;
     };

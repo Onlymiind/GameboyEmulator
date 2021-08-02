@@ -543,7 +543,7 @@ namespace gb {
         case 2: { //JP cond[code.getY()], a16
             uint16_t address = cpu.fetchWord();
 
-            if (cpu.m_TableConditions[code.getY()](cpu.REG.Flags.Value))
+            if (cpu.checkCondition(cpu.m_Conditions[code.getY()]))
             {
                 cpu.REG.PC = address;
                 return 4;
@@ -572,7 +572,7 @@ namespace gb {
         }
         else // JR cond[code.getY() - 4], r8
         {
-            if (cpu.m_TableConditions[code.getY() - 4](cpu.REG.Flags.Value))
+            if (cpu.checkCondition(cpu.m_Conditions[code.getY() - 4]))
             {
                 cpu.REG.PC += relAddress;
                 return 3;
@@ -620,7 +620,7 @@ namespace gb {
 
         switch (code.getZ()) {
         case 4: { // CALL cond[code.getY()], a16
-            if (cpu.m_TableConditions[code.getY()](cpu.REG.Flags.Value))
+            if (cpu.checkCondition(cpu.m_Conditions[code.getY()]))
             {
                 cpu.pushStack(cpu.REG.PC);
                 cpu.REG.PC = address;
@@ -642,7 +642,7 @@ namespace gb {
     {
         switch (code.getZ()) {
         case 0: { // RET cond[code.getY()]
-            if (cpu.m_TableConditions[code.getY()](cpu.REG.Flags.Value))
+            if (cpu.checkCondition(cpu.m_Conditions[code.getY()]))
             {
                 cpu.REG.PC = cpu.popStack();
                 return 5;
