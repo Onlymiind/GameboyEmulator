@@ -1,6 +1,7 @@
 #include "core/gb/cpu/CPU.h"
 #include "core/gb/AddressBus.h"
 #include "utils/Utils.h"
+#include "core/gb/cpu/Operation.h"
 
 #include <climits>
 #include <iostream>
@@ -260,6 +261,93 @@ namespace gb
         REG.PC = 0x0100;
 
         IME = false;
+    }
+
+    uint8_t SharpSM83::getByteRegister(Registers reg)
+    {
+#define CASE_BYTE_REG(x) case Registers::##x: return REG.##x
+#define CASE_WORD_REG(x) case Registers::##x: return read(REG.##x)
+        switch(reg)
+        {
+            CASE_BYTE_REG(A);
+            CASE_BYTE_REG(B);
+            CASE_BYTE_REG(C);
+            CASE_BYTE_REG(D);
+            CASE_BYTE_REG(E);
+            CASE_BYTE_REG(H);
+            CASE_BYTE_REG(L);
+            CASE_WORD_REG(HL);
+            CASE_WORD_REG(BC);
+            CASE_WORD_REG(DE);
+            default:
+                //TODO: throw an error
+                return 0;
+        }
+#undef CASE_BYTE_REG
+#undef CASE_WORD_REG
+    }
+
+    uint16_t SharpSM83::getWordRegister(Registers reg)
+    {
+#define CASE_REG(x) case Registers::##x: return REG.##x
+        switch(reg)
+        {
+            CASE_REG(BC);
+            CASE_REG(DE);
+            CASE_REG(HL);
+            CASE_REG(SP);
+        }
+        return 0;
+#undef CASE_REG
+    }
+
+    void SharpSM83::setByteRegister(Registers reg, uint8_t data)
+    {
+#define CASE_BYTE_REG(x) case Registers::##x: REG.##x = data; break
+#define CASE_WORD_REG(x) case Registers::##x: write(REG.##x, data); break
+        switch(reg)
+        {
+            CASE_BYTE_REG(A);
+            CASE_BYTE_REG(B);
+            CASE_BYTE_REG(C);
+            CASE_BYTE_REG(D);
+            CASE_BYTE_REG(E);
+            CASE_BYTE_REG(H);
+            CASE_BYTE_REG(L);
+            CASE_WORD_REG(HL);
+            CASE_WORD_REG(BC);
+            CASE_WORD_REG(DE);
+            default:
+                //TODO: throw an error
+                return;
+        }
+#undef CASE_BYTE_REG
+#undef CASE_WORD_REG
+    }
+
+    void SharpSM83::setWordRegister(Registers reg, uint16_t data)
+    {
+#define CASE_REG(x) case Registers::##x:  write(REG.##x, data); break
+        switch(reg)
+        {
+            CASE_REG(BC);
+            CASE_REG(DE);
+            CASE_REG(HL);
+            CASE_REG(SP);
+        }
+#undef CASE_REG
+    }
+
+    bool SharpSM83::checkCondition(Conditions condition)
+    {
+        switch(condition)
+        {
+            case Conditions::Carry: return REG.Flags.C != 0;
+            case Conditions::NotCarry: return REG.Flags.C == 0;
+            case Conditions::Zero: return REG.Flags.Z != 0;
+            case Conditions::NotZero: return REG.Flags.Z == 0;
+        }
+        return false;
     }
 
 }
