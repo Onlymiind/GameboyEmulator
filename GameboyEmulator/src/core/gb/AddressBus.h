@@ -19,8 +19,8 @@ namespace gb {
 
 		inline void connect(const MemoryController& controller) { m_Memory.insert(controller); }
 
-		uint8_t read(uint16_t address);
-		void write(uint16_t address, uint8_t data);
+		uint8_t read(uint16_t address) const;
+		void write(uint16_t address, uint8_t data) const;
 	private:
 		std::string getErrorDescription(uint16_t address, int value = -1);
 

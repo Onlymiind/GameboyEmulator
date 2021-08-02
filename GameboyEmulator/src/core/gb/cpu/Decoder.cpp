@@ -4,11 +4,6 @@
 
 namespace gb
 {
-    using type = InstructionType;
-    using arg_src = ArgumentSource;
-    using arg_t = ArgumentType;
-    using reg = Registers;
-
     UnprefixedInstruction Decoder::decodeUnprefixed(opcode code) const
     {
         UnprefixedInstruction result;
@@ -19,11 +14,11 @@ namespace gb
             {
                 if (code.getZ() == 6 && code.getY() == 6)
                 {
-                    result.Type = InstructionType::HALT;
+                    result.Type = type::HALT;
                 }
                 else
                 {
-                    result.Type = InstructionType::LD;
+                    result.Type = type::LD;
                     result.LDSubtype = LoadSubtype::Typical;
                     setRegisterInfo(code.getY(), result.Destination);
                     setRegisterInfo(code.getZ(), result.Source);
@@ -45,7 +40,7 @@ namespace gb
             }
         }
 
-        if(result.Type == InstructionType::None)
+        if(result.Type == type::None)
         {
             bool isRandomLD = false;
             if(m_Columns.count(code.code))
@@ -55,7 +50,7 @@ namespace gb
             else
             {
                 result.Type = m_RandomInstructions.at(code.code);
-                if(result.Type == InstructionType::LD)
+                if(result.Type == type::LD)
                 {
                     isRandomLD = true;
                 }
@@ -272,19 +267,19 @@ namespace gb
             }
             case 1: 
             {
-                result.Type = type::BIT;
+                result.Type = pref_type::BIT;
                 result.Bit = code.getY();
                 break;
             }
             case 2: 
             {
-                result.Type = type::RES;
+                result.Type = pref_type::RES;
                 result.Bit = code.getY();
                 break;
             }
             case 3: 
             {
-                result.Type = type::SET;
+                result.Type = pref_type::SET;
                 result.Bit = code.getY();
                 break;
             }

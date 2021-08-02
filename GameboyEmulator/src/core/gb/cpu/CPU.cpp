@@ -2,6 +2,7 @@
 #include "core/gb/AddressBus.h"
 #include "utils/Utils.h"
 #include "core/gb/cpu/Operation.h"
+#include "core/gb/cpu/Decoder.h"
 
 #include <climits>
 #include <iostream>
@@ -15,8 +16,8 @@
 
 namespace gb 
 {
-    SharpSM83::SharpSM83(AddressBus& bus, InterruptRegister& interruptEnable, InterruptRegister& interruptFlags) 
-        : m_InterruptEnable(interruptEnable), m_InterruptFlags(interruptFlags), m_Bus(bus), m_CyclesToFinish(0)
+    SharpSM83::SharpSM83(const AddressBus& bus, InterruptRegister& interruptEnable, InterruptRegister& interruptFlags, const Decoder& decoder) 
+        : m_InterruptEnable(interruptEnable), m_InterruptFlags(interruptFlags), m_Bus(bus), m_Decoder(decoder), m_CyclesToFinish(0)
     {}
 
 
@@ -115,86 +116,40 @@ namespace gb
 
     uint8_t SharpSM83::dispatch(opcode code)
     {
-        uint8_t cycles{ 0 };
-        if (code.code == 0xCB)
+        if(m_Decoder.isPrefix(code))
         {
             code.code = fetch();
-            switch (code.getX()) {
-            case 0: {
-                m_CyclesToFinish = m_TableBitOperations[code.getY()](this, code);
-                break;
-            }
-            case 1: {
-                m_CyclesToFinish = BIT(code);
-                break;
-            }
-            case 2: {
-                m_CyclesToFinish = RES(code);
-                break;
-            }
-            case 3: {
-                m_CyclesToFinish = SET(code);
-                break;
-            }
-            }
+            PrefixedInstruction instr = m_Decoder.decodePrefixed(code);
+            return dispatchPrefixed(instr);
         }
         else
         {
-
-            switch (code.getX())
-            {
-            case 0:
-            {
-                if (m_ColumnToImplUpper.count(code.getLowerNibble()))
-                {
-                    cycles = m_ColumnToImplUpper.at(code.getLowerNibble())(*this, code);
-                }
-                else if (m_RandomInstructions.count(code.code))
-                {
-                    cycles = m_RandomInstructions.at(code.code)(*this, code);
-                }
-                break;
-            }
-            case 1:
-            {
-                if (code.getZ() == 6 && code.getY() == 6)
-                {
-                    cycles = HALT(*this, code);
-                }
-                else
-                {
-                    cycles = LD_REG8(*this, code);
-                }
-                break;
-            }
-            case 2:
-            {
-                cycles = m_TableALU[code.getY()](*this, code);
-                break;
-            }
-            case 3:
-            {
-                if (m_ColumnToImplLower.count(code.getLowerNibble()))
-                {
-                    cycles = m_ColumnToImplLower.at(code.getLowerNibble())(*this, code);
-                }
-                else if (code.getZ() == 6)
-                {
-                    cycles = m_TableALU[code.getY()](*this, code);
-                }
-                else if (m_RandomInstructions.count(code.code))
-                {
-                    cycles = m_RandomInstructions.at(code.code)(*this, code);
-                }
-                else
-                {
-                }
-                break;
-            }
-            }
+            UnprefixedInstruction instr = m_Decoder.decodeUnprefixed(code);
+            return dispatchUnprefixed(instr);
         }
+    }
 
-        return cycles;
+    uint8_t SharpSM83::dispatchPrefixed(PrefixedInstruction instr)
+    {
+        using type = PrefixedType;
+        switch(instr.Type)
+        {
+            case type::RLC: return 0;
+            case type::RRC: return 0;
+            case type::RL: return 0;
+            case type::RR: return 0;
+            case type::SLA: return 0;
+            case type::SRA: return 0;
+            case type::SWAP: return 0;
+            case type::BIT: return 0;
+            case type::RES: return 0;
+            case type::SET: return 0;
+        }
+    }
+
+    uint8_t SharpSM83::dispatchUnprefixed(UnprefixedInstruction instr)
+    {
+
     }
 
     uint8_t SharpSM83::read(uint16_t address)
