@@ -13,7 +13,7 @@ namespace gb {
         return 0;
     }
 
-    uint8_t SharpSM83::NOP(SharpSM83& cpu, const opcode code)
+    uint8_t SharpSM83::NOP()
     {
         return 1;
     }
@@ -148,7 +148,7 @@ namespace gb {
             int8_t offset = cpu.fetchSigned();
 
             cpu.REG.Flags.H = cpu.halfCarryOccured8Add(cpu.REG.SP & 0x00FF, offset);
-            cpu.REG.Flags.C = cpu.carryOccured8Add(cpu.REG.SP & 0x00FF, offset);
+            cpu.REG.Flags.C = cpu.carryOccured(static_cast<uint8_t>(cpu.REG.SP & 0x00FF), reinterpret_cast<uint8_t&>(offset));
             cpu.REG.Flags.Z = 0;
             cpu.REG.Flags.N = 0;
 
@@ -284,7 +284,7 @@ namespace gb {
         switch (code.getX()) {
         case 0: { // ADD HL, reg16[code.getP()]
             cpu.REG.Flags.H = cpu.halfCarryOccured16Add(cpu.REG.HL, *cpu.m_TableREGP_SP[code.getP()]);
-            cpu.REG.Flags.C = cpu.carryOccured16Add(cpu.REG.HL, *cpu.m_TableREGP_SP[code.getP()]);
+            cpu.REG.Flags.C = cpu.carryOccured(cpu.REG.HL, *cpu.m_TableREGP_SP[code.getP()]);
 
             cpu.REG.HL += *cpu.m_TableREGP_SP[code.getP()];
 
@@ -295,7 +295,7 @@ namespace gb {
             {
                 uint8_t value = cpu.read(cpu.REG.HL);
                 cpu.REG.Flags.H = cpu.halfCarryOccured8Add(cpu.REG.A, value);
-                cpu.REG.Flags.C = cpu.carryOccured8Add(cpu.REG.A, value);
+                cpu.REG.Flags.C = cpu.carryOccured(cpu.REG.A, value);
 
                 cpu.REG.A += value;
 
@@ -305,7 +305,7 @@ namespace gb {
             }
             else { //ADD A, reg8[code.getZ()]
                 cpu.REG.Flags.H = cpu.halfCarryOccured8Add(cpu.REG.A, *cpu.m_TableREG8[code.getZ()]);
-                cpu.REG.Flags.C = cpu.carryOccured8Add(cpu.REG.A, *cpu.m_TableREG8[code.getZ()]);
+                cpu.REG.Flags.C = cpu.carryOccured(cpu.REG.A, *cpu.m_TableREG8[code.getZ()]);
 
                 cpu.REG.A += *cpu.m_TableREG8[code.getZ()];
 
@@ -322,7 +322,7 @@ namespace gb {
                 int8_t value = cpu.fetchSigned();
 
                 cpu.REG.Flags.H = cpu.halfCarryOccured8Add(cpu.REG.SP & 0x00FF, value); //According to specification H flag should be set if overflow from bit 3
-                cpu.REG.Flags.C = cpu.carryOccured8Add(cpu.REG.SP & 0x00FF, value); //Carry flag should be set if overflow from bit 7
+                cpu.REG.Flags.C = cpu.carryOccured(static_cast<uint8_t>(cpu.REG.SP & 0x00FF), static_cast<uint8_t>(value)); //Carry flag should be set if overflow from bit 7
 
                 cpu.REG.SP += value;
 
@@ -332,7 +332,7 @@ namespace gb {
             {
                 uint8_t value = cpu.fetch();
                 cpu.REG.Flags.H = cpu.halfCarryOccured8Add(cpu.REG.A, value);
-                cpu.REG.Flags.C = cpu.carryOccured8Add(cpu.REG.A, value);
+                cpu.REG.Flags.C = cpu.carryOccured(cpu.REG.A, value);
 
                 cpu.REG.A += value;
 
@@ -346,194 +346,90 @@ namespace gb {
         return 0;
     }
 
-    uint8_t SharpSM83::ADC(SharpSM83& cpu, const opcode code)
+    uint8_t SharpSM83::ADC(ArgumentInfo argument)
     {
-        cpu.REG.Flags.N = 0;
-        uint8_t value{ 0 };
-        uint8_t cycles{ 0 };
-        uint8_t regA = cpu.REG.A;
+        REG.Flags.N = 0;
+        uint8_t value = getByte(argument);
+        uint8_t regA = REG.A;
 
-        switch (code.getX()) {
-        case 2: {
-            if (code.getZ() == 6) { value = cpu.read(cpu.REG.HL); cycles = 2; } // ADC [HL]
-            else { value = *cpu.m_TableREG8[code.getZ()]; cycles = 1; }     // ADC cpu.REG8[code.getZ()]
-            break;
-        }
-        case 3: { // ADC d8
-            value = cpu.fetch();
-            cycles = 2;
-            break; 
-        } 
-        }
+        REG.A += value + REG.Flags.C;
+        REG.Flags.Z = REG.A == 0;
+        REG.Flags.H = ((regA & 0x0F) + (value &0x0F) + REG.Flags.C) > 0x0F;
+        REG.Flags.C = static_cast<uint16_t>(regA) + value + REG.Flags.C > 0xFF;
 
-        cpu.REG.A += value + cpu.REG.Flags.C;
-        cpu.REG.Flags.Z = cpu.REG.A == 0;
-        cpu.REG.Flags.H = ((regA & 0x0F) + (value &0x0F) + cpu.REG.Flags.C) > 0x0F;
-        cpu.REG.Flags.C = static_cast<uint16_t>(regA) + value + cpu.REG.Flags.C > 0xFF;
-
-
-        return cycles;
+        return argument.Source == ArgumentSource::Register ? 1 : 2;
     }
 
-    uint8_t SharpSM83::SUB(SharpSM83& cpu, const opcode code)
+    uint8_t SharpSM83::SUB(ArgumentInfo argument)
     {
-        cpu.REG.Flags.N = 1;
-        uint8_t value{ 0 };
-        uint8_t cycles{ 0 };
+        REG.Flags.N = 1;
+        uint8_t value = getByte(argument);
 
-        switch (code.getX()) {
-        case 2: {
-            if (code.getZ() == 6) { value = cpu.read(cpu.REG.HL); cycles = 2; } // SUB [HL]
-            else { value = *cpu.m_TableREG8[code.getZ()]; cycles = 1; }     // SUB cpu.REG8[code.getZ()]
-            break;
-        }
-        case 3: { value = cpu.fetch(); cycles = 2; break; } // SUB d8
-        }
+        REG.Flags.H = halfCarryOccured8Sub(REG.A, value);
+        REG.Flags.C = carryOccured(REG.A, value, true);
+        REG.A -= value;
+        REG.Flags.Z = REG.A == 0;
 
-        cpu.REG.Flags.H = cpu.halfCarryOccured8Sub(cpu.REG.A, value);
-        cpu.REG.Flags.C = cpu.carryOccured8Sub(cpu.REG.A, value);
-
-        cpu.REG.A -= value;
-
-        cpu.REG.Flags.Z = cpu.REG.A == 0;
-
-        return cycles;
+        return argument.Source == ArgumentSource::Register ? 1 : 2;
     }
 
-    uint8_t SharpSM83::SBC(SharpSM83& cpu, const opcode code)
+    uint8_t SharpSM83::SBC(ArgumentInfo argument)
     {
-        cpu.REG.Flags.N = 1;
-        uint8_t value{ 0 };
-        uint8_t cycles{ 0 };
-        uint8_t regA = cpu.REG.A;
+        REG.Flags.N = 1;
+        uint8_t value = getByte(argument);
+        uint8_t regA = REG.A;
 
-        switch (code.getX()) {
-        case 2: {
-            if (code.getZ() == 6) { value = cpu.read(cpu.REG.HL); cycles = 2; } // SBC [HL]
-            else { value = *cpu.m_TableREG8[code.getZ()]; cycles = 1; }     // SBC cpu.REG8[code.getZ()]
-            break;
-        }
-        case 3: { value = cpu.fetch(); cycles = 2; break; } // SBC d8
-        }
-
-        cpu.REG.A -= value + cpu.REG.Flags.C;
-        cpu.REG.Flags.Z = cpu.REG.A == 0;
-        cpu.REG.Flags.H = (regA & 0x0F) < ((value & 0x0F) + cpu.REG.Flags.C);
-        cpu.REG.Flags.C = regA < (static_cast<uint16_t>(value) + cpu.REG.Flags.C);
+        REG.A -= value + REG.Flags.C;
+        REG.Flags.Z = REG.A == 0;
+        REG.Flags.H = (regA & 0x0F) < ((value & 0x0F) + REG.Flags.C);
+        REG.Flags.C = regA < (static_cast<uint16_t>(value) + REG.Flags.C);
 
 
-        return cycles;
+        return argument.Source == ArgumentSource::Register ? 1 : 2;
     }
 
-    uint8_t SharpSM83::OR(SharpSM83& cpu, const opcode code)
+    uint8_t SharpSM83::OR(ArgumentInfo argument)
     {
-        cpu.REG.Flags.Value = 0; //Only Z flag can be non-zero as a result of OR
-        uint8_t cycles{ 0 };
-        switch (code.getX()) {
-        case 2: {
-            if (code.getZ() == 6) //OR [HL]
-            {
-                cpu.REG.A |= cpu.read(cpu.REG.HL);
-                cycles = 2;
-            }
-            else //OR cpu.REG8[code.getZ()]
-            {
-                cpu.REG.A |= *cpu.m_TableREG8[code.getZ()];
-                cycles = 1;
-            }
-            break;
-        }
-        case 3: { cpu.REG.A |= cpu.fetch(); cycles = 2; break; } //OR d8
-        }
+        REG.Flags.Value = 0; //Only Z flag can be non-zero as a result of OR
+        
+        REG.A |= getByte(argument);
+        REG.Flags.Z = REG.A == 0;
 
-        cpu.REG.Flags.Z = cpu.REG.A == 0;
-
-        return cycles;
+        return argument.Source == ArgumentSource::Register ? 1 : 2;
     }
 
-    uint8_t SharpSM83::AND(SharpSM83& cpu, const opcode code)
+    uint8_t SharpSM83::AND(ArgumentInfo argument)
     {
-        cpu.REG.Flags.Value = 0;
-        cpu.REG.Flags.H = 1;
+        REG.Flags.Value = 0;
+        REG.Flags.H = 1;
         uint8_t cycles{ 0 };
 
-        switch (code.getX()) {
-        case 2: {
-            if (code.getZ() == 6) //AND [HL]
-            {
-                cpu.REG.A &= cpu.read(cpu.REG.HL);
-                cycles = 2;
-            }
-            else //AND cpu.REG8[code.getZ()]
-            {
-                cpu.REG.A &= *cpu.m_TableREG8[code.getZ()];
-                cycles = 1;
-            }
-            break;
-        }
-        case 3: { cpu.REG.A &= cpu.fetch(); cycles = 2; break; } //AND d8
-        }
+        REG.A &= getByte(argument);
 
-        cpu.REG.Flags.Z = cpu.REG.A == 0;
+        REG.Flags.Z = REG.A == 0;
 
-        return cycles;
+        return argument.Source == ArgumentSource::Register ? 1 : 2;
     }
 
-    uint8_t SharpSM83::XOR(SharpSM83& cpu, const opcode code)
+    uint8_t SharpSM83::XOR(ArgumentInfo argument)
     {
-        cpu.REG.Flags.Value = 0; //Only Z flag can be non-zero as a result of XOR
-        uint8_t cycles{ 0 };
+        REG.Flags.Value = 0; //Only Z flag can be non-zero as a result of XOR
+        REG.A ^= getByte(argument);
+        REG.Flags.Z = REG.A == 0;
 
-        switch (code.getX()) {
-        case 2: {
-            if (code.getZ() == 6) //XOR [HL]
-            {
-                cpu.REG.A ^= cpu.read(cpu.REG.HL);
-                cycles = 2;
-            }
-            else //XOR cpu.REG8[code.getZ()]
-            {
-                cpu.REG.A ^= *cpu.m_TableREG8[code.getZ()];
-                cycles = 1;
-            }
-            break;
-        }
-        case 3: { cpu.REG.A ^= cpu.fetch(); cycles = 2; break; } //XOR d8
-        }
-
-        cpu.REG.Flags.Z = cpu.REG.A == 0;
-
-        return cycles;
+        return argument.Source == ArgumentSource::Register ? 1 : 2;
     }
 
-    uint8_t SharpSM83::CP(SharpSM83& cpu, const opcode code)
+    uint8_t SharpSM83::CP(ArgumentInfo argument)
     {
-        uint8_t value{ 0 };
-        uint8_t cycles{ 0 };
+        uint8_t value = getByte(argument);
 
-        switch (code.getX()) {
-        case 2: {
-            if (code.getZ() == 6) //CP [HL]
-            {
-                value = cpu.read(cpu.REG.HL);
-                cycles = 2;
-            }
-            else //CP cpu.REG8[code.getZ()]
-            {
-                value = *cpu.m_TableREG8[code.getZ()];
-                cycles = 1;
-            }
-            break;
-        }
-        case 3: { value = cpu.fetch(); cycles = 2; break; } //CP d8
-        }
+        REG.Flags.N = 1;
+        REG.Flags.H = halfCarryOccured8Sub(REG.A, value);
+        REG.Flags.C = carryOccured(REG.A, value, true);
+        REG.Flags.Z = (REG.A - value) == 0;
 
-        cpu.REG.Flags.N = 1;
-        cpu.REG.Flags.H = cpu.halfCarryOccured8Sub(cpu.REG.A, value);
-        cpu.REG.Flags.C = cpu.carryOccured8Sub(cpu.REG.A, value);
-        cpu.REG.Flags.Z = (cpu.REG.A - value) == 0;
-
-        return cycles;
+        return argument.Source == ArgumentSource::Register ? 1 : 2;
     }
 
     uint8_t SharpSM83::JP(SharpSM83& cpu, const opcode code)
@@ -582,35 +478,22 @@ namespace gb {
         }
     }
 
-    uint8_t SharpSM83::PUSH(SharpSM83& cpu, const opcode code)
+    uint8_t SharpSM83::PUSH(Registers reg)
     {
-        if (code.getP() == 3) { // PUSH AF
-            cpu.pushStack(cpu.REG.AF & 0xFFF0);
-        }
-        else {
-            cpu.pushStack(*cpu.m_TableREGP_AF[code.getP()]);
-        }
-
+        pushStack(getWordRegister(reg));
         return 4;
     }
 
-    uint8_t SharpSM83::POP(SharpSM83& cpu, const opcode code)
+    uint8_t SharpSM83::POP(Registers reg)
     {
-        if (code.getP() == 3) //POP AF
-        {
-            cpu.REG.AF = cpu.popStack() & 0xFFF0;
-        }
-        else { //POP REGAF[code.p]
-            *cpu.m_TableREGP_AF[code.getP()] = cpu.popStack();
-        }
-
+        setWordRegister(reg, popStack());
         return 3;
     }
 
-    uint8_t SharpSM83::RST(SharpSM83& cpu, const opcode code)
+    uint8_t SharpSM83::RST(uint16_t reset_vector)
     {
-        cpu.pushStack(cpu.REG.PC);
-        cpu.REG.PC = static_cast<uint16_t>(code.getY() * 8);
+        pushStack(REG.PC);
+        REG.PC = reset_vector;
         return 4;
     }
 
@@ -658,359 +541,245 @@ namespace gb {
         return 0;
     }
 
-    uint8_t SharpSM83::RETI(SharpSM83& cpu, const opcode code)
+    uint8_t SharpSM83::RETI()
     {
-        cpu.REG.PC = cpu.popStack();
-        cpu.IME = true;
+        REG.PC = popStack();
+        IME = true;
         return 4;
     }
 
-    uint8_t SharpSM83::DI(SharpSM83& cpu, const opcode code)
+    uint8_t SharpSM83::DI()
     {
-        cpu.IME = false;
-        cpu.m_EnableIME = false;
+        IME = false;
+        m_EnableIME = false;
         return 1;
     }
 
-    uint8_t SharpSM83::EI(SharpSM83& cpu, const opcode code)
+    uint8_t SharpSM83::EI()
     {
-        cpu.m_EnableIME = true;
+        m_EnableIME = true;
         return 1;
     }
 
-    uint8_t SharpSM83::HALT(SharpSM83& cpu, const opcode code)
-    {
-        return 1;
-    }
-
-    uint8_t SharpSM83::STOP(SharpSM83& cpu, const opcode code)
+    uint8_t SharpSM83::HALT()
     {
         return 1;
     }
 
-    uint8_t SharpSM83::DAA(SharpSM83& cpu, const opcode code)
+    uint8_t SharpSM83::STOP()
+    {
+        return 1;
+    }
+
+    uint8_t SharpSM83::DAA()
     {
         uint8_t correction = 0;
 
-        if (cpu.REG.Flags.C || (!cpu.REG.Flags.N && cpu.REG.A > 0x99))
+        if (REG.Flags.C || (!REG.Flags.N && REG.A > 0x99))
         {
             correction |= 0x60;
-            cpu.REG.Flags.C = 1;
+            REG.Flags.C = 1;
         }
-        if (cpu.REG.Flags.H || (!cpu.REG.Flags.N && (cpu.REG.A & 0x0F) > 0x09))
+        if (REG.Flags.H || (!REG.Flags.N && (REG.A & 0x0F) > 0x09))
         {
             correction |= 0x06;
         }
 
-        if (cpu.REG.Flags.N) cpu.REG.A -= correction;
-        else cpu.REG.A += correction;
+        if (REG.Flags.N) REG.A -= correction;
+        else REG.A += correction;
 
-        cpu.REG.Flags.H = 0;
-        cpu.REG.Flags.Z = cpu.REG.A == 0;
-
-        return 1;
-    }
-
-    uint8_t SharpSM83::CPL(SharpSM83& cpu, const opcode code)
-    {
-        cpu.REG.Flags.N = 1;
-        cpu.REG.Flags.H = 1;
-        cpu.REG.A = ~cpu.REG.A;
-        return 1;
-    }
-
-    uint8_t SharpSM83::CCF(SharpSM83& cpu, const opcode code)
-    {
-        cpu.REG.Flags.N = 0;
-        cpu.REG.Flags.H = 0;
-        cpu.REG.Flags.C = !cpu.REG.Flags.C;
-        return 1;
-    }
-
-    uint8_t SharpSM83::SCF(SharpSM83& cpu, const opcode code)
-    {
-        cpu.REG.Flags.N = 0;
-        cpu.REG.Flags.H = 0;
-        cpu.REG.Flags.C = 1;
-        return 1;
-    }
-
-    uint8_t SharpSM83::RLA(SharpSM83& cpu, const opcode code)
-    {
-        uint8_t firstBit = cpu.REG.Flags.C;
-        cpu.REG.Flags.Value = 0;
-        cpu.REG.Flags.C = (cpu.REG.A & 0x80) != 0;
-        cpu.REG.A = (cpu.REG.A << 1) | firstBit;
+        REG.Flags.H = 0;
+        REG.Flags.Z = REG.A == 0;
 
         return 1;
     }
 
-    uint8_t SharpSM83::RRA(SharpSM83& cpu, const opcode code)
+    uint8_t SharpSM83::CPL()
     {
-        uint8_t lastBit = static_cast<uint8_t>(cpu.REG.Flags.C) << 7;
-        cpu.REG.Flags.Value = 0;
-        cpu.REG.Flags.C = (cpu.REG.A & 0x01) != 0;
-        cpu.REG.A = (cpu.REG.A >> 1) | lastBit;
+        REG.Flags.N = 1;
+        REG.Flags.H = 1;
+        REG.A = ~REG.A;
         return 1;
     }
 
-    uint8_t SharpSM83::RLCA(SharpSM83& cpu, const opcode code)
+    uint8_t SharpSM83::CCF()
     {
-        cpu.REG.Flags.Value = 0;
-        cpu.REG.Flags.C = (cpu.REG.A & 0b10000000) != 0;
-        cpu.REG.A = (cpu.REG.A << 1) | (cpu.REG.A >> (sizeof(uint8_t) * CHAR_BIT - 1));
-
+        REG.Flags.N = 0;
+        REG.Flags.H = 0;
+        REG.Flags.C = !REG.Flags.C;
         return 1;
     }
 
-    uint8_t SharpSM83::RRCA(SharpSM83& cpu, const opcode code)
+    uint8_t SharpSM83::SCF()
     {
-        cpu.REG.Flags.Value = 0;
-        cpu.REG.Flags.C = (cpu.REG.A & 0b00000001) != 0;
-        cpu.REG.A = (cpu.REG.A >> 1) | (cpu.REG.A << (sizeof(uint8_t) * CHAR_BIT - 1));
-
+        REG.Flags.N = 0;
+        REG.Flags.H = 0;
+        REG.Flags.C = 1;
         return 1;
     }
 
-    uint8_t SharpSM83::RLC(const opcode code)
-    {
-        REG.Flags.Value = 0;
-
-        if (code.getZ() == 6) // RLC [HL]
-        {
-            uint8_t value = read(REG.HL);
-            REG.Flags.C = (value & 0x80) != 0;
-            value = (value << 1) | (value >> (sizeof(uint8_t) * CHAR_BIT - 1)); // (value << n) | (value >> (BIT_COUNT - n))
-            write(REG.HL, value);
-            REG.Flags.Z = value == 0;
-            return 4;
-        }
-        else //RLC reg8[code.getZ()]
-        {
-            REG.Flags.C = (*m_TableREG8[code.getZ()] & 0x80) != 0;
-            *m_TableREG8[code.getZ()] = (*m_TableREG8[code.getZ()] << 1) | (*m_TableREG8[code.getZ()] >> (sizeof(uint8_t) * CHAR_BIT - 1)); // (value << n) | (value >> (BIT_COUNT - n))
-            REG.Flags.Z = *m_TableREG8[code.getZ()] == 0;
-            return 2;
-        }
-    }
-
-    uint8_t SharpSM83::RRC(const opcode code)
-    {
-        REG.Flags.Value = 0;
-
-        if (code.getZ() == 6) // RRC [HL]
-        {
-            uint8_t value = read(REG.HL);
-            REG.Flags.C = (value & 0x01) != 0;
-            value = (value >> 1) | (value << (sizeof(uint8_t) * CHAR_BIT - 1)); // (value >> n) | (value << (BIT_COUNT - n))
-            write(REG.HL, value);
-            REG.Flags.Z = value == 0;
-            return 4;
-        }
-        else //RRC reg8[code.getZ()]
-        {
-            REG.Flags.C = (*m_TableREG8[code.getZ()] & 0x01) != 0;
-            *m_TableREG8[code.getZ()] = (*m_TableREG8[code.getZ()] >> 1) | (*m_TableREG8[code.getZ()] << (sizeof(uint8_t) * CHAR_BIT - 1)); // (value >> n) | (value << (BIT_COUNT - n))
-            REG.Flags.Z = *m_TableREG8[code.getZ()] == 0;
-            return 2;
-        }
-    }
-
-    uint8_t SharpSM83::RL(const opcode code)
+    uint8_t SharpSM83::RLA()
     {
         uint8_t firstBit = REG.Flags.C;
         REG.Flags.Value = 0;
+        REG.Flags.C = (REG.A & 0x80) != 0;
+        REG.A = (REG.A << 1) | firstBit;
 
-        if (code.getZ() == 6) // RL [HL]
-        {
-            uint8_t value = read(REG.HL);
-            REG.Flags.C = (value & 0x80) != 0;
-            value = (value << 1) | firstBit;
-            write(REG.HL, value);
-            REG.Flags.Z = value == 0;
-            return 4;
-        }
-        else // RL reg8[code.getZ()]
-        {
-            REG.Flags.C = (*m_TableREG8[code.getZ()] & 0x80) != 0;
-            *m_TableREG8[code.getZ()] = (*m_TableREG8[code.getZ()] << 1) | firstBit;
-            REG.Flags.Z = *m_TableREG8[code.getZ()] == 0;
-            return 2;
-        }
+        return 1;
     }
 
-    uint8_t SharpSM83::RR(const opcode code)
+    uint8_t SharpSM83::RRA()
     {
         uint8_t lastBit = static_cast<uint8_t>(REG.Flags.C) << 7;
         REG.Flags.Value = 0;
-
-        if (code.getZ() == 6) // RL [HL]
-        {
-            uint8_t value = read(REG.HL);
-            REG.Flags.C = (value & 0x01) != 0;
-            value = (value >> 1) | lastBit;
-            write(REG.HL, value);
-            REG.Flags.Z = value == 0;
-            return 4;
-        }
-        else // RL reg8[code.getZ()]
-        {
-            REG.Flags.C = (*m_TableREG8[code.getZ()] & 0x01) != 0;
-            *m_TableREG8[code.getZ()] = (*m_TableREG8[code.getZ()] >> 1) | lastBit;
-            REG.Flags.Z = *m_TableREG8[code.getZ()] == 0;
-            return 2;
-        }
+        REG.Flags.C = (REG.A & 0x01) != 0;
+        REG.A = (REG.A >> 1) | lastBit;
+        return 1;
     }
 
-    uint8_t SharpSM83::SLA(const opcode code)
+    uint8_t SharpSM83::RLCA()
     {
         REG.Flags.Value = 0;
+        REG.Flags.C = (REG.A & 0b10000000) != 0;
+        REG.A = (REG.A << 1) | (REG.A >> (sizeof(uint8_t) * CHAR_BIT - 1));
 
-        if (code.getZ() == 6) // SLA [HL]
-        {
-            uint8_t value = read(REG.HL);
-            REG.Flags.C = (value & 0x80) != 0;
-            value <<= 1;
-            write(REG.HL, value);
-            REG.Flags.Z = value == 0;
-            return 4;
-        }
-        else // SLA reg8[code.getZ()]
-        {
-            REG.Flags.C = (*m_TableREG8[code.getZ()] & 0x80) != 0;
-            *m_TableREG8[code.getZ()] <<= 1;
-            REG.Flags.Z = *m_TableREG8[code.getZ()] == 0;
-            return 2;
-        }
+        return 1;
     }
 
-    uint8_t SharpSM83::SRA(const opcode code)
+    uint8_t SharpSM83::RRCA()
     {
         REG.Flags.Value = 0;
-        uint8_t firstBit{ 0 };
+        REG.Flags.C = (REG.A & 0b00000001) != 0;
+        REG.A = (REG.A >> 1) | (REG.A << (sizeof(uint8_t) * CHAR_BIT - 1));
 
-        if (code.getZ() == 6) // SRA [HL]
-        {
-            uint8_t value = read(REG.HL);
-            REG.Flags.C = (value & 0x01) != 0;
-            firstBit = value & 0x80;
-            value >>= 1;
-            value |= firstBit;
-            write(REG.HL, value);
-            REG.Flags.Z = value == 0;
-            return 4;
-        }
-        else // SRA reg8[code.getZ()]
-        {
-            REG.Flags.C = (*m_TableREG8[code.getZ()] & 0x01) != 0;
-            firstBit = (*m_TableREG8[code.getZ()]) & 0x80;
-            *m_TableREG8[code.getZ()] >>= 1;
-            *m_TableREG8[code.getZ()] |= firstBit;
-            REG.Flags.Z = *m_TableREG8[code.getZ()] == 0;
-            return 2;
-        }
+        return 1;
     }
 
-    uint8_t SharpSM83::SWAP(const opcode code)
+    uint8_t SharpSM83::RLC(Registers reg)
     {
         REG.Flags.Value = 0;
-        uint8_t temp{ 0 };
-        uint8_t result{ 0 };
+        uint8_t value = getByteRegister(reg);
 
-        if (code.getZ() == 6) // SWAP [HL]
-        {
-            uint8_t value = read(REG.HL);
-            temp = value & 0xF0;
-            temp >>= 4;
-            value <<= 4;
-            value |= temp;
-            write(REG.HL, value);
-            REG.Flags.Z = value == 0;
-            return 4;
-        }
-        else // SWAP reg8[code.getZ()]
-        {
-            temp = (*m_TableREG8[code.getZ()]) & 0xF0;
-            *m_TableREG8[code.getZ()] <<= 4;
-            temp >>= 4;
-            *m_TableREG8[code.getZ()] |= temp;
-            REG.Flags.Z = *m_TableREG8[code.getZ()] == 0;
-            return 2;
-        }
+        REG.Flags.C = (value & 0x80) != 0;
+        value = (value << 1) | (value >> (sizeof(uint8_t) * CHAR_BIT - 1)); // (value << n) | (value >> (BIT_COUNT - n))
+        setByteRegister(reg, value);
+        REG.Flags.Z = value == 0;
+        return reg == Registers::HL ? 4 : 2;
     }
 
-    uint8_t SharpSM83::SRL(const opcode code)
+    uint8_t SharpSM83::RRC(Registers reg)
     {
         REG.Flags.Value = 0;
+        uint8_t value = getByteRegister(reg);
 
-        if (code.getZ() == 6) // SRL [HL]
-        {
-            uint8_t value = read(REG.HL);
-            REG.Flags.C = (value & 0x01) != 0;
-            value >>= 1;
-            write(REG.HL, value);
-            REG.Flags.Z = value == 0;
-            return 4;
-        }
-        else // SRL reg8[code.getZ()]
-        {
-            REG.Flags.C = (*m_TableREG8[code.getZ()] & 0x01) != 0;
-            *m_TableREG8[code.getZ()] >>= 1;
-            REG.Flags.Z = *m_TableREG8[code.getZ()] == 0;
-            return 2;
-        }
+        REG.Flags.C = (value & 0x01) != 0;
+        value = (value >> 1) | (value << (sizeof(uint8_t) * CHAR_BIT - 1)); // (value >> n) | (value << (BIT_COUNT - n))
+        setByteRegister(reg, value);
+        REG.Flags.Z = value == 0;
+        return reg == Registers::HL ? 4 : 2;
     }
 
-    uint8_t SharpSM83::BIT(const opcode code)
+    uint8_t SharpSM83::RL(Registers reg)
+    {
+        uint8_t firstBit = REG.Flags.C;
+        REG.Flags.Value = 0;
+        uint8_t value = getByteRegister(reg);
+
+        REG.Flags.C = (value & 0x80) != 0;
+        value = (value << 1) | firstBit;
+        setByteRegister(reg, value);
+        REG.Flags.Z = value == 0;
+        return reg == Registers::HL ? 4 : 2;
+    }
+
+    uint8_t SharpSM83::RR(Registers reg)
+    {
+        uint8_t lastBit = static_cast<uint8_t>(REG.Flags.C) << 7;
+        REG.Flags.Value = 0;
+        uint8_t value = getByteRegister(reg);
+
+        REG.Flags.C = (value & 0x01) != 0;
+        value = (value >> 1) | lastBit;
+        setByteRegister(reg, value);
+        REG.Flags.Z = value == 0;
+        return reg == Registers::HL ? 4 : 2;
+    }
+
+    uint8_t SharpSM83::SLA(Registers reg)
+    {
+        REG.Flags.Value = 0;
+        uint8_t value = getByteRegister(reg);
+
+        REG.Flags.C = (value & 0x80) != 0;
+        value <<= 1;
+        setByteRegister(reg, value);
+        REG.Flags.Z = value == 0;
+        return reg == Registers::HL ? 4 : 2;
+    }
+
+    uint8_t SharpSM83::SRA(Registers reg)
+    {
+        REG.Flags.Value = 0;
+        uint8_t firstBit = 0;
+        uint8_t value = getByteRegister(reg);
+
+        REG.Flags.C = (value & 0x01) != 0;
+        firstBit = value & 0x80;
+        value >>= 1;
+        value |= firstBit;
+        setByteRegister(reg, value);
+        REG.Flags.Z = value == 0;
+        return reg == Registers::HL ? 4 : 2;
+    }
+
+    uint8_t SharpSM83::SWAP(Registers reg)
+    {
+        REG.Flags.Value = 0;
+        uint8_t value = getByteRegister(reg);
+        uint8_t temp = value & 0xF0;
+
+        temp >>= 4;
+        value <<= 4;
+        value |= temp;
+        setByteRegister(reg, value);
+        REG.Flags.Z = value == 0;
+        return reg == Registers::HL ? 4 : 2;
+    }
+
+    uint8_t SharpSM83::SRL(Registers reg)
+    {
+        REG.Flags.Value = 0;
+        uint8_t value = getByteRegister(reg);
+
+        REG.Flags.C = (value & 0x01) != 0;
+        value >>= 1;
+        setByteRegister(reg, value);
+        REG.Flags.Z = value == 0;
+        return reg == Registers::HL ? 4 : 2;
+    }
+
+    uint8_t SharpSM83::BIT(PrefixedInstruction instr)
     {
         REG.Flags.N = 0;
         REG.Flags.H = 1;
+        uint8_t value = getByteRegister(instr.Target);
 
-        uint8_t result{ 0 };
-
-        if (code.getZ() == 6) // BIT n, [HL]
-        {
-            result = read(REG.HL) & (1 << code.getY());
-            REG.Flags.Z = result == 0;
-            return 3;
-        }
-        else //BIT n, reg8[code.getZ()]
-        {
-            result = *m_TableREG8[code.getZ()] & (1 << code.getY());
-            REG.Flags.Z = result == 0;
-            return 2;
-        }
+        value &= 1 << *instr.Bit;
+        REG.Flags.Z = value == 0;
+        return instr.Target == Registers::HL ? 3 : 2;
     }
 
-    uint8_t SharpSM83::RES(const opcode code)
+    uint8_t SharpSM83::RES(PrefixedInstruction instr)
     {
-        uint8_t mask = ~(1 << code.getY());
-
-        if (code.getZ() == 6) // RES n, [HL]
-        {
-            write(REG.HL, (read(REG.HL) & mask));
-            return 4;
-        }
-        else // RES n, reg8[code.getZ()]
-        {
-            *m_TableREG8[code.getZ()] &= mask;
-            return 2;
-        }
+        uint8_t mask = ~(1 << *instr.Bit);
+        setByteRegister(instr.Target, getByteRegister(instr.Target) & mask);
+        return instr.Target == Registers::HL ? 4 : 2;
     }
 
-    uint8_t SharpSM83::SET(const opcode code)
+    uint8_t SharpSM83::SET(PrefixedInstruction instr)
     {
-        uint8_t mask = 1 << code.getY();
-
-        if (code.getZ() == 6) // SET n, [HL]
-        {
-            write(REG.HL, (read(REG.HL) | mask));
-            return 4;
-        }
-        else // SET n, reg8[code.getZ()]
-        {
-            *m_TableREG8[code.getZ()] |= mask;
-            return 2;
-        }
+        uint8_t mask = 1 << *instr.Bit;
+        setByteRegister(instr.Target, getByteRegister(instr.Target) | mask);
+        return instr.Target == Registers::HL ? 4 : 2;
     }
 }

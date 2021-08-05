@@ -5,6 +5,7 @@
 #include "core/gb/cpu/CPU.h"
 #include "core/gb/IO.h"
 #include "core/gb/InterruptRegister.h"
+#include "core/gb/cpu/Decoder.h"
 
 #include <memory>
 #include <string_view>
@@ -39,7 +40,9 @@ namespace gb {
 		AddressBus m_Bus;
 		InterruptRegister m_InterruptEnable;
 		InterruptRegister m_InterruptFlags;
+		Decoder m_Decoder;
 		SharpSM83 m_CPU;
+		
 
 		const uint8_t m_InstructionPerFrame{ 100 };
 		bool m_IsRunning;
