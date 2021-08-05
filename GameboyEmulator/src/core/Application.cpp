@@ -33,7 +33,7 @@ namespace gb {
 
     Application::Application() :
         m_RAM(computeSizeFromAddresses(0x8000, 0xFEFF)), m_ROM(), m_Leftover(computeSizeFromAddresses(0xFF80, 0xFFFF)), m_GBIO(),
-        m_Bus(), m_CPU(m_Bus, m_InterruptEnable, m_InterruptFlags), m_IsRunning(true), m_EmulatorRunning(false), m_JustStarted(false)
+        m_Bus(), m_CPU(m_Bus, m_InterruptEnable, m_InterruptFlags, m_Decoder), m_IsRunning(true), m_EmulatorRunning(false), m_JustStarted(false)
     {
         init();
     }

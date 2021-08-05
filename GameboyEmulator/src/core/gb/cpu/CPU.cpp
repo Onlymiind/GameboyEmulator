@@ -85,28 +85,9 @@ namespace gb
         return (lhs & 0x0F) < (rhs & 0x0F);
     }
 
-    bool SharpSM83::carryOccured8Add(uint8_t lhs, uint8_t rhs)
-    {
-        uint16_t lhs16{ lhs }, rhs16{ rhs };
-
-        return (lhs16 + rhs16) > 0x00FF;
-    }
-
-    bool SharpSM83::carryOccured8Sub(uint8_t lhs, uint8_t rhs)
-    {
-        return lhs < rhs;
-    }
-
     bool SharpSM83::halfCarryOccured16Add(uint16_t lhs, uint16_t rhs)
     {
         return (((lhs & 0x0FFF) + (rhs & 0x0FFF)) & 0x1000) != 0;
-    }
-
-    bool SharpSM83::carryOccured16Add(uint16_t lhs, uint16_t rhs)
-    {
-        uint32_t lhs32{ lhs }, rhs32{ rhs };
-
-        return (lhs32 + rhs32) > 0xFFFF;
     }
 
     void SharpSM83::write(uint16_t address, uint8_t data)
@@ -134,25 +115,65 @@ namespace gb
         using type = PrefixedType;
         switch(instr.Type)
         {
-            case type::RLC: return 0;
-            case type::RRC: return 0;
-            case type::RL: return 0;
-            case type::RR: return 0;
-            case type::SLA: return 0;
-            case type::SRA: return 0;
-            case type::SWAP: return 0;
-            case type::BIT: return 0;
-            case type::RES: return 0;
-            case type::SET: return 0;
+            case type::RLC: return RLC(instr.Target);
+            case type::RRC: return RRC(instr.Target);
+            case type::RL: return RL(instr.Target);
+            case type::RR: return RR(instr.Target);
+            case type::SLA: return SLA(instr.Target);
+            case type::SRA: return SRA(instr.Target);
+            case type::SWAP: return SWAP(instr.Target);
+            case type::BIT: return BIT(instr);
+            case type::RES: return RES(instr);
+            case type::SET: return SET(instr);
+            default:
+                return 0;
         }
     }
 
     uint8_t SharpSM83::dispatchUnprefixed(UnprefixedInstruction instr)
     {
-
+        using type = UnprefixedType;
+        switch(instr.Type)
+        {
+            case type::NOP: return NOP();
+            case type::RLA: return RLA();
+            case type::RLCA: return RLCA();
+            case type::RRA: return RRA();
+            case type::RRCA: return RRCA();
+            case type::DI: return DI();
+            case type::RETI: return RETI();
+            case type::CPL: return CPL();
+            case type::CCF: return CCF();
+            case type::EI: return EI();
+            case type::DAA: return DAA();
+            case type::SCF: return SCF();
+            case type::HALT: return HALT();
+            case type::STOP: return STOP();
+            case type::RST: return RST(*instr.ResetVector);
+            case type::PUSH: return PUSH(instr.Source.Register);
+            case type::POP: return POP(instr.Destination.Register);
+            case type::SUB: return SUB(instr.Source);
+            case type::OR: return OR(instr.Source);
+            case type::AND: return AND(instr.Source);
+            case type::XOR: return XOR(instr.Source);
+            case type::ADC: return ADC(instr.Source);
+            case type::SBC: return SBC(instr.Source);
+            case type::CP: return CP(instr.Source);
+            case type::LD: return 0;
+            case type::INC: return 0;
+            case type::ADD: return 0;
+            case type::JR: return 0;
+            case type::DEC: return 0;
+            case type::JP: return 0;
+            case type::CALL: return 0;
+            case type::RET: return 0;
+            default:
+                //TODO: throw an error
+                return 0;
+        }
     }
 
-    uint8_t SharpSM83::read(uint16_t address)
+    uint8_t SharpSM83::read(uint16_t address) const
     {
         return m_Bus.read(address);
     }
@@ -218,7 +239,31 @@ namespace gb
         IME = false;
     }
 
-    uint8_t SharpSM83::getByteRegister(Registers reg)
+    uint8_t SharpSM83::getByte(ArgumentInfo from)
+    {
+        switch(from.Source)
+        {
+            case ArgumentSource::Immediate: return fetch();
+            case ArgumentSource::IndirectImmediate: return read(fetchWord());
+            case ArgumentSource::Register:
+            case ArgumentSource::Indirect:
+                return getByteRegister(from.Register);
+            default: //TODO: throw an error
+                return 0;
+        }
+    }
+    uint16_t SharpSM83::getWord(ArgumentInfo from)
+    {
+        switch(from.Source)
+        {
+            case ArgumentSource::Immediate: return fetchWord();
+            case ArgumentSource::Register: return getWordRegister(from.Register);
+            default: //TODO: throw an error
+                return 0;
+        }
+    }
+
+    uint8_t SharpSM83::getByteRegister(Registers reg) const
     {
 #define CASE_BYTE_REG(x) case Registers::##x: return REG.##x
 #define CASE_WORD_REG(x) case Registers::##x: return read(REG.##x)
@@ -242,7 +287,7 @@ namespace gb
 #undef CASE_WORD_REG
     }
 
-    uint16_t SharpSM83::getWordRegister(Registers reg)
+    uint16_t SharpSM83::getWordRegister(Registers reg) const
     {
 #define CASE_REG(x) case Registers::##x: return REG.##x
         switch(reg)
@@ -251,6 +296,7 @@ namespace gb
             CASE_REG(DE);
             CASE_REG(HL);
             CASE_REG(SP);
+            case Registers::AF: return REG.AF & 0xFFF0;
         }
         return 0;
 #undef CASE_REG
@@ -282,13 +328,14 @@ namespace gb
 
     void SharpSM83::setWordRegister(Registers reg, uint16_t data)
     {
-#define CASE_REG(x) case Registers::##x:  write(REG.##x, data); break
+#define CASE_REG(x) case Registers::##x:  REG.##x = data; break
         switch(reg)
         {
             CASE_REG(BC);
             CASE_REG(DE);
             CASE_REG(HL);
             CASE_REG(SP);
+            case Registers::AF: REG.AF = data & 0xFFF0;
         }
 #undef CASE_REG
     }
