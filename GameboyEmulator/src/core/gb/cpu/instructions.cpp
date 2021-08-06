@@ -18,8 +18,34 @@ namespace gb {
         return 1;
     }
 
-    uint8_t SharpSM83::LD(SharpSM83& cpu, const opcode code)
+    uint8_t SharpSM83::LD(UnprefixedInstruction instr)
     {
+        switch(*instr.LDSubtype)
+        {
+            case LoadSubtype::Typical:
+                break;
+            case LoadSubtype::LD_DEC:
+                break;
+            case LoadSubtype::LD_INC:
+                break;
+            case LoadSubtype::LD_IO:
+                //true if loading from register A, false otherwise
+                bool direction = instr.Source.Register == Registers::A;
+                uint8_t offset = getByte(direction ? instr.Destination : instr.Source);
+                break;
+            case LoadSubtype::LD_Offset_SP:
+                int8_t offset = fetchSigned();
+                REG.Flags.H = halfCarryOccured8Add(REG.SP & 0x00FF, offset);
+                REG.Flags.C = carryOccured(static_cast<uint8_t>(REG.SP & 0x00FF), reinterpret_cast<uint8_t&>(offset));
+                REG.Flags.Z = 0;
+                REG.Flags.N = 0;
+                REG.HL = REG.SP + offset;
+
+                return 3;
+            case LoadSubtype::LD_SP:
+                loadWord(getWord(instr.Destination), instr.Source);
+                return 5;
+        }
         switch (code.getX()) {
         case 0: {
             switch (code.getQ()) {
