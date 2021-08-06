@@ -8,7 +8,7 @@
 namespace gb {
 
 
-    uint8_t SharpSM83::NONE(SharpSM83& cpu, const opcode code)
+    uint8_t SharpSM83::NONE()
     {
         return 0;
     }
@@ -199,82 +199,44 @@ namespace gb {
         return 0;
     }
 
-    uint8_t SharpSM83::INC(SharpSM83& cpu, const opcode code)
+    uint8_t SharpSM83::INC(ArgumentInfo target)
     {
-        switch (code.getZ()) {
-        case 3: { // INC reg16[code.getP()]
-            ++(*cpu.m_TableREGP_SP[code.getP()]);
+        if(target.Type == ArgumentType::Unsigned16)
+        {
+            uint16_t value = getWordRegister(target.Register);
+            ++value;
+            setWordRegister(target.Register, value);
             return 2;
         }
-        case 4: {
-            cpu.REG.Flags.N = 0;
-            if (code.getY() == 6) // INC [HL]
-            {
-                uint8_t value = cpu.read(cpu.REG.HL);
-
-                cpu.REG.Flags.H = cpu.halfCarryOccured8Add(value, 1);
-
-                ++value;
-
-                cpu.write(cpu.REG.HL, value);
-
-                cpu.REG.Flags.Z = value == 0;
-
-                return 3;
-            }
-            else { // INC reg8[code.getY()]
-                cpu.REG.Flags.H = cpu.halfCarryOccured8Add(*cpu.m_TableREG8[code.getY()], 1);
-
-                ++(*cpu.m_TableREG8[code.getY()]);
-
-                cpu.REG.Flags.Z = *cpu.m_TableREG8[code.getY()] == 0;
-
-                return 1;
-            }
-
-            break;
+        else
+        {
+            uint8_t value = getByteRegister(target.Register);
+            REG.Flags.H = halfCarryOccured8Add(value, 1);
+            ++value;
+            setByteRegister(target.Register, value);
+            REG.Flags.Z = value == 0;
+            return target.Source == ArgumentSource::Register ? 1 : 3;
         }
-        }
-        return 0;
     }
 
-    uint8_t SharpSM83::DEC(SharpSM83& cpu, const opcode code)
+    uint8_t SharpSM83::DEC(ArgumentInfo target)
     {
-        switch (code.getZ()) {
-        case 3: { // DEC reg16[code.getP()]
-            --(*cpu.m_TableREGP_SP[code.getP()]);
+        if(target.Type == ArgumentType::Unsigned16)
+        {
+            uint16_t value = getWordRegister(target.Register);
+            --value;
+            setWordRegister(target.Register, value);
             return 2;
         }
-        case 5: {
-            cpu.REG.Flags.N = 1;
-            if (code.getY() == 6) // DEC [HL]
-            {
-                uint8_t value = cpu.read(cpu.REG.HL);
-                cpu.REG.Flags.H = cpu.halfCarryOccured8Sub(value, 1);
-
-                --value;
-
-                cpu.write(cpu.REG.HL, value);
-                cpu.REG.Flags.Z = value == 0;
-
-                return 3;
-            }
-            else //DEC reg8[code.getY()]
-            {
-                cpu.REG.Flags.H = cpu.halfCarryOccured8Sub(*cpu.m_TableREG8[code.getY()], 1);
-
-                --(*cpu.m_TableREG8[code.getY()]);
-
-                cpu.REG.Flags.Z = *cpu.m_TableREG8[code.getY()] == 0;
-
-                return 1;
-            }
-
-            break;
+        else
+        {
+            uint8_t value = getByteRegister(target.Register);
+            REG.Flags.H = halfCarryOccured8Sub(value, 1);
+            --value;
+            setByteRegister(target.Register, value);
+            REG.Flags.Z = value == 0;
+            return target.Source == ArgumentSource::Register ? 1 : 3;
         }
-        }
-
-        return 0;
     }
 
     uint8_t SharpSM83::ADD(SharpSM83& cpu, const opcode code)
@@ -384,7 +346,6 @@ namespace gb {
         REG.Flags.H = (regA & 0x0F) < ((value & 0x0F) + REG.Flags.C);
         REG.Flags.C = regA < (static_cast<uint16_t>(value) + REG.Flags.C);
 
-
         return argument.Source == ArgumentSource::Register ? 1 : 2;
     }
 
@@ -402,10 +363,7 @@ namespace gb {
     {
         REG.Flags.Value = 0;
         REG.Flags.H = 1;
-        uint8_t cycles{ 0 };
-
         REG.A &= getByte(argument);
-
         REG.Flags.Z = REG.A == 0;
 
         return argument.Source == ArgumentSource::Register ? 1 : 2;
@@ -432,50 +390,40 @@ namespace gb {
         return argument.Source == ArgumentSource::Register ? 1 : 2;
     }
 
-    uint8_t SharpSM83::JP(SharpSM83& cpu, const opcode code)
+    uint8_t SharpSM83::JP(UnprefixedInstruction instr)
     {
-        switch (code.getZ()) {
-        case 1: {cpu.REG.PC = cpu.REG.HL; return 1; } // JP HL
-        case 2: { //JP cond[code.getY()], a16
-            uint16_t address = cpu.fetchWord();
+        uint16_t address = getWord(instr.Source);
 
-            if (cpu.checkCondition(cpu.m_Conditions[code.getY()]))
+        if(instr.Condition.has_value())
+        {
+            if(checkCondition(*instr.Condition))
             {
-                cpu.REG.PC = address;
+                REG.PC = address;
                 return 4;
             }
-
-            return 3;
-        }
-        case 3: { // JP a16
-            uint16_t address = cpu.fetchWord();
-
-            cpu.REG.PC = address;
-            return 4;
-        }
-        }
-        return 0;
-    }
-
-    uint8_t SharpSM83::JR(SharpSM83& cpu, const opcode code)
-    {
-        int8_t relAddress = cpu.fetchSigned();
-
-        if (code.getY() == 3) // JR r8
-        {
-            cpu.REG.PC += relAddress;
-            return 3;
-        }
-        else // JR cond[code.getY() - 4], r8
-        {
-            if (cpu.checkCondition(cpu.m_Conditions[code.getY() - 4]))
+            else
             {
-                cpu.REG.PC += relAddress;
                 return 3;
             }
+        }
+        else
+        {
+            REG.PC = address;
+            return instr.Source.Source == ArgumentSource::Register ? 1 : 4;
+        }
+    }
 
+    uint8_t SharpSM83::JR(std::optional<Conditions> condition)
+    {
+        int8_t relAddress = fetchSigned();
+
+        if(condition.has_value() && (!checkCondition(*condition)))
+        {
             return 2;
         }
+
+        REG.PC += relAddress;
+        return 3;
     }
 
     uint8_t SharpSM83::PUSH(Registers reg)
@@ -497,48 +445,30 @@ namespace gb {
         return 4;
     }
 
-    uint8_t SharpSM83::CALL(SharpSM83& cpu, const opcode code)
+    uint8_t SharpSM83::CALL(std::optional<Conditions> condition)
     {
-        uint16_t address = cpu.fetchWord();
+        uint16_t address = fetchWord();
 
-        switch (code.getZ()) {
-        case 4: { // CALL cond[code.getY()], a16
-            if (cpu.checkCondition(cpu.m_Conditions[code.getY()]))
-            {
-                cpu.pushStack(cpu.REG.PC);
-                cpu.REG.PC = address;
-                return 6;
-            }
-
+        if(condition.has_value() && (!checkCondition(*condition)))
+        {
             return 3;
         }
-        case 5: { // CALL a16
-            cpu.pushStack(cpu.REG.PC);
-            cpu.REG.PC = address;
-            return 6;
-        }
-        }
-        return 0;
+
+        pushStack(REG.PC);
+        REG.PC = address;
+        return 6;
     }
 
-    uint8_t SharpSM83::RET(SharpSM83& cpu, const opcode code)
+    uint8_t SharpSM83::RET(std::optional<Conditions> condition)
     {
-        switch (code.getZ()) {
-        case 0: { // RET cond[code.getY()]
-            if (cpu.checkCondition(cpu.m_Conditions[code.getY()]))
-            {
-                cpu.REG.PC = cpu.popStack();
-                return 5;
-            }
-
+        bool conditional = condition.has_value();
+        if(conditional && (!checkCondition(*condition)))
+        {
             return 2;
         }
-        case 1: { // RET
-            cpu.REG.PC = cpu.popStack();
-            return 4;
-        }
-        }
-        return 0;
+
+        REG.PC = popStack();
+        return conditional ? 5 : 4;
     }
 
     uint8_t SharpSM83::RETI()

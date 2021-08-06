@@ -55,7 +55,6 @@ namespace gb
 
     enum class Conditions : uint8_t
     {
-        None = 0,
         NotZero, Zero, NotCarry, Carry
     };
 

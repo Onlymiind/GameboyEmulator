@@ -159,14 +159,14 @@ namespace gb
             case type::ADC: return ADC(instr.Source);
             case type::SBC: return SBC(instr.Source);
             case type::CP: return CP(instr.Source);
+            case type::JR: return JR(instr.Condition);
+            case type::CALL: return CALL(instr.Condition);
+            case type::RET: return RET(instr.Condition);
+            case type::JP: return JP(instr);
+            case type::INC: return INC(instr.Source);
+            case type::DEC: return DEC(instr.Source);
             case type::LD: return 0;
-            case type::INC: return 0;
             case type::ADD: return 0;
-            case type::JR: return 0;
-            case type::DEC: return 0;
-            case type::JP: return 0;
-            case type::CALL: return 0;
-            case type::RET: return 0;
             default:
                 //TODO: throw an error
                 return 0;
