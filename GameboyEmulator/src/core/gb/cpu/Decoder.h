@@ -130,7 +130,7 @@ namespace gb
                     {}, //Condition
                     {ArgumentSource::Register, ArgumentType::Unsigned16, Registers::SP}, //Source
                     {ArgumentSource::IndirectImmediate, ArgumentType::Unsigned16, Registers::None}, //Destination
-                    UnprefixedType::LD //UnprefixedInstruction type
+                    UnprefixedType::LD //Instruction type
                 }},
             {0xE0, 
                 {
