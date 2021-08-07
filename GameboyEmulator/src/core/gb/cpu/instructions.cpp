@@ -7,6 +7,37 @@
 
 namespace gb {
 
+    uint8_t SharpSM83::loadByte(ArgumentInfo destination, ArgumentInfo source)
+    {
+        uint8_t value = getByte(source);
+
+        if(destination.Source != ArgumentSource::IndirectImmediate)
+        {
+            setByteRegister(destination.Register, value);
+        }
+        else
+        {
+            uint16_t address = fetchWord();
+            write(address, value);
+        }
+
+        uint8_t cycles = 1;
+
+        if(source.Source == ArgumentSource::Indirect || destination.Source == ArgumentSource::Indirect)
+        {
+            ++cycles;
+        }
+        if(source.Source == ArgumentSource::Immediate)
+        {
+            ++cycles;
+        }
+        if(source.Source == ArgumentSource::IndirectImmediate || destination.Source == ArgumentSource::IndirectImmediate)
+        {
+            cycles += 3;
+        }
+
+        return cycles;
+    }
 
     uint8_t SharpSM83::NONE()
     {
@@ -23,16 +54,38 @@ namespace gb {
         switch(*instr.LDSubtype)
         {
             case LoadSubtype::Typical:
-                break;
+                bool isloadWord = (instr.Destination.Source == ArgumentSource::Register && instr.Destination.Type == ArgumentType::Unsigned16);
+                if(isloadWord)
+                {
+                    setWordRegister(instr.Destination.Register, getWord(instr.Source));
+                    return instr.Source.Source == ArgumentSource::Immediate ? 3 : 2;
+                }
+                else
+                {
+                    return loadByte(instr.Destination, instr.Source);
+                }
             case LoadSubtype::LD_DEC:
-                break;
+                loadByte(instr.Destination, instr.Source);
+                --REG.HL;
+                return 2;
             case LoadSubtype::LD_INC:
-                break;
+                loadByte(instr.Destination, instr.Source);
+                ++REG.HL;
+                return 2;
             case LoadSubtype::LD_IO:
                 //true if loading from register A, false otherwise
                 bool direction = instr.Source.Register == Registers::A;
-                uint8_t offset = getByte(direction ? instr.Destination : instr.Source);
-                break;
+                bool hasImmediate = (instr.Source.Source == ArgumentSource::Immediate) || (instr.Destination.Source == ArgumentSource::Immediate);
+                uint16_t address = 0xFF00 + getByte(direction ? instr.Destination : instr.Source);
+                if(direction)
+                {
+                    write(address, REG.A);
+                }
+                else
+                {
+                    REG.A = read(address);
+                }
+                return hasImmediate ? 3 : 2;
             case LoadSubtype::LD_Offset_SP:
                 int8_t offset = fetchSigned();
                 REG.Flags.H = halfCarryOccured8Add(REG.SP & 0x00FF, offset);
@@ -40,189 +93,15 @@ namespace gb {
                 REG.Flags.Z = 0;
                 REG.Flags.N = 0;
                 REG.HL = REG.SP + offset;
-
                 return 3;
             case LoadSubtype::LD_SP:
-                loadWord(getWord(instr.Destination), instr.Source);
-                return 5;
-        }
-        switch (code.getX()) {
-        case 0: {
-            switch (code.getQ()) {
-            case 0: {
-                switch (code.getP()) {
-                case 0: { // LD [BC], A
-                    cpu.write(cpu.REG.BC, cpu.REG.A);
-                    return 2;
-                }
-                case 1: { // LD [DE], A
-                    cpu.write(cpu.REG.DE, cpu.REG.A);
-                    return 2;
-                }
-                case 2: { // LD [HLI], A
-                    cpu.write(cpu.REG.HL, cpu.REG.A);
-                    ++cpu.REG.HL;
-                    return 2;
-                }
-                case 3: { // LD [HLD], A
-                    cpu.write(cpu.REG.HL, cpu.REG.A);
-                    --cpu.REG.HL;
-                    return 2;
-                }
-                }
-                break;
-            }
-            case 1: {
-                switch (code.getP()) {
-                case 0: { // LD A, [BC]
-                    cpu.REG.A = cpu.read(cpu.REG.BC);
-                    return 2;
-                }
-                case 1: { // LD A, [DE]
-                    cpu.REG.A = cpu.read(cpu.REG.DE);
-                    return 2;
-                }
-                case 2: { // LD A, [HLI]
-                    cpu.REG.A = cpu.read(cpu.REG.HL);
-                    ++cpu.REG.HL;
-                    return 2;
-                }
-                case 3: { // LD A, [HLD]
-                    cpu.REG.A = cpu.read(cpu.REG.HL);
-                    --cpu.REG.HL;
-                    return 2;
-                }
-                }
-                break;
-            }
-            }
-            break;
-        }
-        case 3: {
-            switch (code.getZ()) {
-            case 1: { // LD SP, HL
+                uint16_t address = fetchWord();
 
-                cpu.REG.SP = cpu.REG.HL;
-
-                return 2;
-            }
-            case 2: {
-                uint16_t address = cpu.fetchWord();
-
-                switch (code.getY()) {
-                case 5: { // LD [a16], A
-                    cpu.write(address, cpu.REG.A);
-                    return 4;
-                }
-                case 7: { // LD A, [a16]
-                    cpu.REG.A = cpu.read(address);
-                    return 4;
-                }
-                }
-                break;
-            }
-            }
-
-            break;
-        }
-        }
-
-
-        return 0;
-    }
-
-    uint8_t SharpSM83::LD_IMM(SharpSM83& cpu, const opcode code)
-    {
-        switch (code.getX()) {
-        case 0: {
-            switch (code.getZ()) {
-            case 0: { //LD [a16], SP
-                uint16_t address = cpu.fetchWord();
-
-                cpu.write(address, cpu.REG.SP & 0x00FF);
+                write(address, REG.SP & 0x00FF);
                 ++address;
-                cpu.write(address, (cpu.REG.SP & 0xFF00) >> 8);
+                write(address, (REG.SP & 0xFF00) >> 8);
                 return 5;
-            }
-            case 1: {                     // LD reg16[code.p], d16
-                uint16_t value = cpu.fetchWord();
-
-                *cpu.m_TableREGP_SP[code.getP()] = value;
-                return 3;
-            }
-            case 6: {
-                uint8_t value = cpu.fetch();
-
-                if (code.getY() == 6)
-                {
-                    cpu.write(cpu.REG.HL, value); // LD [HL], d8
-                    return 3;
-                }
-                else
-                {
-                    *cpu.m_TableREG8[code.getY()] = value;     // LD reg8[code.y], d8
-                    return 2;
-                }
-
-                break;
-            }
-            }
-
-            break;
         }
-        case 3: { // LD HL, SP + r8
-            int8_t offset = cpu.fetchSigned();
-
-            cpu.REG.Flags.H = cpu.halfCarryOccured8Add(cpu.REG.SP & 0x00FF, offset);
-            cpu.REG.Flags.C = cpu.carryOccured(static_cast<uint8_t>(cpu.REG.SP & 0x00FF), reinterpret_cast<uint8_t&>(offset));
-            cpu.REG.Flags.Z = 0;
-            cpu.REG.Flags.N = 0;
-
-            cpu.REG.HL = cpu.REG.SP + offset;
-            return 3;
-        }
-        }
-
-        return 0;
-    }
-
-    uint8_t SharpSM83::LD_IO(SharpSM83& cpu, const opcode code)
-    {
-        switch (code.getZ()) {
-        case 0: {
-            uint8_t address = cpu.fetch();
-            if (code.getY() == 4) cpu.write(0xFF00 + address, cpu.REG.A); // LD [$FF00 + a8], A
-            else cpu.REG.A = cpu.read(0xFF00 + address);             // LD A, [$FF00 + a8]
-            return 3;
-        }
-        case 2: {
-            if (code.getY() == 4) cpu.write(0xFF00 + cpu.REG.C, cpu.REG.A);   // LD [$FF00 + C], A
-            else cpu.REG.A = cpu.read(0xFF00 + cpu.REG.C);               // LD A, [$FF00 + C]
-            return 2;
-        }
-        }
-        return 0;
-    }
-
-    uint8_t SharpSM83::LD_REG8(SharpSM83& cpu, const opcode code)
-    {
-        if (code.getY() == 6)
-        {
-            cpu.write(cpu.REG.HL, *cpu.m_TableREG8[code.getZ()]);      // LD [HL], reg8[code.getZ()]
-            return 2;
-        }
-        else if (code.getZ() == 6)
-        {
-            *cpu.m_TableREG8[code.getY()] = cpu.read(cpu.REG.HL); // LD reg8[code.getY()], [HL]
-            return 2;
-        }
-        else
-        {
-            *cpu.m_TableREG8[code.getY()] = *cpu.m_TableREG8[code.getZ()]; // LD reg8[code.getY()], reg8[code.getZ()]
-            return 1;
-        }
-
-        return 0;
     }
 
     uint8_t SharpSM83::INC(ArgumentInfo target)
@@ -265,73 +144,45 @@ namespace gb {
         }
     }
 
-    uint8_t SharpSM83::ADD(SharpSM83& cpu, const opcode code)
+    uint8_t SharpSM83::ADD(UnprefixedInstruction instr)
     {
-        cpu.REG.Flags.N = 0;
+        REG.Flags.N = 0;
 
-        switch (code.getX()) {
-        case 0: { // ADD HL, reg16[code.getP()]
-            cpu.REG.Flags.H = cpu.halfCarryOccured16Add(cpu.REG.HL, *cpu.m_TableREGP_SP[code.getP()]);
-            cpu.REG.Flags.C = cpu.carryOccured(cpu.REG.HL, *cpu.m_TableREGP_SP[code.getP()]);
-
-            cpu.REG.HL += *cpu.m_TableREGP_SP[code.getP()];
-
-            return 2;;
-        }
-        case 2: {
-            if (code.getZ() == 6) //ADD A, [HL]
+        switch(instr.Destination.Register)
+        {
+            case Registers::HL:
             {
-                uint8_t value = cpu.read(cpu.REG.HL);
-                cpu.REG.Flags.H = cpu.halfCarryOccured8Add(cpu.REG.A, value);
-                cpu.REG.Flags.C = cpu.carryOccured(cpu.REG.A, value);
-
-                cpu.REG.A += value;
-
-                cpu.REG.Flags.Z = (cpu.REG.A == 0);
-
+                uint16_t value = getWordRegister(instr.Source.Register);
+                REG.Flags.H = halfCarryOccured16Add(REG.HL, value);
+                REG.Flags.C = carryOccured(REG.HL, value);
+                REG.HL += value;
                 return 2;
             }
-            else { //ADD A, reg8[code.getZ()]
-                cpu.REG.Flags.H = cpu.halfCarryOccured8Add(cpu.REG.A, *cpu.m_TableREG8[code.getZ()]);
-                cpu.REG.Flags.C = cpu.carryOccured(cpu.REG.A, *cpu.m_TableREG8[code.getZ()]);
-
-                cpu.REG.A += *cpu.m_TableREG8[code.getZ()];
-
-                cpu.REG.Flags.Z = cpu.REG.A == 0;
-
-                return 1;
-            }
-            break;
-        }
-        case 3: {
-            if (code.getZ() == 0) //ADD SP, r8
+            case Registers::SP:
             {
-                cpu.REG.Flags.Z = 0;
-                int8_t value = cpu.fetchSigned();
-
-                cpu.REG.Flags.H = cpu.halfCarryOccured8Add(cpu.REG.SP & 0x00FF, value); //According to specification H flag should be set if overflow from bit 3
-                cpu.REG.Flags.C = cpu.carryOccured(static_cast<uint8_t>(cpu.REG.SP & 0x00FF), static_cast<uint8_t>(value)); //Carry flag should be set if overflow from bit 7
-
-                cpu.REG.SP += value;
-
+                REG.Flags.Z = 0;
+                int8_t value = fetchSigned();
+                REG.Flags.H = halfCarryOccured8Add(REG.SP & 0x00FF, value); //According to specification H flag should be set if overflow from bit 3
+                REG.Flags.C = carryOccured(static_cast<uint8_t>(REG.SP & 0x00FF), static_cast<uint8_t>(value)); //Carry flag should be set if overflow from bit 7
+                REG.SP += value;
                 return 4;
             }
-            else //ADD A, d8
+            case Registers::A:
             {
-                uint8_t value = cpu.fetch();
-                cpu.REG.Flags.H = cpu.halfCarryOccured8Add(cpu.REG.A, value);
-                cpu.REG.Flags.C = cpu.carryOccured(cpu.REG.A, value);
+                uint8_t value = getByte(instr.Source);
+                REG.Flags.H = halfCarryOccured8Add(REG.A, value);
+                REG.Flags.C = carryOccured(REG.A, value);
+                REG.A += value;
+                REG.Flags.Z = REG.A == 0;
 
-                cpu.REG.A += value;
-
-                cpu.REG.Flags.Z = cpu.REG.A == 0;
-
-                return 2;
+                uint8_t cycles = 1;
+                if(instr.Source.Source == ArgumentSource::Immediate || instr.Source.Source == ArgumentSource::Indirect)
+                {
+                    ++cycles;
+                }
+                return cycles;
             }
-            break;
         }
-        }
-        return 0;
     }
 
     uint8_t SharpSM83::ADC(ArgumentInfo argument)

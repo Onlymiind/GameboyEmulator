@@ -87,17 +87,13 @@ namespace gb
 
 
         //Unprefixed instrictions. Return the amount of machine cycles needed for the instruction
-        static uint8_t LD_IMM(SharpSM83& cpu, const opcode code);
-        static uint8_t ADD(SharpSM83& cpu, const opcode code); 
-        static uint8_t LD_IO(SharpSM83& cpu, const opcode code);
-        static uint8_t LD_REG8(SharpSM83& cpu, const opcode code); 
         uint8_t NOP(); 
         uint8_t RLA(); 
         uint8_t RLCA();
         uint8_t RRA(); 
         uint8_t RRCA();
         uint8_t DI(); 
-        uint8_t CPL(); 
+        uint8_t CPL();
         uint8_t RETI();
         uint8_t CCF();
         uint8_t EI();
@@ -117,18 +113,16 @@ namespace gb
         uint8_t OR(ArgumentInfo argument); 
         uint8_t AND(ArgumentInfo argument); 
         uint8_t XOR(ArgumentInfo argument); 
-        uint8_t ADC(ArgumentInfo argument); 
+        uint8_t ADC(ArgumentInfo argument);
         uint8_t SBC(ArgumentInfo argument); 
         uint8_t CP(ArgumentInfo argument); 
         uint8_t JP(UnprefixedInstruction instr); 
         uint8_t LD(UnprefixedInstruction instr);
+        uint8_t ADD(UnprefixedInstruction instr);
 
         uint8_t NONE();
 
-        void loadByte(ArgumentInfo destination, ArgumentInfo source);
-        void loadByte(uint16_t address, ArgumentInfo source);
-        void loadWord(Registers destination, ArgumentInfo source);
-        void loadWord(uint16_t address, ArgumentInfo source);
+        uint8_t loadByte(ArgumentInfo destination, ArgumentInfo source);
 
         //Prefixed instructions. Return the amount of machine cycles needed for the instruction
         uint8_t RLC (Registers reg); uint8_t RRC(Registers reg); 
