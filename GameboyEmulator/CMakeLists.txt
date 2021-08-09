@@ -1,3 +1,4 @@
+cmake_minimum_required(VERSION 3.20)
 project(GameboyEmulator)
 
 add_executable(emulator 
@@ -29,7 +30,9 @@ if(UNIX)
 elseif(WIN32)
 	add_compile_definitions(SFML_STATIC)
 	target_link_directories(emulator PRIVATE ${PROJECT_SOURCE_DIR}/dependencies/SFML/lib)
-	target_link_libraries(emulator sfml-system-s sfml-window-s sfml-graphics-s)
+		target_link_libraries(emulator 
+			optimized sfml-system-s optimized sfml-window-s optimized sfml-graphics-s
+			debug sfml-system-s-d debug sfml-window-s-d debug sfml-graphics-s-d)
 	target_link_libraries(emulator opengl32)
 	target_link_libraries(emulator winmm)
 endif()

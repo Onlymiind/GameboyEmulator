@@ -54,6 +54,7 @@ namespace gb {
         switch(*instr.LDSubtype)
         {
             case LoadSubtype::Typical:
+            {
                 bool isloadWord = (instr.Destination.Source == ArgumentSource::Register && instr.Destination.Type == ArgumentType::Unsigned16);
                 if(isloadWord)
                 {
@@ -64,15 +65,21 @@ namespace gb {
                 {
                     return loadByte(instr.Destination, instr.Source);
                 }
+            }
             case LoadSubtype::LD_DEC:
+            {
                 loadByte(instr.Destination, instr.Source);
                 --REG.HL;
                 return 2;
+            }
             case LoadSubtype::LD_INC:
+            {
                 loadByte(instr.Destination, instr.Source);
                 ++REG.HL;
                 return 2;
+            }
             case LoadSubtype::LD_IO:
+            {
                 //true if loading from register A, false otherwise
                 bool direction = instr.Source.Register == Registers::A;
                 bool hasImmediate = (instr.Source.Source == ArgumentSource::Immediate) || (instr.Destination.Source == ArgumentSource::Immediate);
@@ -86,7 +93,9 @@ namespace gb {
                     REG.A = read(address);
                 }
                 return hasImmediate ? 3 : 2;
+            }
             case LoadSubtype::LD_Offset_SP:
+            {
                 int8_t offset = fetchSigned();
                 REG.Flags.H = halfCarryOccured8Add(REG.SP & 0x00FF, offset);
                 REG.Flags.C = carryOccured(static_cast<uint8_t>(REG.SP & 0x00FF), reinterpret_cast<uint8_t&>(offset));
@@ -94,13 +103,16 @@ namespace gb {
                 REG.Flags.N = 0;
                 REG.HL = REG.SP + offset;
                 return 3;
+            }
             case LoadSubtype::LD_SP:
+            {
                 uint16_t address = fetchWord();
 
                 write(address, REG.SP & 0x00FF);
                 ++address;
                 write(address, (REG.SP & 0xFF00) >> 8);
                 return 5;
+            }
         }
     }
 
@@ -117,6 +129,7 @@ namespace gb {
         {
             uint8_t value = getByteRegister(target.Register);
             REG.Flags.H = halfCarryOccured8Add(value, 1);
+            REG.Flags.N = 0;
             ++value;
             setByteRegister(target.Register, value);
             REG.Flags.Z = value == 0;
@@ -137,6 +150,7 @@ namespace gb {
         {
             uint8_t value = getByteRegister(target.Register);
             REG.Flags.H = halfCarryOccured8Sub(value, 1);
+            REG.Flags.N = 1;
             --value;
             setByteRegister(target.Register, value);
             REG.Flags.Z = value == 0;

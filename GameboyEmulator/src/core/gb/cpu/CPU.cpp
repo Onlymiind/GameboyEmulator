@@ -165,8 +165,8 @@ namespace gb
             case type::JP: return JP(instr);
             case type::INC: return INC(instr.Source);
             case type::DEC: return DEC(instr.Source);
-            case type::LD: return 0;
-            case type::ADD: return 0;
+            case type::LD: return LD(instr);
+            case type::ADD: return ADD(instr);
             default:
                 //TODO: throw an error
                 return 0;
@@ -228,10 +228,10 @@ namespace gb
 
     void SharpSM83::reset()
     {
-        REG.AF = 0;
-        REG.BC = 0;
-        REG.DE = 0;
-        REG.HL = 0;
+        REG.AF = 0x01B0;
+        REG.BC = 0x0013;
+        REG.DE = 0x00D8;
+        REG.HL = 0x014D;
 
         REG.SP = 0xFFFE;
         REG.PC = 0x0100;

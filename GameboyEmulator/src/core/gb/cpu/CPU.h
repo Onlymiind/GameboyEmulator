@@ -137,7 +137,7 @@ namespace gb
     private: //REGISTERS
         struct {
             union {
-                uint16_t AF = 0;
+                uint16_t AF = 0x01B0;
             
                 struct {
                     union {
@@ -157,7 +157,7 @@ namespace gb
             };
 
             union {
-                uint16_t BC = 0;
+                uint16_t BC = 0x0013;
 
                 struct {
                     uint8_t C;
@@ -167,7 +167,7 @@ namespace gb
             };
 
             union {
-                uint16_t DE = 0;
+                uint16_t DE = 0x00D8;
 
                 struct {
                     uint8_t E;
@@ -176,7 +176,7 @@ namespace gb
             };
 
             union {
-                uint16_t HL = 0;
+                uint16_t HL = 0x014D;
 
                 struct {
                     uint8_t L;
