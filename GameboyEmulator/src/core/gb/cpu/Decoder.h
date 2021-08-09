@@ -138,7 +138,7 @@ namespace gb
                     LoadSubtype::LD_IO,
                     {},
                     {ArgumentSource::Register, ArgumentType::Unsigned8, Registers::A},
-                    {ArgumentSource::IndirectImmediate, ArgumentType::Unsigned8, Registers::None},
+                    {ArgumentSource::Immediate, ArgumentType::Unsigned8, Registers::None},
                     UnprefixedType::LD
                 }}, 
             {0xF0, 
@@ -146,7 +146,7 @@ namespace gb
                     {},
                     LoadSubtype::LD_IO,
                     {},
-                    {ArgumentSource::IndirectImmediate, ArgumentType::Unsigned8, Registers::None},
+                    {ArgumentSource::Immediate, ArgumentType::Unsigned8, Registers::None},
                     {ArgumentSource::Register, ArgumentType::Unsigned8, Registers::A},
                     UnprefixedType::LD
                 }},

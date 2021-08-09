@@ -248,6 +248,7 @@ namespace gb
                 instruction.Source.Register = m_16BitRegisters_SP[code.getP()];
                 break;
             case 4:
+            case 5:
                 setRegisterInfo(code.getY(), instruction.Source);
                 break;
         }
