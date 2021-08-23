@@ -3,6 +3,7 @@
 
 #include <string>
 #include <sstream>
+#include <exception>
 
 
 namespace gb {
@@ -11,24 +12,26 @@ namespace gb {
 	uint8_t AddressBus::read(uint16_t address) const
 	{
 		auto it = m_Memory.find(address);
-		if (it != m_Memory.end())
+		if (it == m_Memory.end())
 		{
-			return it->read(address);
+			throw std::out_of_range(getErrorDescription(address));
 		}
-		return 0x00;
-
+		
+		return it->read(address);
 	}
 
 	void AddressBus::write(uint16_t address, uint8_t data) const
 	{
 		auto it = m_Memory.find(address);
-		if (it != m_Memory.end())
+		if (it == m_Memory.end())
 		{
-			it->write(address, data);
+			throw std::out_of_range(getErrorDescription(address, data));
 		}
 
+		it->write(address, data);
+
 	}
-	std::string AddressBus::getErrorDescription(uint16_t address, int value)
+	std::string AddressBus::getErrorDescription(uint16_t address, int value) const
 	{
 		std::stringstream err;
 		

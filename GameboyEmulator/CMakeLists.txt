@@ -11,6 +11,7 @@ add_executable(emulator
 	src/core/gb/Timer.cpp
 	src/Source.cpp
 	src/core/gb/cpu/Decoder.cpp
+	src/core/gb/cpu/Operation.cpp
 	)
 
 include_directories(
@@ -26,6 +27,7 @@ target_compile_features(emulator PUBLIC cxx_std_17)
 
 if(UNIX)
 	target_link_libraries(emulator sfml-system sfml-window sfml-graphics)
+	target_compile_options(emulator "$<$<CONFIG:DEBUG>:-g>")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 elseif(WIN32)
 	add_compile_definitions(SFML_STATIC)
