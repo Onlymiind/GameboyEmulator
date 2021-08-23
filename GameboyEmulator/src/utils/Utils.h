@@ -26,6 +26,6 @@ template<typename... Args>
 std::string PrintToString(std::string_view separator, Args... args)
 {
 	std::stringstream stream;
-	((stream << separator << std::forward<Args>(args)), ...);
+	((stream << separator << args), ...);
 	return stream.str();
 }
