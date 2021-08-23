@@ -12,8 +12,9 @@
 #include <string>
 #include <array>
 #include <functional>
+#include <exception>
 
-
+//TODO: DAA
 namespace gb 
 {
     SharpSM83::SharpSM83(const AddressBus& bus, InterruptRegister& interruptEnable, InterruptRegister& interruptFlags, const Decoder& decoder) 
@@ -29,7 +30,7 @@ namespace gb
             if(pending_interrupts)
             {
                 //TODO: handle interrupt
-                //Can actually safely cast this to InterruptBits
+                //Can actually safely cast this to InterruptFlags
                 InterruptFlags interrupt = static_cast<InterruptFlags>(pending_interrupts & -pending_interrupts);
                 if(IME)
                 {
@@ -126,6 +127,7 @@ namespace gb
             case type::RES: return RES(instr);
             case type::SET: return SET(instr);
             default:
+                throw std::invalid_argument(PrintToString("", "Unknown prefixed instruction: ", instr.Type));
                 return 0;
         }
     }
@@ -168,7 +170,7 @@ namespace gb
             case type::LD: return LD(instr);
             case type::ADD: return ADD(instr);
             default:
-                //TODO: throw an error
+                throw std::invalid_argument(PrintToString("", "Unknown unprefixed instruction: ", instr.Type));
                 return 0;
         }
     }
@@ -248,7 +250,8 @@ namespace gb
             case ArgumentSource::Register:
             case ArgumentSource::Indirect:
                 return getByteRegister(from.Register);
-            default: //TODO: throw an error
+            default:
+                throw std::invalid_argument("Trying to get byte from unknown source");
                 return 0;
         }
     }
@@ -258,7 +261,8 @@ namespace gb
         {
             case ArgumentSource::Immediate: return fetchWord();
             case ArgumentSource::Register: return getWordRegister(from.Register);
-            default: //TODO: throw an error
+            default:
+                throw std::invalid_argument("Trying to get word from unknown source");
                 return 0;
         }
     }
@@ -280,7 +284,7 @@ namespace gb
             CASE_WORD_REG(BC);
             CASE_WORD_REG(DE);
             default:
-                //TODO: throw an error
+                throw std::invalid_argument("Trying to get byte from unknown register");
                 return 0;
         }
 #undef CASE_BYTE_REG
@@ -297,15 +301,17 @@ namespace gb
             CASE_REG(HL);
             CASE_REG(SP);
             case Registers::AF: return REG.AF & 0xFFF0;
+            default:
+                throw std::invalid_argument("Trying to get byte from unknown register");
+                return 0;
         }
-        return 0;
 #undef CASE_REG
     }
 
     void SharpSM83::setByteRegister(Registers reg, uint8_t data)
     {
-#define CASE_BYTE_REG(x) case Registers::##x: REG.##x = data; break
-#define CASE_WORD_REG(x) case Registers::##x: write(REG.##x, data); break
+#define CASE_BYTE_REG(x) case Registers::##x: REG.##x = data; return
+#define CASE_WORD_REG(x) case Registers::##x: write(REG.##x, data); return
         switch(reg)
         {
             CASE_BYTE_REG(A);
@@ -319,8 +325,7 @@ namespace gb
             CASE_WORD_REG(BC);
             CASE_WORD_REG(DE);
             default:
-                //TODO: throw an error
-                return;
+                throw std::invalid_argument("Trying to write byte to unknown register");
         }
 #undef CASE_BYTE_REG
 #undef CASE_WORD_REG
@@ -328,7 +333,7 @@ namespace gb
 
     void SharpSM83::setWordRegister(Registers reg, uint16_t data)
     {
-#define CASE_REG(x) case Registers::##x:  REG.##x = data; break
+#define CASE_REG(x) case Registers::##x:  REG.##x = data; return
         switch(reg)
         {
             CASE_REG(BC);
@@ -336,6 +341,8 @@ namespace gb
             CASE_REG(HL);
             CASE_REG(SP);
             case Registers::AF: REG.AF = data & 0xFFF0;
+            default:
+                throw std::invalid_argument("Trying to write word to unknown register");
         }
 #undef CASE_REG
     }
@@ -348,8 +355,10 @@ namespace gb
             case Conditions::NotCarry: return REG.Flags.C == 0;
             case Conditions::Zero: return REG.Flags.Z != 0;
             case Conditions::NotZero: return REG.Flags.Z == 0;
+            default:
+                //Never happens
+                return false;
         }
-        return false;
     }
 
 }

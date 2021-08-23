@@ -79,7 +79,17 @@ namespace gb {
 
         do
         {
-            m_CPU.tick();
+            try
+            {
+                m_CPU.tick();
+            }
+            catch(const std::exception& e)
+            {
+                m_EmulatorRunning = false;
+                std::cerr << e.what() << '\n';
+                break;
+            }
+            
         } while (!m_CPU.isFinished());
         
         auto status = result.wait_for(std::chrono::microseconds(0));

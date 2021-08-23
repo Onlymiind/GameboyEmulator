@@ -21,3 +21,11 @@ inline void toHexOutput(std::stringstream& stream, T value)
 {
 	stream << "0x" << std::setfill('0') << std::setw(sizeof(T) * 2) << std::hex << +value;
 }
+
+template<typename... Args>
+std::string PrintToString(std::string_view separator, Args... args)
+{
+	std::stringstream stream;
+	((stream << separator << std::forward<Args>(args)), ...);
+	return stream.str();
+}

@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <optional>
+#include <iostream>
 
 namespace gb
 {
@@ -132,5 +133,16 @@ namespace gb
 
         uint8_t code;
     };
+
+    std::ostream& operator<<(std::ostream& os, UnprefixedType type);
+    std::ostream& operator<<(std::ostream& os, PrefixedType type);
+    //TODO
+    // std::ostream& operator<<(std::ostream& os, LoadSubtype subtype);
+    // std::ostream& operator<<(std::ostream& os, ArgumentSource source);
+    // std::ostream& operator<<(std::ostream& os, ArgumentType arg_type);
+    // std::ostream& operator<<(std::ostream& os, Conditions condition);
+    // std::ostream& operator<<(std::ostream& os, ArgumentInfo arg_info);
+    // std::ostream& operator<<(std::ostream& os, UnprefixedInstruction instr);
+    // std::ostream& operator<<(std::ostream& os, PrefixedInstruction instr);
 }
 

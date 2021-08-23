@@ -17,7 +17,6 @@ namespace gb
 {
     class SharpSM83 
     {
-        using pfn_instruction = uint8_t(*)(SharpSM83&, const opcode);
     public:
         SharpSM83(const AddressBus& bus, InterruptRegister& interruptEnable, InterruptRegister& interruptFlags, const Decoder& decoder);
         ~SharpSM83() {}
