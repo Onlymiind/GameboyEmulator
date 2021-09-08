@@ -122,6 +122,7 @@ namespace gb
             case type::RR: return RR(instr.Target);
             case type::SLA: return SLA(instr.Target);
             case type::SRA: return SRA(instr.Target);
+            case type::SRL: return SRL(instr.Target);
             case type::SWAP: return SWAP(instr.Target);
             case type::BIT: return BIT(instr);
             case type::RES: return RES(instr);
@@ -340,7 +341,7 @@ namespace gb
             CASE_REG(DE);
             CASE_REG(HL);
             CASE_REG(SP);
-            case Registers::AF: REG.AF = data & 0xFFF0;
+            case Registers::AF: REG.AF = data & 0xFFF0; return;
             default:
                 throw std::invalid_argument("Trying to write word to unknown register");
         }
