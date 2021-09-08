@@ -73,7 +73,7 @@ namespace gb {
 		Parser() = default;
 		~Parser() = default;
 
-		Command parse(const std::string& text) const;
+		Command parse(std::string_view text) const;
 
 	private:
 
@@ -84,7 +84,7 @@ namespace gb {
 			bool HasArguments;
 		};
 
-		std::string getArguments(const std::string& text, const CommandInfo& info, size_t cmdBegin) const;
+		std::string getArguments(std::string_view text, const CommandInfo& info) const;
 
 		const std::array<CommandInfo, 6> m_Commands =
 		{ {

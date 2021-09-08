@@ -192,7 +192,7 @@ namespace gb {
         return is;
     }
 
-    Command Parser::parse(const std::string& text) const
+    Command Parser::parse(std::string_view text) const
     {
         Command result{ CommandType::None, {} };
 
@@ -203,7 +203,7 @@ namespace gb {
             {
                 result.Type = info.Type;
 
-                result.Argument = getArguments(text, info, pos);
+                result.Argument = getArguments(text.substr(pos + info.Name.size()), info);
 
                 if (info.HasArguments && result.Argument.empty())
                 {
@@ -222,15 +222,15 @@ namespace gb {
         return result;
     }
 
-    std::string Parser::getArguments(const std::string& text, const Parser::CommandInfo& info, size_t cmdBegin) const
+    std::string Parser::getArguments(std::string_view text, const Parser::CommandInfo& info) const
     {
         if (info.HasArguments)
         {
-            auto argIt = std::find_if(text.begin() + cmdBegin + info.Name.length(), text.end(),
-                [](const char c) { return c != ' '; });
-            if (argIt != text.end())
+            size_t arg_pos = text.find_first_not_of(' ');
+            if (arg_pos != std::string::npos)
             {
-                return std::string(argIt, text.end());
+                std::string_view arg = text.substr(arg_pos);
+                return std::string(arg.data(), arg.size());
             }
             else
             {
