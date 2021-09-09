@@ -9,6 +9,7 @@
 #include "gb/Timer.h"
 #include "gb/cpu/Operation.h"
 #include "gb/cpu/Decoder.h"
+#include "ConsoleInput.h"
 
 #include <SFML/Window/Keyboard.hpp>
 
@@ -24,8 +25,8 @@
 #define BIND_READ(x, func) std::bind(func, &x, std::placeholders::_1)
 #define BIND_WRITE(x, func) std::bind(func, &x, std::placeholders::_1, std::placeholders::_2)
 
-namespace gb {
-
+namespace emulator
+{
     void Application::draw()
     {
 
@@ -60,10 +61,10 @@ namespace gb {
 
     void Application::init()
     {
-        m_Bus.connect(MemoryController(0x0000, 0x7FFF, m_ROM));
-        m_Bus.connect(MemoryController(0x8000, 0xFEFF, m_RAM));
-        m_Bus.connect(MemoryController(0xFF80, 0xFFFF, m_Leftover));
-        m_Bus.connect(MemoryController(0xFF00, 0xFF7F, m_GBIO));
+        m_Bus.connect(gb::MemoryController(0x0000, 0x7FFF, m_ROM));
+        m_Bus.connect(gb::MemoryController(0x8000, 0xFEFF, m_RAM));
+        m_Bus.connect(gb::MemoryController(0xFF80, 0xFFFF, m_Leftover));
+        m_Bus.connect(gb::MemoryController(0xFF00, 0xFF7F, m_GBIO));
 
         std::cout << R"(
 ****************************
@@ -107,10 +108,10 @@ namespace gb {
     void Application::pollCommands()
     {
         std::cout << ">";
+        std::string cmd_str;
+        std::getline(std::cin, cmd_str);
 
-        Command cmd;
-
-        std::cin >> cmd;
+        Command cmd = m_CommandParser.parse(cmd_str);
 
         switch (cmd.Type)
         {
@@ -146,7 +147,7 @@ namespace gb {
             m_TestPath = cmd.Argument;
             if (m_TestPath.back() != '/' || m_TestPath.back() != '\\')
             {
-                m_TestPath.push_back('/');
+                m_TestPath.push_back('\\');
             }
             break;
         case CommandType::Quit:
@@ -179,67 +180,4 @@ namespace gb {
     {
 
     }
-
-
-    std::istream& operator>>(std::istream& is, Command& command)
-    {
-        std::string cmd;
-        std::getline(is, cmd);
-
-
-        command = Parser().parse(cmd);
-
-        return is;
-    }
-
-    Command Parser::parse(std::string_view text) const
-    {
-        Command result{ CommandType::None, {} };
-
-        for (const CommandInfo& info : m_Commands)
-        {
-            std::string::size_type pos = text.find(info.Name);
-            if (pos != std::string::npos)
-            {
-                result.Type = info.Type;
-
-                result.Argument = getArguments(text.substr(pos + info.Name.size()), info);
-
-                if (info.HasArguments && result.Argument.empty())
-                {
-                    result.Type = CommandType::Invalid;
-                }
-
-                break;
-            }
-        }
-
-        if (result.Type == CommandType::None && !text.empty())
-        {
-            result.Type = CommandType::Invalid;
-        }
-
-        return result;
-    }
-
-    std::string Parser::getArguments(std::string_view text, const Parser::CommandInfo& info) const
-    {
-        if (info.HasArguments)
-        {
-            size_t arg_pos = text.find_first_not_of(' ');
-            if (arg_pos != std::string::npos)
-            {
-                std::string_view arg = text.substr(arg_pos);
-                return std::string(arg.data(), arg.size());
-            }
-            else
-            {
-                return {};
-            }
-        }
-
-        return {};
-    }
 }
-
-
