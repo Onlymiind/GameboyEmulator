@@ -14,6 +14,7 @@
 #include <SFML/Window/Keyboard.hpp>
 
 #include <iostream>
+#include <string>
 #include <iomanip>
 #include <memory>
 #include <filesystem>
@@ -33,8 +34,8 @@ namespace emulator
     }
 
     Application::Application() :
-        m_RAM(computeSizeFromAddresses(0x8000, 0xFEFF)), m_ROM(), m_Leftover(computeSizeFromAddresses(0xFF80, 0xFFFF)), m_GBIO(),
-        m_Bus(), m_CPU(m_Bus, m_InterruptEnable, m_InterruptFlags, m_Decoder), m_IsRunning(true), m_EmulatorRunning(false), m_JustStarted(false)
+        RAM_(computeSizeFromAddresses(0x8000, 0xFEFF)), ROM_(), leftover_(computeSizeFromAddresses(0xFF80, 0xFFFF)), GBIO_(),
+        bus_(), CPU_(bus_, interrupt_enable_, interrupt_flags_, decoder_), is_running_(true), emulator_running_(false), just_started_(false)
     {
         init();
     }
@@ -46,9 +47,9 @@ namespace emulator
 
     void Application::run()
     {
-        while (m_IsRunning) {
+        while (is_running_) {
 
-            if (m_EmulatorRunning)
+            if (emulator_running_)
             {
                 update();
             }
@@ -61,10 +62,10 @@ namespace emulator
 
     void Application::init()
     {
-        m_Bus.connect(gb::MemoryController(0x0000, 0x7FFF, m_ROM));
-        m_Bus.connect(gb::MemoryController(0x8000, 0xFEFF, m_RAM));
-        m_Bus.connect(gb::MemoryController(0xFF80, 0xFFFF, m_Leftover));
-        m_Bus.connect(gb::MemoryController(0xFF00, 0xFF7F, m_GBIO));
+        bus_.connect(gb::MemoryController(0x0000, 0x7FFF, ROM_));
+        bus_.connect(gb::MemoryController(0x8000, 0xFEFF, RAM_));
+        bus_.connect(gb::MemoryController(0xFF80, 0xFFFF, leftover_));
+        bus_.connect(gb::MemoryController(0xFF00, 0xFF7F, GBIO_));
 
         std::cout << R"(
 ****************************
@@ -82,26 +83,26 @@ namespace emulator
         {
             try
             {
-                m_CPU.tick();
+                CPU_.tick();
             }
             catch(const std::exception& e)
             {
-                m_EmulatorRunning = false;
+                emulator_running_ = false;
                 std::cerr << e.what() << '\n';
                 break;
             }
             
-        } while (!m_CPU.isFinished());
+        } while (!CPU_.isFinished());
         
         auto status = result.wait_for(std::chrono::microseconds(0));
         if (status == std::future_status::ready)
         {
-            if(!m_JustStarted && result.get())
+            if(!just_started_ && result.get())
             {
-                m_EmulatorRunning = false;
+                emulator_running_ = false;
             }
             result = std::async(std::launch::async, sf::Keyboard::isKeyPressed, sf::Keyboard::Escape);
-            if(m_JustStarted) m_JustStarted = false;
+            if(just_started_) just_started_ = false;
         }
     }
 
@@ -111,15 +112,15 @@ namespace emulator
         std::string cmd_str;
         std::getline(std::cin, cmd_str);
 
-        Command cmd = m_CommandParser.parse(cmd_str);
+        Command cmd = command_parser_.parse(cmd_str);
 
-        switch (cmd.Type)
+        switch (cmd.type)
         {
         case CommandType::List:
 
-            if (std::filesystem::exists(m_TestPath))
+            if (std::filesystem::exists(test_path_))
             {
-                for (const auto& file : std::filesystem::directory_iterator(m_TestPath))
+                for (const auto& file : std::filesystem::directory_iterator(test_path_))
                 {
                     if (file.path().extension().string() == ".gb")
                     {
@@ -144,23 +145,23 @@ namespace emulator
                 << "ESC - stop execution\n";
             break;
         case CommandType::SetRomDir:
-            m_TestPath = cmd.Argument;
-            if (m_TestPath.back() != '/' || m_TestPath.back() != '\\')
+            test_path_ = cmd.argument;
+            if (test_path_.back() != '/' || test_path_.back() != '\\')
             {
-                m_TestPath.push_back('\\');
+                test_path_.push_back('\\');
             }
             break;
         case CommandType::Quit:
-            m_IsRunning = false;
+            is_running_ = false;
             break;
         case CommandType::RunRom:
 
-            if (std::filesystem::exists(m_TestPath + cmd.Argument + m_Extension))
+            if (std::filesystem::exists(test_path_ + cmd.argument + extension_))
             {
-                m_ROM.setData(FileManager::readFile(m_TestPath + cmd.Argument + m_Extension));
-                m_CPU.reset();
-                m_EmulatorRunning = true;
-                m_JustStarted = true;
+                ROM_.setData(FileManager::readFile(test_path_ + cmd.argument + extension_));
+                CPU_.reset();
+                emulator_running_ = true;
+                just_started_ = true;
             }
             else
             {
@@ -169,7 +170,7 @@ namespace emulator
 
             break;
         case CommandType::Config:
-            std::cout << "Current ROM directory: " << std::filesystem::absolute(m_TestPath) << "\n";
+            std::cout << "Current ROM directory: " << std::filesystem::absolute(test_path_) << "\n";
             break;
         case CommandType::Invalid:
             std::cout << "Invalid command. Use -help for command list\n";

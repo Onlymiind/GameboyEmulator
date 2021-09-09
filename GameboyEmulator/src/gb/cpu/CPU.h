@@ -29,9 +29,9 @@ namespace gb
 
             Registers getRegisters() const;
 
-            inline uint16_t getProgramCounter() const { return REG.PC; }
+            inline uint16_t getProgramCounter() const { return reg_.PC; }
 
-            inline bool isFinished() const { return m_CyclesToFinish == 0; }
+            inline bool isFinished() const { return cycles_to_finish_ == 0; }
 
             void reset();
 
@@ -138,20 +138,20 @@ namespace gb
 
 
         private: //REGISTERS
-            Registers REG;
+            Registers reg_;
 
-            bool IME = false; // Interrupt master enable
-            bool m_EnableIME = false;
+            bool IME_ = false; // Interrupt master enable
+            bool enable_IME_ = false;
 
-            InterruptRegister& m_InterruptEnable;
-            InterruptRegister& m_InterruptFlags;
+            InterruptRegister& interrupt_enable_;
+            InterruptRegister& interrupt_flags_;
 
         private: //STUFF
 
-            const AddressBus& m_Bus;
-            const decoding::Decoder& m_Decoder;
+            const AddressBus& bus_;
+            const decoding::Decoder& decoder_;
 
-            uint8_t m_CyclesToFinish;
+            uint8_t cycles_to_finish_;
         };
     }
 }

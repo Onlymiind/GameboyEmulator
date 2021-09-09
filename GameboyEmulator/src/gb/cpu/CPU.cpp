@@ -21,7 +21,7 @@ namespace gb
     {
 
         SharpSM83::SharpSM83(const AddressBus& bus, InterruptRegister& interruptEnable, InterruptRegister& interruptFlags, const decoding::Decoder& decoder) 
-            : m_InterruptEnable(interruptEnable), m_InterruptFlags(interruptFlags), m_Bus(bus), m_Decoder(decoder), m_CyclesToFinish(0)
+            : interrupt_enable_(interruptEnable), interrupt_flags_(interruptFlags), bus_(bus), decoder_(decoder), cycles_to_finish_(0)
         {
             reset();
         }
@@ -29,17 +29,17 @@ namespace gb
 
         void SharpSM83::tick()
         {
-            if (m_CyclesToFinish == 0)
+            if (cycles_to_finish_ == 0)
             {
-                uint8_t pending_interrupts = m_InterruptEnable.getFlags() & m_InterruptFlags.getFlags() & (~g_UnusedInterruptBits);
+                uint8_t pending_interrupts = interrupt_enable_.getFlags() & interrupt_flags_.getFlags() & (~g_UnusedInterruptBits);
                 if(pending_interrupts)
                 {
                     //TODO: handle interrupt
                     //Can actually safely cast this to InterruptFlags
                     InterruptFlags interrupt = static_cast<InterruptFlags>(pending_interrupts & -pending_interrupts);
-                    if(IME)
+                    if(IME_)
                     {
-                        m_InterruptEnable.clearFlag(interrupt);
+                        interrupt_enable_.clearFlag(interrupt);
                         //TODO: jump to interrupt vector
                     }
                 }
@@ -48,24 +48,24 @@ namespace gb
                     decoding::opcode code = fetch();
                     //TODO: HALT state (with bug)
                     //TODO: Check if opcode is invalid
-                    m_CyclesToFinish = dispatch(code);
+                    cycles_to_finish_ = dispatch(code);
                 }
 
             }
 
-            if (m_EnableIME) 
+            if (enable_IME_) 
             { 
                 // Enable jumping to interrupt vectors if it is scheduled by EI
-                IME = true;
-                m_EnableIME = false;
+                IME_ = true;
+                enable_IME_ = false;
             }
 
-            --m_CyclesToFinish;
+            --cycles_to_finish_;
         }
 
         Registers SharpSM83::getRegisters() const
         {
-            return REG;
+            return reg_;
         }
 
         bool SharpSM83::halfCarryOccured8Add(uint8_t lhs, uint8_t rhs)
@@ -85,20 +85,20 @@ namespace gb
 
         void SharpSM83::write(uint16_t address, uint8_t data)
         {
-            m_Bus.write(address, data);
+            bus_.write(address, data);
         }
 
         uint8_t SharpSM83::dispatch(decoding::opcode code)
         {
-            if(m_Decoder.isPrefix(code))
+            if(decoder_.isPrefix(code))
             {
                 code.code = fetch();
-                decoding::PrefixedInstruction instr = m_Decoder.decodePrefixed(code);
+                decoding::PrefixedInstruction instr = decoder_.decodePrefixed(code);
                 return dispatchPrefixed(instr);
             }
             else
             {
-                decoding::UnprefixedInstruction instr = m_Decoder.decodeUnprefixed(code);
+                decoding::UnprefixedInstruction instr = decoder_.decodeUnprefixed(code);
                 return dispatchUnprefixed(instr);
             }
         }
@@ -170,7 +170,7 @@ namespace gb
 
         uint8_t SharpSM83::read(uint16_t address) const
         {
-            return m_Bus.read(address);
+            return bus_.read(address);
         }
 
         void SharpSM83::pushStack(uint16_t value)
@@ -181,16 +181,16 @@ namespace gb
             lsb = static_cast<uint8_t>(value & 0x00FF);
             msb = static_cast<uint8_t>((value & 0xFF00) >> 8);
 
-            --REG.SP;
-            write(REG.SP, msb);
-            --REG.SP;
-            write(REG.SP, lsb);
+            --reg_.SP;
+            write(reg_.SP, msb);
+            --reg_.SP;
+            write(reg_.SP, lsb);
         }
 
         uint8_t SharpSM83::fetch()
         {
-            uint8_t value = read(REG.PC);
-            ++REG.PC;
+            uint8_t value = read(reg_.PC);
+            ++reg_.PC;
             return value;
         }
 
@@ -209,10 +209,10 @@ namespace gb
         {
             uint8_t lsb = 0;
             uint8_t msb = 0;
-            lsb = read(REG.SP);
-            ++REG.SP;
-            msb = read(REG.SP);
-            ++REG.SP;
+            lsb = read(reg_.SP);
+            ++reg_.SP;
+            msb = read(reg_.SP);
+            ++reg_.SP;
             uint16_t result = (static_cast<uint16_t>(msb) << 8) | static_cast<uint16_t>(lsb);
             return result;
         }
@@ -226,15 +226,15 @@ namespace gb
 
         void SharpSM83::reset()
         {
-            REG.AF = 0x01B0;
-            REG.BC = 0x0013;
-            REG.DE = 0x00D8;
-            REG.HL = 0x014D;
+            reg_.AF = 0x01B0;
+            reg_.BC = 0x0013;
+            reg_.DE = 0x00D8;
+            reg_.HL = 0x014D;
 
-            REG.SP = 0xFFFE;
-            REG.PC = 0x0100;
+            reg_.SP = 0xFFFE;
+            reg_.PC = 0x0100;
 
-            IME = false;
+            IME_ = false;
         }
 
         uint8_t SharpSM83::getByte(decoding::ArgumentInfo from)
@@ -265,8 +265,8 @@ namespace gb
 
         uint8_t SharpSM83::getByteRegister(decoding::Registers reg) const
         {
-    #define CASE_BYTE_REG(x) case decoding::Registers::##x: return REG.##x
-    #define CASE_WORD_REG(x) case decoding::Registers::##x: return read(REG.##x)
+    #define CASE_BYTE_REG(x) case decoding::Registers::##x: return reg_.##x
+    #define CASE_WORD_REG(x) case decoding::Registers::##x: return read(reg_.##x)
             switch(reg)
             {
                 CASE_BYTE_REG(A);
@@ -289,14 +289,14 @@ namespace gb
 
         uint16_t SharpSM83::getWordRegister(decoding::Registers reg) const
         {
-    #define CASE_REG(x) case decoding::Registers::##x: return REG.##x
+    #define CASE_REG(x) case decoding::Registers::##x: return reg_.##x
             switch(reg)
             {
                 CASE_REG(BC);
                 CASE_REG(DE);
                 CASE_REG(HL);
                 CASE_REG(SP);
-                case decoding::Registers::AF: return REG.AF & 0xFFF0;
+                case decoding::Registers::AF: return reg_.AF & 0xFFF0;
                 default:
                     throw std::invalid_argument("Trying to get byte from unknown register");
                     return 0;
@@ -306,8 +306,8 @@ namespace gb
 
         void SharpSM83::setByteRegister(decoding::Registers reg, uint8_t data)
         {
-    #define CASE_BYTE_REG(x) case decoding::Registers::##x: REG.##x = data; return
-    #define CASE_WORD_REG(x) case decoding::Registers::##x: write(REG.##x, data); return
+    #define CASE_BYTE_REG(x) case decoding::Registers::##x: reg_.##x = data; return
+    #define CASE_WORD_REG(x) case decoding::Registers::##x: write(reg_.##x, data); return
             switch(reg)
             {
                 CASE_BYTE_REG(A);
@@ -329,14 +329,14 @@ namespace gb
 
         void SharpSM83::setWordRegister(decoding::Registers reg, uint16_t data)
         {
-    #define CASE_REG(x) case decoding::Registers::##x:  REG.##x = data; return
+    #define CASE_REG(x) case decoding::Registers::##x:  reg_.##x = data; return
             switch(reg)
             {
                 CASE_REG(BC);
                 CASE_REG(DE);
                 CASE_REG(HL);
                 CASE_REG(SP);
-                case decoding::Registers::AF: REG.AF = data & 0xFFF0; return;
+                case decoding::Registers::AF: reg_.AF = data & 0xFFF0; return;
                 default:
                     throw std::invalid_argument("Trying to write word to unknown register");
             }
@@ -347,10 +347,10 @@ namespace gb
         {
             switch(condition)
             {
-                case decoding::Conditions::Carry: return REG.Flags.C != 0;
-                case decoding::Conditions::NotCarry: return REG.Flags.C == 0;
-                case decoding::Conditions::Zero: return REG.Flags.Z != 0;
-                case decoding::Conditions::NotZero: return REG.Flags.Z == 0;
+                case decoding::Conditions::Carry: return reg_.flags.C != 0;
+                case decoding::Conditions::NotCarry: return reg_.flags.C == 0;
+                case decoding::Conditions::Zero: return reg_.flags.Z != 0;
+                case decoding::Conditions::NotZero: return reg_.flags.Z == 0;
                 default:
                     //Never happens
                     return false;

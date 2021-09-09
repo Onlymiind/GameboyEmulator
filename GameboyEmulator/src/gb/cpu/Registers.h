@@ -16,11 +16,11 @@ namespace gb
 
             uint8_t& getHight()
             {
-                return m_Low;
+                return high_;
             }
             uint8_t& getLow()
             {
-                return m_High;
+                return low_;
             }
 
             uint16_t value() const
@@ -43,8 +43,8 @@ namespace gb
             }
             WordRegister& operator=(uint16_t value)
             {
-                m_Low = value & 0x00FF;
-                m_High = (value & 0xFF00) >> 8;
+                low_ = value & 0x00FF;
+                high_ = (value & 0xFF00) >> 8;
                 return *this;
             }
 
@@ -66,11 +66,11 @@ namespace gb
 
             operator uint16_t() const
             {
-                return (m_High << 8) + m_Low;
+                return (high_ << 8) + low_;
             }
         private:
-            uint8_t m_High;
-            uint8_t m_Low;
+            uint8_t high_;
+            uint8_t low_;
         };
 
         struct Registers
@@ -81,16 +81,16 @@ namespace gb
                 
                 struct {
                     union {
-                        uint8_t Value;
+                        uint8_t value;
 
                         struct {
-                            uint8_t Unused : 4;
+                            uint8_t unused : 4;
                             uint8_t C : 1;
                             uint8_t H : 1;
                             uint8_t N : 1;
                             uint8_t Z : 1;
                         };
-                    }Flags;
+                    }flags;
 
                     uint8_t A;
                 };
