@@ -3,7 +3,7 @@
 
 #include <cassert>
 
-std::vector<std::string> g_Input = 
+std::vector<std::string> input = 
 {
     "-help",
     "   -help",
@@ -19,7 +19,7 @@ std::vector<std::string> g_Input =
     "-run "
 };
 
-std::vector<emulator::Command> g_Output =
+std::vector<emulator::Command> output =
 {
     {emulator::CommandType::Help, {}},
     {emulator::CommandType::Help, {}},
@@ -37,16 +37,16 @@ std::vector<emulator::Command> g_Output =
 
 bool operator==(const emulator::Command& lhs, const emulator::Command& rhs)
 {
-    return lhs.Type == rhs.Type && lhs.Argument == rhs.Argument;
+    return lhs.type == rhs.type && lhs.argument == rhs.argument;
 }
 
 void TestParser()
 {
     emulator::Parser p;
 
-    for(int i = 0; i < g_Input.size(); ++i)
+    for(int i = 0; i < input.size(); ++i)
     {
-        assert(p.parse(g_Input[i]) == g_Output[i]);
+        assert(p.parse(input[i]) == output[i]);
     }
 }
 

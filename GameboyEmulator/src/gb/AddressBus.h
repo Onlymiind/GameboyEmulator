@@ -11,22 +11,21 @@ namespace gb {
 
 	class AddressBus {
 	public:
-		AddressBus() :
-			m_Memory() 
+		AddressBus()
 		{}
 
 		~AddressBus() = default;
 
-		inline void connect(const MemoryController& controller) { m_Memory.insert(controller); }
+		inline void connect(const MemoryController& controller) { memory_.insert(controller); }
 
-		size_t getObjectCount() const { return m_Memory.size(); }
+		size_t getObjectCount() const { return memory_.size(); }
 
 		uint8_t read(uint16_t address) const;
 		void write(uint16_t address, uint8_t data) const;
 	private:
 		std::string getErrorDescription(uint16_t address, int value = -1) const;
 
-		std::set<MemoryController, ControllerComparator> m_Memory;
+		std::set<MemoryController, ControllerComparator> memory_;
 	};
 
 }

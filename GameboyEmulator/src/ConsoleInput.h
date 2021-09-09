@@ -1,5 +1,4 @@
 #pragma once
-#include <iostream>
 #include <string_view>
 #include <string>
 #include <unordered_map>
@@ -11,13 +10,16 @@ namespace emulator
 		None, Invalid, Help, Quit, SetRomDir, RunRom, List, Config
 	};
 
+    enum class InputError
+    {
+        InvalidCommand, InvalidDirectory, InvalidRomName
+    };
+
 	struct Command
 	{
-		CommandType Type;
-		std::string Argument;
+		CommandType type;
+		std::string argument;
 	};
-
-	std::istream& operator >> (std::istream& is, Command& cmd);
 
 	class Parser
 	{
@@ -31,13 +33,13 @@ namespace emulator
 
 		struct CommandInfo
 		{
-			CommandType Type;
-			bool HasArguments;
+			CommandType type;
+			bool has_arguments;
 		};
 
 		std::string getArguments(std::string_view text, const CommandInfo& info) const;
 
-		const std::unordered_map<std::string, CommandInfo> m_Commands =
+		const std::unordered_map<std::string, CommandInfo> commands_ =
 		{
 			{"-help", {CommandType::Help, false}}, {"-quit", {CommandType::Quit, false}},
 			{"-romdir", {CommandType::SetRomDir, true}}, {"-run", {CommandType::RunRom, true}},

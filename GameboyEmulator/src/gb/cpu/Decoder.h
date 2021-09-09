@@ -52,7 +52,7 @@ namespace gb
             void decodeINC_DEC(opcode code, UnprefixedInstruction& instruction) const;
 
         private:
-            const std::array<Registers, 8> m_8BitRegisters = 
+            const std::array<Registers, 8> byte_registers_ = 
             {
                 Registers::B,  Registers::C,
                 Registers::D,  Registers::E,
@@ -61,13 +61,13 @@ namespace gb
             };
 
             //Register pair lookup with SP
-            const std::array<Registers, 4> m_16BitRegisters_SP = { Registers::BC, Registers::DE, Registers::HL, Registers::SP };
+            const std::array<Registers, 4> word_registers_SP_ = { Registers::BC, Registers::DE, Registers::HL, Registers::SP };
 
             //Register pair lookup with AF
-            const std::array<Registers, 4> m_16BitRegisters_AF = { Registers::BC, Registers::DE, Registers::HL, Registers::AF };
+            const std::array<Registers, 4> word_registers_AF_ = { Registers::BC, Registers::DE, Registers::HL, Registers::AF };
 
             //Conditions lookup
-            const std::array<Conditions, 4> m_Conditions = 
+            const std::array<Conditions, 4> conditions_ = 
             { 
                 Conditions::NotZero,
                 Conditions::Zero,
@@ -75,13 +75,13 @@ namespace gb
                 Conditions::Carry
             };
 
-            const std::array<UnprefixedType, 8> m_ALU =
+            const std::array<UnprefixedType, 8> ALU_ =
             {
                 UnprefixedType::ADD, UnprefixedType::ADC, UnprefixedType::SUB, UnprefixedType::SBC,
                 UnprefixedType::AND, UnprefixedType::XOR, UnprefixedType::OR,  UnprefixedType::CP
             };
 
-            const std::array<PrefixedType, 8> m_BitOperations =
+            const std::array<PrefixedType, 8> bit_operations_ =
             {
                 PrefixedType::RLC,  PrefixedType::RRC,
                 PrefixedType::RL,   PrefixedType::RR,
@@ -89,7 +89,7 @@ namespace gb
                 PrefixedType::SWAP, PrefixedType::SRL
             };
 
-            const std::unordered_map<uint8_t, UnprefixedType, column_hash, collideable_equal> m_Columns = 
+            const std::unordered_map<uint8_t, UnprefixedType, column_hash, collideable_equal> columns_ = 
             {
                 { 0x01, UnprefixedType::LD }, { 0x02, UnprefixedType::LD }, { 0x03, UnprefixedType::INC },
                 { 0x04, UnprefixedType::INC }, { 0x05, UnprefixedType::DEC }, { 0x06, UnprefixedType::LD },
@@ -99,7 +99,7 @@ namespace gb
                 { 0xCF, UnprefixedType::RST }
             };
 
-            const std::unordered_map<uint8_t, UnprefixedType> m_RandomInstructions = 
+            const std::unordered_map<uint8_t, UnprefixedType> random_instructions_ = 
             {
                 { 0x00, UnprefixedType::NOP }, { 0x07, UnprefixedType::RLCA }, { 0x08, UnprefixedType::LD }, { 0x0F, UnprefixedType::RRCA },
                 
@@ -124,7 +124,7 @@ namespace gb
             };
 
             //Some LD instructions are a pain to decode, so it is done with this lookup table
-            const std::unordered_map<uint8_t, UnprefixedInstruction> m_RandomLD = 
+            const std::unordered_map<uint8_t, UnprefixedInstruction> random_LD_ = 
             {
                 {0x08, 
                     {

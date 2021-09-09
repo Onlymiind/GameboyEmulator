@@ -64,53 +64,53 @@ namespace gb
 
         struct ArgumentInfo
         {
-            ArgumentSource Source = ArgumentSource::None;
-            ArgumentType Type = ArgumentType::None;
-            Registers Register = Registers::None;
+            ArgumentSource source = ArgumentSource::None;
+            ArgumentType type = ArgumentType::None;
+            Registers reg = Registers::None;
 
             inline bool operator ==(ArgumentInfo other) const
             {
-                return Source == other.Source && Type == other.Type && Register == other.Register;
+                return source == other.source && type == other.type && reg == other.reg;
             }
         };
 
         struct UnprefixedInstruction
         {
             //Used only in RST instruction. In other cases is left uninitialized
-            std::optional<uint16_t> ResetVector;
+            std::optional<uint16_t> reset_vector;
             //Used only in LD instructions. In other cases is left uninitialized
-            std::optional<LoadSubtype> LDSubtype;
+            std::optional<LoadSubtype> LD_subtype;
 
-            std::optional<Conditions> Condition;
+            std::optional<Conditions> condition;
 
-            ArgumentInfo Source;
-            ArgumentInfo Destination;
+            ArgumentInfo source;
+            ArgumentInfo destination;
 
-            UnprefixedType Type = UnprefixedType::None;
+            UnprefixedType type = UnprefixedType::None;
 
             //For Debugging
             inline bool operator == (UnprefixedInstruction other) const
             {
-                return Type == other.Type &&
-                    Source == other.Source &&
-                    Destination == other.Destination &&
-                    Condition == other.Condition &&
-                    ResetVector == other.ResetVector &&
-                    LDSubtype == other.LDSubtype;
+                return type == other.type &&
+                    source == other.source &&
+                    destination == other.destination &&
+                    condition == other.condition &&
+                    reset_vector == other.reset_vector &&
+                    LD_subtype == other.LD_subtype;
             }
         };
 
         struct PrefixedInstruction
         {
-            PrefixedType Type;
+            PrefixedType type;
 
-            Registers Target = Registers::None;
+            Registers target = Registers::None;
 
-            std::optional<uint8_t> Bit;
+            std::optional<uint8_t> bit;
 
             inline bool operator == (PrefixedInstruction other)
             {
-                return Type == other.Type && Target == other.Target && Bit == other.Bit;
+                return type == other.type && target == other.target && bit == other.bit;
             }
         };
 

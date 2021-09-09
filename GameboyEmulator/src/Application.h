@@ -34,23 +34,23 @@ namespace emulator
 
 	private:
 
-		gb::RAM m_RAM;
-		gb::ROM m_ROM;
-		gb::RAM m_Leftover;
-		gb::IORegisters m_GBIO;
-		gb::AddressBus m_Bus;
-		gb::InterruptRegister m_InterruptEnable;
-		gb::InterruptRegister m_InterruptFlags;
-		gb::decoding::Decoder m_Decoder;
-		gb::cpu::SharpSM83 m_CPU;
+		gb::RAM RAM_;
+		gb::ROM ROM_;
+		gb::RAM leftover_;
+		gb::IORegisters GBIO_;
+		gb::AddressBus bus_;
+		gb::InterruptRegister interrupt_enable_;
+		gb::InterruptRegister interrupt_flags_;
+		gb::decoding::Decoder decoder_;
+		gb::cpu::SharpSM83 CPU_;
 		
-		bool m_IsRunning;
-		bool m_EmulatorRunning;
-		bool m_JustStarted;
+		bool is_running_;
+		bool emulator_running_;
+		bool just_started_;
 
 
-		std::string m_TestPath{ "../TestRoms/blargg/cpu_instrs/individual/" };
-		const std::string m_Extension = ".gb";
-		Parser m_CommandParser;
+		std::string test_path_ = "../TestRoms/blargg/cpu_instrs/individual/";
+		const std::string extension_ = ".gb";
+		Parser command_parser_;
 	};
 }

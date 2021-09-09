@@ -5,15 +5,6 @@
 
 namespace emulator
 {
-    std::istream& operator>>(std::istream& is, Command& command)
-    {
-        std::string cmd;
-        std::getline(is, cmd);
-
-        command = Parser().parse(cmd);
-
-        return is;
-    }
 
     Command Parser::parse(std::string_view text) const
     {
@@ -28,21 +19,21 @@ namespace emulator
 
         std::string cmd_name(text.data() + name_begin, name_end - name_begin);
 
-        if(m_Commands.count(cmd_name))
+        if(commands_.count(cmd_name))
         {
-            result.Type = m_Commands.at(cmd_name).Type;
-            result.Argument = getArguments(text.substr(name_end), m_Commands.at(cmd_name));
+            result.type = commands_.at(cmd_name).type;
+            result.argument = getArguments(text.substr(name_end), commands_.at(cmd_name));
 
-            if(m_Commands.at(cmd_name).HasArguments && result.Argument.empty())
+            if(commands_.at(cmd_name).has_arguments && result.argument.empty())
             {
-                result.Type = CommandType::Invalid;
+                result.type = CommandType::Invalid;
             }
         }
 
 
-        if (result.Type == CommandType::None && name_begin != std::string_view::npos)
+        if (result.type == CommandType::None && name_begin != std::string_view::npos)
         {
-            result.Type = CommandType::Invalid;
+            result.type = CommandType::Invalid;
         }
         
 
@@ -51,7 +42,7 @@ namespace emulator
 
     std::string Parser::getArguments(std::string_view text, const Parser::CommandInfo& info) const
     {
-        if (info.HasArguments)
+        if (info.has_arguments)
         {
             size_t arg_pos = text.find_first_not_of(' ');
             size_t arg_end = text.find_last_not_of(' ');

@@ -11,8 +11,8 @@ namespace gb {
 
 	uint8_t AddressBus::read(uint16_t address) const
 	{
-		auto it = m_Memory.find(address);
-		if (it == m_Memory.end())
+		auto it = memory_.find(address);
+		if (it == memory_.end())
 		{
 			throw std::out_of_range(getErrorDescription(address));
 		}
@@ -22,8 +22,8 @@ namespace gb {
 
 	void AddressBus::write(uint16_t address, uint8_t data) const
 	{
-		auto it = m_Memory.find(address);
-		if (it == m_Memory.end())
+		auto it = memory_.find(address);
+		if (it == memory_.end())
 		{
 			throw std::out_of_range(getErrorDescription(address, data));
 		}
