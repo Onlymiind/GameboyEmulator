@@ -19,7 +19,9 @@ namespace gb
 {
     SharpSM83::SharpSM83(const AddressBus& bus, InterruptRegister& interruptEnable, InterruptRegister& interruptFlags, const decoding::Decoder& decoder) 
         : m_InterruptEnable(interruptEnable), m_InterruptFlags(interruptFlags), m_Bus(bus), m_Decoder(decoder), m_CyclesToFinish(0)
-    {}
+    {
+        reset();
+    }
 
 
     void SharpSM83::tick()
@@ -183,7 +185,8 @@ namespace gb
 
     void SharpSM83::pushStack(uint16_t value)
     {
-        uint8_t msb{ 0 }, lsb{ 0 };
+        uint8_t lsb = 0;
+        uint8_t msb = 0;
 
         lsb = static_cast<uint8_t>(value & 0x00FF);
         msb = static_cast<uint8_t>((value & 0xFF00) >> 8);
@@ -203,7 +206,8 @@ namespace gb
 
     uint16_t SharpSM83::fetchWord()
     {
-        uint8_t lsb{ 0 }, msb{ 0 };
+        uint8_t lsb = 0;
+        uint8_t msb = 0;
         uint16_t value;
         lsb = fetch();
         msb = fetch();
@@ -213,7 +217,8 @@ namespace gb
 
     uint16_t SharpSM83::popStack()
     {
-        uint8_t msb{ 0 }, lsb{ 0 };
+        uint8_t lsb = 0;
+        uint8_t msb = 0;
         lsb = read(REG.SP);
         ++REG.SP;
         msb = read(REG.SP);
