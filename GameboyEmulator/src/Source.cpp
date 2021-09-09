@@ -1,8 +1,8 @@
-#include "core/Application.h"
+#include "Application.h"
 
 
 int main() {
-	gb::Application* app = new gb::Application;
+	emulator::Application* app = new emulator::Application;
 
 	app->run();
 
