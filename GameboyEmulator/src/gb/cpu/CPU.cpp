@@ -1,8 +1,8 @@
-#include "core/gb/cpu/CPU.h"
-#include "core/gb/AddressBus.h"
+#include "gb/cpu/CPU.h"
+#include "gb/AddressBus.h"
 #include "utils/Utils.h"
-#include "core/gb/cpu/Operation.h"
-#include "core/gb/cpu/Decoder.h"
+#include "gb/cpu/Operation.h"
+#include "gb/cpu/Decoder.h"
 
 #include <climits>
 #include <iostream>
@@ -17,7 +17,7 @@
 //TODO: DAA
 namespace gb 
 {
-    SharpSM83::SharpSM83(const AddressBus& bus, InterruptRegister& interruptEnable, InterruptRegister& interruptFlags, const Decoder& decoder) 
+    SharpSM83::SharpSM83(const AddressBus& bus, InterruptRegister& interruptEnable, InterruptRegister& interruptFlags, const decoding::Decoder& decoder) 
         : m_InterruptEnable(interruptEnable), m_InterruptFlags(interruptFlags), m_Bus(bus), m_Decoder(decoder), m_CyclesToFinish(0)
     {}
 
@@ -40,7 +40,7 @@ namespace gb
             }
             else
             {
-                opcode code = fetch();
+                decoding::opcode code = fetch();
                 //TODO: HALT state (with bug)
                 //TODO: Check if opcode is invalid
                 m_CyclesToFinish = dispatch(code);
@@ -96,24 +96,24 @@ namespace gb
         m_Bus.write(address, data);
     }
 
-    uint8_t SharpSM83::dispatch(opcode code)
+    uint8_t SharpSM83::dispatch(decoding::opcode code)
     {
         if(m_Decoder.isPrefix(code))
         {
             code.code = fetch();
-            PrefixedInstruction instr = m_Decoder.decodePrefixed(code);
+            decoding::PrefixedInstruction instr = m_Decoder.decodePrefixed(code);
             return dispatchPrefixed(instr);
         }
         else
         {
-            UnprefixedInstruction instr = m_Decoder.decodeUnprefixed(code);
+            decoding::UnprefixedInstruction instr = m_Decoder.decodeUnprefixed(code);
             return dispatchUnprefixed(instr);
         }
     }
 
-    uint8_t SharpSM83::dispatchPrefixed(PrefixedInstruction instr)
+    uint8_t SharpSM83::dispatchPrefixed(decoding::PrefixedInstruction instr)
     {
-        using type = PrefixedType;
+        using type = decoding::PrefixedType;
         switch(instr.Type)
         {
             case type::RLC: return RLC(instr.Target);
@@ -133,9 +133,9 @@ namespace gb
         }
     }
 
-    uint8_t SharpSM83::dispatchUnprefixed(UnprefixedInstruction instr)
+    uint8_t SharpSM83::dispatchUnprefixed(decoding::UnprefixedInstruction instr)
     {
-        using type = UnprefixedType;
+        using type = decoding::UnprefixedType;
         switch(instr.Type)
         {
             case type::NOP: return NOP();
@@ -242,36 +242,36 @@ namespace gb
         IME = false;
     }
 
-    uint8_t SharpSM83::getByte(ArgumentInfo from)
+    uint8_t SharpSM83::getByte(decoding::ArgumentInfo from)
     {
         switch(from.Source)
         {
-            case ArgumentSource::Immediate: return fetch();
-            case ArgumentSource::IndirectImmediate: return read(fetchWord());
-            case ArgumentSource::Register:
-            case ArgumentSource::Indirect:
+            case decoding::ArgumentSource::Immediate: return fetch();
+            case decoding::ArgumentSource::IndirectImmediate: return read(fetchWord());
+            case decoding::ArgumentSource::Register:
+            case decoding::ArgumentSource::Indirect:
                 return getByteRegister(from.Register);
             default:
                 throw std::invalid_argument("Trying to get byte from unknown source");
                 return 0;
         }
     }
-    uint16_t SharpSM83::getWord(ArgumentInfo from)
+    uint16_t SharpSM83::getWord(decoding::ArgumentInfo from)
     {
         switch(from.Source)
         {
-            case ArgumentSource::Immediate: return fetchWord();
-            case ArgumentSource::Register: return getWordRegister(from.Register);
+            case decoding::ArgumentSource::Immediate: return fetchWord();
+            case decoding::ArgumentSource::Register: return getWordRegister(from.Register);
             default:
                 throw std::invalid_argument("Trying to get word from unknown source");
                 return 0;
         }
     }
 
-    uint8_t SharpSM83::getByteRegister(Registers reg) const
+    uint8_t SharpSM83::getByteRegister(decoding::Registers reg) const
     {
-#define CASE_BYTE_REG(x) case Registers::##x: return REG.##x
-#define CASE_WORD_REG(x) case Registers::##x: return read(REG.##x)
+#define CASE_BYTE_REG(x) case decoding::Registers::##x: return REG.##x
+#define CASE_WORD_REG(x) case decoding::Registers::##x: return read(REG.##x)
         switch(reg)
         {
             CASE_BYTE_REG(A);
@@ -292,16 +292,16 @@ namespace gb
 #undef CASE_WORD_REG
     }
 
-    uint16_t SharpSM83::getWordRegister(Registers reg) const
+    uint16_t SharpSM83::getWordRegister(decoding::Registers reg) const
     {
-#define CASE_REG(x) case Registers::##x: return REG.##x
+#define CASE_REG(x) case decoding::Registers::##x: return REG.##x
         switch(reg)
         {
             CASE_REG(BC);
             CASE_REG(DE);
             CASE_REG(HL);
             CASE_REG(SP);
-            case Registers::AF: return REG.AF & 0xFFF0;
+            case decoding::Registers::AF: return REG.AF & 0xFFF0;
             default:
                 throw std::invalid_argument("Trying to get byte from unknown register");
                 return 0;
@@ -309,10 +309,10 @@ namespace gb
 #undef CASE_REG
     }
 
-    void SharpSM83::setByteRegister(Registers reg, uint8_t data)
+    void SharpSM83::setByteRegister(decoding::Registers reg, uint8_t data)
     {
-#define CASE_BYTE_REG(x) case Registers::##x: REG.##x = data; return
-#define CASE_WORD_REG(x) case Registers::##x: write(REG.##x, data); return
+#define CASE_BYTE_REG(x) case decoding::Registers::##x: REG.##x = data; return
+#define CASE_WORD_REG(x) case decoding::Registers::##x: write(REG.##x, data); return
         switch(reg)
         {
             CASE_BYTE_REG(A);
@@ -332,30 +332,30 @@ namespace gb
 #undef CASE_WORD_REG
     }
 
-    void SharpSM83::setWordRegister(Registers reg, uint16_t data)
+    void SharpSM83::setWordRegister(decoding::Registers reg, uint16_t data)
     {
-#define CASE_REG(x) case Registers::##x:  REG.##x = data; return
+#define CASE_REG(x) case decoding::Registers::##x:  REG.##x = data; return
         switch(reg)
         {
             CASE_REG(BC);
             CASE_REG(DE);
             CASE_REG(HL);
             CASE_REG(SP);
-            case Registers::AF: REG.AF = data & 0xFFF0; return;
+            case decoding::Registers::AF: REG.AF = data & 0xFFF0; return;
             default:
                 throw std::invalid_argument("Trying to write word to unknown register");
         }
 #undef CASE_REG
     }
 
-    bool SharpSM83::checkCondition(Conditions condition)
+    bool SharpSM83::checkCondition(decoding::Conditions condition)
     {
         switch(condition)
         {
-            case Conditions::Carry: return REG.Flags.C != 0;
-            case Conditions::NotCarry: return REG.Flags.C == 0;
-            case Conditions::Zero: return REG.Flags.Z != 0;
-            case Conditions::NotZero: return REG.Flags.Z == 0;
+            case decoding::Conditions::Carry: return REG.Flags.C != 0;
+            case decoding::Conditions::NotCarry: return REG.Flags.C == 0;
+            case decoding::Conditions::Zero: return REG.Flags.Z != 0;
+            case decoding::Conditions::NotZero: return REG.Flags.Z == 0;
             default:
                 //Never happens
                 return false;

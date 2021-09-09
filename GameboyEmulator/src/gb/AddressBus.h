@@ -1,5 +1,5 @@
 #pragma once
-#include "core/gb/MemoryController.h"
+#include "gb/MemoryController.h"
 
 #include <cstdint>
 #include <string>

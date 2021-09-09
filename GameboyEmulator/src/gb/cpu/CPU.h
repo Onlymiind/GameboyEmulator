@@ -1,9 +1,9 @@
 #pragma once
 #include "utils/Utils.h"
-#include "core/gb/AddressBus.h"
-#include "core/gb/InterruptRegister.h"
-#include "core/gb/cpu/Operation.h"
-#include "core/gb/cpu/Decoder.h"
+#include "gb/AddressBus.h"
+#include "gb/InterruptRegister.h"
+#include "gb/cpu/Operation.h"
+#include "gb/cpu/Decoder.h"
 
 #include <cstdint>
 #include <string_view>
@@ -15,10 +15,15 @@
 
 namespace gb
 {
+    struct Registers
+    {
+
+    };
+
     class SharpSM83 
     {
     public:
-        SharpSM83(const AddressBus& bus, InterruptRegister& interruptEnable, InterruptRegister& interruptFlags, const Decoder& decoder);
+        SharpSM83(const AddressBus& bus, InterruptRegister& interruptEnable, InterruptRegister& interruptFlags, const decoding::Decoder& decoder);
         ~SharpSM83() {}
 
         void tick();
@@ -33,9 +38,9 @@ namespace gb
 
     private:
 
-        uint8_t dispatch(opcode code);
-        uint8_t dispatchPrefixed(PrefixedInstruction instr);
-        uint8_t dispatchUnprefixed(UnprefixedInstruction instr);
+        uint8_t dispatch(decoding::opcode code);
+        uint8_t dispatchPrefixed(decoding::PrefixedInstruction instr);
+        uint8_t dispatchUnprefixed(decoding::UnprefixedInstruction instr);
 
         uint8_t read(uint16_t address) const;
 
@@ -71,18 +76,18 @@ namespace gb
             }
         }
 
-        uint8_t getByte(ArgumentInfo from);
-        uint16_t getWord(ArgumentInfo from);
+        uint8_t getByte(decoding::ArgumentInfo from);
+        uint16_t getWord(decoding::ArgumentInfo from);
 
-        uint8_t getByteRegister(Registers reg) const;
+        uint8_t getByteRegister(decoding::Registers reg) const;
 
-        uint16_t getWordRegister(Registers reg) const;
+        uint16_t getWordRegister(decoding::Registers reg) const;
 
-        void setByteRegister(Registers reg, uint8_t data);
+        void setByteRegister(decoding::Registers reg, uint8_t data);
 
-        void setWordRegister(Registers reg, uint16_t data);
+        void setWordRegister(decoding::Registers reg, uint16_t data);
 
-        bool checkCondition(Conditions condition);
+        bool checkCondition(decoding::Conditions condition);
 
 
         //Unprefixed instrictions. Return the amount of machine cycles needed for the instruction
@@ -99,38 +104,38 @@ namespace gb
         uint8_t DAA(); 
         uint8_t HALT(); 
         uint8_t SCF(); 
-        uint8_t STOP(); 
-        uint8_t PUSH(Registers reg);
-        uint8_t POP(Registers reg); 
+        uint8_t STOP();
+        uint8_t PUSH(decoding::Registers reg);
+        uint8_t POP(decoding::Registers reg); 
         uint8_t RST(uint16_t reset_vector);
-        uint8_t CALL(std::optional<Conditions> condition);
-        uint8_t JR(std::optional<Conditions> condition); 
-        uint8_t RET(std::optional<Conditions> condition); 
-        uint8_t INC(ArgumentInfo target);
-        uint8_t DEC(ArgumentInfo target);
-        uint8_t SUB(ArgumentInfo argument); 
-        uint8_t OR(ArgumentInfo argument); 
-        uint8_t AND(ArgumentInfo argument); 
-        uint8_t XOR(ArgumentInfo argument); 
-        uint8_t ADC(ArgumentInfo argument);
-        uint8_t SBC(ArgumentInfo argument); 
-        uint8_t CP(ArgumentInfo argument); 
-        uint8_t JP(UnprefixedInstruction instr); 
-        uint8_t LD(UnprefixedInstruction instr);
-        uint8_t ADD(UnprefixedInstruction instr);
+        uint8_t CALL(std::optional<decoding::Conditions> condition);
+        uint8_t JR(std::optional<decoding::Conditions> condition); 
+        uint8_t RET(std::optional<decoding::Conditions> condition); 
+        uint8_t INC(decoding::ArgumentInfo target);
+        uint8_t DEC(decoding::ArgumentInfo target);
+        uint8_t SUB(decoding::ArgumentInfo argument); 
+        uint8_t OR(decoding::ArgumentInfo argument); 
+        uint8_t AND(decoding::ArgumentInfo argument); 
+        uint8_t XOR(decoding::ArgumentInfo argument); 
+        uint8_t ADC(decoding::ArgumentInfo argument);
+        uint8_t SBC(decoding::ArgumentInfo argument); 
+        uint8_t CP(decoding::ArgumentInfo argument); 
+        uint8_t JP(decoding::UnprefixedInstruction instr); 
+        uint8_t LD(decoding::UnprefixedInstruction instr);
+        uint8_t ADD(decoding::UnprefixedInstruction instr);
 
         uint8_t NONE();
 
-        uint8_t loadByte(ArgumentInfo destination, ArgumentInfo source);
+        uint8_t loadByte(decoding::ArgumentInfo destination, decoding::ArgumentInfo source);
 
         //Prefixed instructions. Return the amount of machine cycles needed for the instruction
-        uint8_t RLC (Registers reg); uint8_t RRC(Registers reg); 
-        uint8_t RL  (Registers reg); uint8_t RR (Registers reg);
-        uint8_t SLA (Registers reg); uint8_t SRA(Registers reg);
-        uint8_t SWAP(Registers reg); uint8_t SRL(Registers reg);
+        uint8_t RLC (decoding::Registers reg); uint8_t RRC(decoding::Registers reg); 
+        uint8_t RL  (decoding::Registers reg); uint8_t RR (decoding::Registers reg);
+        uint8_t SLA (decoding::Registers reg); uint8_t SRA(decoding::Registers reg);
+        uint8_t SWAP(decoding::Registers reg); uint8_t SRL(decoding::Registers reg);
 
-        uint8_t BIT (PrefixedInstruction instr); uint8_t RES(PrefixedInstruction instr);  
-        uint8_t SET (PrefixedInstruction instr);
+        uint8_t BIT (decoding::PrefixedInstruction instr); uint8_t RES(decoding::PrefixedInstruction instr);  
+        uint8_t SET (decoding::PrefixedInstruction instr);
 
 
     private: //REGISTERS
@@ -183,11 +188,13 @@ namespace gb
                 };
             };
 
-            uint16_t SP{ 0xFFFE }, PC{ 0x0100 }; // Stack pointer, program counter
+            // Stack pointer, program counter
+            uint16_t SP = 0xFFFE;
+            uint16_t PC = 0x0100;
         } REG;
 
-        bool IME{ false }; // Interrupt master enable
-        bool m_EnableIME{ false };
+        bool IME = false; // Interrupt master enable
+        bool m_EnableIME = false;
 
         InterruptRegister& m_InterruptEnable;
         InterruptRegister& m_InterruptFlags;
@@ -195,7 +202,7 @@ namespace gb
     private: //STUFF
 
         const AddressBus& m_Bus;
-        const Decoder& m_Decoder;
+        const decoding::Decoder& m_Decoder;
 
         uint8_t m_CyclesToFinish;
     };

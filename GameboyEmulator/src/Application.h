@@ -1,11 +1,11 @@
 #pragma once
-#include "core/gb/RAM.h"
-#include "core/gb/ROM.h"
-#include "core/gb/AddressBus.h"
-#include "core/gb/cpu/CPU.h"
-#include "core/gb/IO.h"
-#include "core/gb/InterruptRegister.h"
-#include "core/gb/cpu/Decoder.h"
+#include "gb/RAM.h"
+#include "gb/ROM.h"
+#include "gb/AddressBus.h"
+#include "gb/cpu/CPU.h"
+#include "gb/IO.h"
+#include "gb/InterruptRegister.h"
+#include "gb/cpu/Decoder.h"
 
 #include <memory>
 #include <string_view>
@@ -40,7 +40,7 @@ namespace gb {
 		AddressBus m_Bus;
 		InterruptRegister m_InterruptEnable;
 		InterruptRegister m_InterruptFlags;
-		Decoder m_Decoder;
+		decoding::Decoder m_Decoder;
 		SharpSM83 m_CPU;
 		
 
