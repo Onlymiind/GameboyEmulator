@@ -12,6 +12,7 @@ add_executable(emulator
 	src/Source.cpp
 	src/gb/cpu/Decoder.cpp
 	src/gb/cpu/Operation.cpp
+	src/ConsoleInput.cpp
 	)
 
 add_executable(
@@ -29,6 +30,12 @@ add_executable(
 	bus_test
 	src/gb/AddressBus.cpp
 	src/tests/AddressBusTest.cpp
+)
+
+add_executable(
+	input_test
+	src/ConsoleInput.cpp
+	src/tests/ConsoleInputTest.cpp
 )
 
 include_directories(
