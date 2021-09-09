@@ -1,5 +1,5 @@
 #pragma once
-#include "core/gb/MemoryObject.h"
+#include "gb/MemoryObject.h"
 
 
 #include <type_traits>

@@ -3,15 +3,15 @@ project(GameboyEmulator)
 
 add_executable(emulator 
 	src/utils/Utils.cpp
-	src/core/Application.cpp
-	src/core/gb/cpu/CPU.cpp
-	src/core/gb/cpu/instructions.cpp
-	src/core/gb/AddressBus.cpp
-	src/core/gb/IO.cpp
-	src/core/gb/Timer.cpp
+	src/Application.cpp
+	src/gb/cpu/CPU.cpp
+	src/gb/cpu/instructions.cpp
+	src/gb/AddressBus.cpp
+	src/gb/IO.cpp
+	src/gb/Timer.cpp
 	src/Source.cpp
-	src/core/gb/cpu/Decoder.cpp
-	src/core/gb/cpu/Operation.cpp
+	src/gb/cpu/Decoder.cpp
+	src/gb/cpu/Operation.cpp
 	)
 
 include_directories(

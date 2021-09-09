@@ -1,14 +1,14 @@
 #include "Application.h"
 #include "utils/Utils.h"
-#include "core/gb/cpu/CPU.h"
-#include "core/gb/AddressBus.h"
-#include "core/gb/RAM.h"
-#include "core/gb/MemoryController.h"
-#include "core/gb/ROM.h"
+#include "gb/cpu/CPU.h"
+#include "gb/AddressBus.h"
+#include "gb/RAM.h"
+#include "gb/MemoryController.h"
+#include "gb/ROM.h"
 #include "utils/FileManager.h"
-#include "core/gb/Timer.h"
-#include "core/gb/cpu/Operation.h"
-#include "core/gb/cpu/Decoder.h"
+#include "gb/Timer.h"
+#include "gb/cpu/Operation.h"
+#include "gb/cpu/Decoder.h"
 
 #include <SFML/Window/Keyboard.hpp>
 
