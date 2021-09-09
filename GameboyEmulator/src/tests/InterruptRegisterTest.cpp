@@ -1,4 +1,4 @@
-#include "core/gb/InterruptRegister.h"
+#include "gb/InterruptRegister.h"
 
 #include "Common.h"
 

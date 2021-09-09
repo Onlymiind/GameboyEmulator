@@ -14,15 +14,34 @@ add_executable(emulator
 	src/gb/cpu/Operation.cpp
 	)
 
+add_executable(
+	decoder_test
+	src/gb/cpu/Decoder.cpp
+	src/tests/DecoderTest.cpp
+)
+
+add_executable(
+	interrupt_reg_test
+	src/tests/InterruptRegisterTest.cpp
+)
+
+add_executable(
+	bus_test
+	src/gb/AddressBus.cpp
+	src/tests/AddressBusTest.cpp
+)
+
 include_directories(
-	${PROJECT_SOURCE_DIR}/src
-	${PROJECT_SOURCE_DIR}/dependencies/GLM)
+	${PROJECT_SOURCE_DIR}/src)
 if(WIN32)
 	include_directories(emulator ${PROJECT_SOURCE_DIR}/dependencies/SFML/include)
 endif()
 
 set(SFML_STATIC_LIBRARIES ON)
 target_compile_features(emulator PUBLIC cxx_std_17)
+target_compile_features(decoder_test PUBLIC cxx_std_17)
+target_compile_features(interrupt_reg_test PUBLIC cxx_std_17)
+target_compile_features(bus_test PUBLIC cxx_std_17)
 
 
 if(UNIX)
