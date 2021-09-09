@@ -4,6 +4,7 @@
 #include "gb/InterruptRegister.h"
 #include "gb/cpu/Operation.h"
 #include "gb/cpu/Decoder.h"
+#include "gb/cpu/Registers.h"
 
 #include <cstdint>
 #include <string_view>
@@ -15,11 +16,6 @@
 
 namespace gb
 {
-    struct Registers
-    {
-
-    };
-
     class SharpSM83 
     {
     public:
@@ -139,59 +135,7 @@ namespace gb
 
 
     private: //REGISTERS
-        struct {
-            union {
-                uint16_t AF = 0x01B0;
-            
-                struct {
-                    union {
-                        uint8_t Value;
-
-                        struct {
-                            uint8_t Unused : 4;
-                            uint8_t C : 1;
-                            uint8_t H : 1;
-                            uint8_t N : 1;
-                            uint8_t Z : 1;
-                        };
-                    }Flags;
-
-                    uint8_t A;
-                };
-            };
-
-            union {
-                uint16_t BC = 0x0013;
-
-                struct {
-                    uint8_t C;
-                    uint8_t B;
-                };
-
-            };
-
-            union {
-                uint16_t DE = 0x00D8;
-
-                struct {
-                    uint8_t E;
-                    uint8_t D;
-                };
-            };
-
-            union {
-                uint16_t HL = 0x014D;
-
-                struct {
-                    uint8_t L;
-                    uint8_t H;
-                };
-            };
-
-            // Stack pointer, program counter
-            uint16_t SP = 0xFFFE;
-            uint16_t PC = 0x0100;
-        } REG;
+        Registers REG;
 
         bool IME = false; // Interrupt master enable
         bool m_EnableIME = false;
