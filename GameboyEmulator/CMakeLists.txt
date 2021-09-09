@@ -49,6 +49,7 @@ target_compile_features(emulator PUBLIC cxx_std_17)
 target_compile_features(decoder_test PUBLIC cxx_std_17)
 target_compile_features(interrupt_reg_test PUBLIC cxx_std_17)
 target_compile_features(bus_test PUBLIC cxx_std_17)
+target_compile_features(input_test PUBLIC cxx_std_17)
 
 
 if(UNIX)
