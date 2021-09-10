@@ -39,12 +39,9 @@ add_executable(
 )
 
 include_directories(
-	${PROJECT_SOURCE_DIR}/src)
-if(WIN32)
-	include_directories(emulator ${PROJECT_SOURCE_DIR}/dependencies/SFML/include)
-endif()
+	${PROJECT_SOURCE_DIR}/src
+	)
 
-set(SFML_STATIC_LIBRARIES ON)
 target_compile_features(emulator PUBLIC cxx_std_17)
 target_compile_features(decoder_test PUBLIC cxx_std_17)
 target_compile_features(interrupt_reg_test PUBLIC cxx_std_17)
@@ -53,17 +50,7 @@ target_compile_features(input_test PUBLIC cxx_std_17)
 
 
 if(UNIX)
-	target_link_libraries(emulator sfml-system sfml-window sfml-graphics)
 	target_compile_options(emulator "$<$<CONFIG:DEBUG>:-g>")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
-elseif(WIN32)
-	add_compile_definitions(SFML_STATIC)
-	target_link_directories(emulator PRIVATE ${PROJECT_SOURCE_DIR}/dependencies/SFML/lib)
-		target_link_libraries(emulator 
-			optimized sfml-system-s optimized sfml-window-s optimized sfml-graphics-s
-			debug sfml-system-s-d debug sfml-window-s-d debug sfml-graphics-s-d)
-	target_link_libraries(emulator opengl32)
-	target_link_libraries(emulator winmm)
 endif()
 
 

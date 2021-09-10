@@ -11,7 +11,7 @@
 
 using namespace gb::decoding;
 
-constexpr std::array<std::pair<uint8_t, UnprefixedInstruction>, 10> g_UnprefixedSample = 
+constexpr std::array<std::pair<uint8_t, UnprefixedInstruction>, 10> unprefixed_sample = 
 {{
     {0x00, {{},{},{},{},{}, UnprefixedType::NOP}},
     {0x40, {{}, LoadSubtype::Typical, {}, {ArgumentSource::Register, ArgumentType::Unsigned8, Registers::B}, {ArgumentSource::Register, ArgumentType::Unsigned8, Registers::B}, UnprefixedType::LD}},
@@ -55,9 +55,9 @@ void TestDecodingUnprefixed()
 {
     Decoder decoder;
 
-    for(const auto& [code, instr] : g_UnprefixedSample)
+    for(const auto& [code, instr] : unprefixed_sample)
     {
-        if(instr.Type != UnprefixedType::None)
+        if(instr.type != UnprefixedType::None)
         {
             std::cout << "Testing instruction: " << std::hex << "0x" << std::setfill('0') << std::setw(sizeof(uint8_t) * 2) << +code << std::endl;
             assert(decoder.decodeUnprefixed(code) == instr);

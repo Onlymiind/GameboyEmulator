@@ -9,7 +9,7 @@ namespace gb
 
 	uint8_t IORegisters::read(uint16_t address)
 	{
-		return m_Registers[address];
+		return registers_[address];
 	}
 	void IORegisters::write(uint16_t address, uint8_t data)
 	{
@@ -18,7 +18,7 @@ namespace gb
 			std::cout << read(0x01);
 		}
 
-		m_Registers[address] = data;
+		registers_[address] = data;
 	}
 }
 

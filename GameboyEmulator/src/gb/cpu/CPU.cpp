@@ -106,21 +106,21 @@ namespace gb
         uint8_t SharpSM83::dispatchPrefixed(decoding::PrefixedInstruction instr)
         {
             using type = decoding::PrefixedType;
-            switch(instr.Type)
+            switch(instr.type)
             {
-                case type::RLC: return RLC(instr.Target);
-                case type::RRC: return RRC(instr.Target);
-                case type::RL: return RL(instr.Target);
-                case type::RR: return RR(instr.Target);
-                case type::SLA: return SLA(instr.Target);
-                case type::SRA: return SRA(instr.Target);
-                case type::SRL: return SRL(instr.Target);
-                case type::SWAP: return SWAP(instr.Target);
+                case type::RLC: return RLC(instr.target);
+                case type::RRC: return RRC(instr.target);
+                case type::RL: return RL(instr.target);
+                case type::RR: return RR(instr.target);
+                case type::SLA: return SLA(instr.target);
+                case type::SRA: return SRA(instr.target);
+                case type::SRL: return SRL(instr.target);
+                case type::SWAP: return SWAP(instr.target);
                 case type::BIT: return BIT(instr);
                 case type::RES: return RES(instr);
                 case type::SET: return SET(instr);
                 default:
-                    throw std::invalid_argument(PrintToString("", "Unknown prefixed instruction: ", instr.Type));
+                    throw std::invalid_argument(PrintToString("", "Unknown prefixed instruction: ", instr.type));
                     return 0;
             }
         }
@@ -128,7 +128,7 @@ namespace gb
         uint8_t SharpSM83::dispatchUnprefixed(decoding::UnprefixedInstruction instr)
         {
             using type = decoding::UnprefixedType;
-            switch(instr.Type)
+            switch(instr.type)
             {
                 case type::NOP: return NOP();
                 case type::RLA: return RLA();
@@ -144,26 +144,26 @@ namespace gb
                 case type::SCF: return SCF();
                 case type::HALT: return HALT();
                 case type::STOP: return STOP();
-                case type::RST: return RST(*instr.ResetVector);
-                case type::PUSH: return PUSH(instr.Source.Register);
-                case type::POP: return POP(instr.Destination.Register);
-                case type::SUB: return SUB(instr.Source);
-                case type::OR: return OR(instr.Source);
-                case type::AND: return AND(instr.Source);
-                case type::XOR: return XOR(instr.Source);
-                case type::ADC: return ADC(instr.Source);
-                case type::SBC: return SBC(instr.Source);
-                case type::CP: return CP(instr.Source);
-                case type::JR: return JR(instr.Condition);
-                case type::CALL: return CALL(instr.Condition);
-                case type::RET: return RET(instr.Condition);
+                case type::RST: return RST(*instr.reset_vector);
+                case type::PUSH: return PUSH(instr.source.reg);
+                case type::POP: return POP(instr.destination.reg);
+                case type::SUB: return SUB(instr.source);
+                case type::OR: return OR(instr.source);
+                case type::AND: return AND(instr.source);
+                case type::XOR: return XOR(instr.source);
+                case type::ADC: return ADC(instr.source);
+                case type::SBC: return SBC(instr.source);
+                case type::CP: return CP(instr.source);
+                case type::JR: return JR(instr.condition);
+                case type::CALL: return CALL(instr.condition);
+                case type::RET: return RET(instr.condition);
                 case type::JP: return JP(instr);
-                case type::INC: return INC(instr.Source);
-                case type::DEC: return DEC(instr.Source);
+                case type::INC: return INC(instr.source);
+                case type::DEC: return DEC(instr.source);
                 case type::LD: return LD(instr);
                 case type::ADD: return ADD(instr);
                 default:
-                    throw std::invalid_argument(PrintToString("", "Unknown unprefixed instruction: ", instr.Type));
+                    throw std::invalid_argument(PrintToString("", "Unknown unprefixed instruction: ", instr.type));
                     return 0;
             }
         }
@@ -239,13 +239,13 @@ namespace gb
 
         uint8_t SharpSM83::getByte(decoding::ArgumentInfo from)
         {
-            switch(from.Source)
+            switch(from.source)
             {
                 case decoding::ArgumentSource::Immediate: return fetch();
                 case decoding::ArgumentSource::IndirectImmediate: return read(fetchWord());
                 case decoding::ArgumentSource::Register:
                 case decoding::ArgumentSource::Indirect:
-                    return getByteRegister(from.Register);
+                    return getByteRegister(from.reg);
                 default:
                     throw std::invalid_argument("Trying to get byte from unknown source");
                     return 0;
@@ -253,10 +253,10 @@ namespace gb
         }
         uint16_t SharpSM83::getWord(decoding::ArgumentInfo from)
         {
-            switch(from.Source)
+            switch(from.source)
             {
                 case decoding::ArgumentSource::Immediate: return fetchWord();
-                case decoding::ArgumentSource::Register: return getWordRegister(from.Register);
+                case decoding::ArgumentSource::Register: return getWordRegister(from.reg);
                 default:
                     throw std::invalid_argument("Trying to get word from unknown source");
                     return 0;
