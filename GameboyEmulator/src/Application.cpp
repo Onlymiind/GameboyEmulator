@@ -33,7 +33,8 @@ namespace emulator
 
     Application::Application() :
         RAM_(computeSizeFromAddresses(0x8000, 0xFEFF)), ROM_(), leftover_(computeSizeFromAddresses(0xFF80, 0xFFFF)), GBIO_(),
-        bus_(), CPU_(bus_, interrupt_enable_, interrupt_flags_, decoder_), is_running_(true), emulator_running_(false), just_started_(false)
+        bus_(), CPU_(bus_, interrupt_enable_, interrupt_flags_, decoder_), is_running_(true), emulator_running_(false), just_started_(false),
+        printer_(std::cout)
     {
         init();
     }
@@ -65,11 +66,7 @@ namespace emulator
         bus_.connect(gb::MemoryController(0xFF80, 0xFFFF, leftover_));
         bus_.connect(gb::MemoryController(0xFF00, 0xFF7F, GBIO_));
 
-        std::cout << R"(
-****************************
-*  Welcome to GB emulator  *
-****************************
-            )" << "\n";
+        printer_.printTitle();
     }
 
     void Application::update()
@@ -85,15 +82,16 @@ namespace emulator
             catch(const std::exception& e)
             {
                 emulator_running_ = false;
-                std::cerr << e.what() << '\n';
+                printer_.reportError(e.what(), CPU_.getProgramCounter());
                 break;
             }
             
         } while (!CPU_.isFinished());
 
-        if(oldPC == CPU_.getProgramCounter())
+        if(oldPC == CPU_.getProgramCounter() && emulator_running_)
         {
             emulator_running_ = false;
+            printer_.reportError("Reached infinite loop", CPU_.getProgramCounter());
         }
 
         oldPC = CPU_.getProgramCounter();
@@ -123,19 +121,12 @@ namespace emulator
             }
             else
             {
-                std::cout << "Selected directory doesn't exist\n";
+                printer_.reportError(InputError::InvalidDirectory);
             }
 
             break;
         case CommandType::Help:
-            std::cout << "-help - show this text\n"
-                << "-romdir <path> -set ROM directory\n"
-                << "-run <name> -run a ROM\n"
-                << "-ls - list all ROMs in current directory\n"
-                << "-config - show current ROM directory\n"
-                << "-quit - quit the emulator\n"
-                << "During execution:\n"
-                << "ESC - stop execution\n";
+            printer_.printHelp();
             break;
         case CommandType::SetRomDir:
             test_path_ = cmd.argument;
@@ -158,15 +149,15 @@ namespace emulator
             }
             else
             {
-                std::cout << "ROM doesn't exist in the specified directory\n";
+                printer_.reportError(InputError::InvalidRomName);
             }
 
             break;
         case CommandType::Config:
-            std::cout << "Current ROM directory: " << std::filesystem::absolute(test_path_) << "\n";
+            printer_.print("Current ROM directory: ", std::filesystem::absolute(test_path_));
             break;
         case CommandType::Invalid:
-            std::cout << "Invalid command. Use -help for command list\n";
+            printer_.reportError(InputError::InvalidCommand);
         }
     }
 
