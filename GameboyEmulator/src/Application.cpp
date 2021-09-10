@@ -31,10 +31,10 @@ namespace emulator
 
     }
 
-    Application::Application() :
+    Application::Application(const Printer& printer) :
         RAM_(computeSizeFromAddresses(0x8000, 0xFEFF)), ROM_(), leftover_(computeSizeFromAddresses(0xFF80, 0xFFFF)), GBIO_(),
-        bus_(), CPU_(bus_, interrupt_enable_, interrupt_flags_, decoder_), is_running_(true), emulator_running_(false), just_started_(false),
-        printer_(std::cout)
+        bus_(), CPU_(bus_, interrupt_enable_, interrupt_flags_, decoder_), is_running_(true), emulator_running_(false),
+        printer_(printer)
     {
         init();
     }
@@ -99,7 +99,7 @@ namespace emulator
 
     void Application::pollCommands()
     {
-        std::cout << ">";
+        printer_.print('>');
         std::string cmd_str;
         std::getline(std::cin, cmd_str);
 
@@ -107,57 +107,72 @@ namespace emulator
 
         switch (cmd.type)
         {
-        case CommandType::List:
+            case CommandType::List:
+                listROMs();
+                break;
+            case CommandType::Help:
+                printer_.printHelp();
+                break;
+            case CommandType::SetRomDir:
+                setROMDirectory(cmd.argument);
+                break;
+            case CommandType::Quit:
+                is_running_ = false;
+                break;
+            case CommandType::RunRom:
+                runROM(cmd.argument);
+                break;
+            case CommandType::Config:
+                printer_.println("Current ROM directory: ", std::filesystem::absolute(ROM_directory_));
+                break;
+            case CommandType::Invalid:
+                printer_.reportError(InputError::InvalidCommand);
+        }
+    }
 
-            if (std::filesystem::exists(test_path_))
-            {
-                for (const auto& file : std::filesystem::directory_iterator(test_path_))
-                {
-                    if (file.path().extension().string() == ".gb")
-                    {
-                        std::cout << "ROM: " << file.path().filename() << "\n";
-                    }
-                }
-            }
-            else
-            {
-                printer_.reportError(InputError::InvalidDirectory);
-            }
+    void Application::setROMDirectory(const std::filesystem::path& newPath)
+    {
+        if (std::filesystem::exists(newPath) && std::filesystem::is_directory(newPath))
+        {
+            ROM_directory_ = newPath;
+        }
+        else
+        {
+            printer_.reportError(InputError::InvalidDirectory);
+        }
+    }
 
-            break;
-        case CommandType::Help:
-            printer_.printHelp();
-            break;
-        case CommandType::SetRomDir:
-            test_path_ = cmd.argument;
-            if (test_path_.back() != '/' || test_path_.back() != '\\')
-            {
-                test_path_.push_back('\\');
-            }
-            break;
-        case CommandType::Quit:
-            is_running_ = false;
-            break;
-        case CommandType::RunRom:
+    void Application::listROMs() const
+    {
+        if(!std::filesystem::exists(ROM_directory_))
+        {
+            printer_.reportError(InputError::InvalidDirectory);
+            return;
+        }
 
-            if (std::filesystem::exists(test_path_ + cmd.argument + extension_))
+        for (const auto& file : std::filesystem::directory_iterator(ROM_directory_))
+        {
+            if (file.path().extension().string() == ".gb")
             {
-                ROM_.setData(FileManager::readFile(test_path_ + cmd.argument + extension_));
-                CPU_.reset();
-                emulator_running_ = true;
-                just_started_ = true;
+                printer_.println("ROM: ", file.path().filename());
             }
-            else
-            {
-                printer_.reportError(InputError::InvalidRomName);
-            }
+        }
+    }
 
-            break;
-        case CommandType::Config:
-            printer_.print("Current ROM directory: ", std::filesystem::absolute(test_path_));
-            break;
-        case CommandType::Invalid:
-            printer_.reportError(InputError::InvalidCommand);
+    void Application::runROM(std::string_view name)
+    {
+        std::filesystem::path ROM_path = ROM_directory_;
+        ROM_path = ROM_path / std::filesystem::path(name).replace_extension(extension_);
+        if (std::filesystem::exists(ROM_path))
+        {
+            ROM_.setData(FileManager::readFile(ROM_path.string()));
+            CPU_.reset();
+            emulator_running_ = true;
+        }
+        else
+        {
+            printer_.reportError(InputError::InvalidRomName);
+            printer_.println("ROM: ", ROM_path);
         }
     }
 
