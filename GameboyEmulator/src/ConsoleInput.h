@@ -10,11 +10,6 @@ namespace emulator
 		None, Invalid, Help, Quit, SetRomDir, RunRom, List, Config
 	};
 
-    enum class InputError
-    {
-        InvalidCommand, InvalidDirectory, InvalidRomName
-    };
-
 	struct Command
 	{
 		CommandType type;

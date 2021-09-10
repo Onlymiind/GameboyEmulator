@@ -10,8 +10,10 @@ namespace FileManager {
 	inline std::vector<uint8_t> readFile(const std::string& fileName)
 	{
 		std::ifstream file(fileName.c_str(), std::ios::binary | std::ios::ate);
-		if (!file.is_open()) return {};
-
+		if (!file.is_open())
+		{
+			return {};
+		}
 		auto size = file.tellg();
 		file.seekg(0);
 

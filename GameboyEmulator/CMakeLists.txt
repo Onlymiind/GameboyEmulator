@@ -13,6 +13,7 @@ add_executable(emulator
 	src/gb/cpu/Decoder.cpp
 	src/gb/cpu/Operation.cpp
 	src/ConsoleInput.cpp
+	src/ConsoleOutput.cpp
 	)
 
 add_executable(

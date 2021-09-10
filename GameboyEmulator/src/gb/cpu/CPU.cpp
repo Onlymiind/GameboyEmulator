@@ -31,7 +31,7 @@ namespace gb
         {
             if (cycles_to_finish_ == 0)
             {
-                uint8_t pending_interrupts = interrupt_enable_.getFlags() & interrupt_flags_.getFlags() & (~g_UnusedInterruptBits);
+                uint8_t pending_interrupts = interrupt_enable_.getFlags() & interrupt_flags_.getFlags() & (~g_unused_interrupt_bits);
                 if(pending_interrupts)
                 {
                     //TODO: handle interrupt

@@ -7,6 +7,7 @@
 #include "gb/InterruptRegister.h"
 #include "gb/cpu/Decoder.h"
 #include "ConsoleInput.h"
+#include "ConsoleOutput.h"
 
 #include <memory>
 #include <string_view>
@@ -52,5 +53,6 @@ namespace emulator
 		std::string test_path_ = "../TestRoms/blargg/cpu_instrs/individual/";
 		const std::string extension_ = ".gb";
 		Parser command_parser_;
+		Printer printer_;
 	};
 }
