@@ -14,41 +14,41 @@ namespace gb
         Joypad   = 1 << 4,
     };
 
-    inline const uint8_t g_UnusedInterruptBits = 0b11100000;
+    inline const uint8_t g_unused_interrupt_bits = 0b11100000;
 
     class InterruptRegister : public MemoryObject
     {
     public:
         InterruptRegister()
-            : m_Interrupts(g_UnusedInterruptBits)
+            : interrupts_(g_unused_interrupt_bits)
         {}
 
         uint8_t read(uint16_t address) override
         {
-            return m_Interrupts;
+            return interrupts_;
         }
 
         void write(uint16_t address, uint8_t data) override
         {
-            m_Interrupts = (g_UnusedInterruptBits | (data & 0x1F));
+            interrupts_ = (g_unused_interrupt_bits | (data & 0x1F));
         }
 
         inline void setFlag(InterruptFlags flag)
         {
-            m_Interrupts |= static_cast<uint8_t>(flag);
+            interrupts_ |= static_cast<uint8_t>(flag);
         }
 
         inline void clearFlag(InterruptFlags flag)
         {
-            m_Interrupts &= ~static_cast<uint8_t>(flag);
+            interrupts_ &= ~static_cast<uint8_t>(flag);
         }
 
         inline uint8_t getFlags()
         {
-            return m_Interrupts;
+            return interrupts_;
         }
 
     private:
-        uint8_t m_Interrupts;
+        uint8_t interrupts_;
     };
 }

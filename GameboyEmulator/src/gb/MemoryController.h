@@ -14,36 +14,36 @@ namespace gb {
 	public:
 
 		MemoryController(uint16_t minAddress, uint16_t maxAddress, MemoryObject& object)
-			: m_MinAddress(minAddress), m_MaxAddress(maxAddress), m_MemoryObject(object) 
+			: min_address_(minAddress), max_address_(maxAddress), m_MemoryObject(object) 
 		{}
 		MemoryController(const MemoryController& other)
-			: m_MinAddress(other.m_MinAddress), m_MaxAddress(other.m_MaxAddress), m_MemoryObject(other.m_MemoryObject)
+			: min_address_(other.min_address_), max_address_(other.max_address_), m_MemoryObject(other.m_MemoryObject)
 		{}
 
 		~MemoryController() = default;
 
-		inline uint8_t read(uint16_t address) const  { return m_MemoryObject.read(address - m_MinAddress); }
-		inline void write(uint16_t address, uint8_t data) const  { m_MemoryObject.write(address - m_MinAddress, data); }
+		inline uint8_t read(uint16_t address) const  { return m_MemoryObject.read(address - min_address_); }
+		inline void write(uint16_t address, uint8_t data) const  { m_MemoryObject.write(address - min_address_, data); }
 
-		inline bool isInRange(uint16_t address) const { return address >= m_MinAddress && address <= m_MaxAddress; }
+		inline bool isInRange(uint16_t address) const { return address >= min_address_ && address <= max_address_; }
 
 		inline bool operator < (const MemoryController& other) const
 		{
-			return m_MaxAddress < other.m_MinAddress;
+			return max_address_ < other.min_address_;
 		}
 
 		inline bool operator < (uint16_t address) const
 		{
-			return address > m_MaxAddress;
+			return address > max_address_;
 		}
 
 		inline bool operator > (uint16_t address) const
 		{
-			return address < m_MinAddress;
+			return address < min_address_;
 		}
 	private:
 
-		uint16_t m_MinAddress, m_MaxAddress;
+		uint16_t min_address_, max_address_;
 		MemoryObject& m_MemoryObject;
 	};
 

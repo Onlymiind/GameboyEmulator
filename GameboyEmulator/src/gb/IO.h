@@ -18,7 +18,7 @@ namespace gb
 
 	private:
 
-		std::array<uint8_t, 0x80> m_Registers;
+		std::array<uint8_t, 0x80> registers_;
 	};
 }
 

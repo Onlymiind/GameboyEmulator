@@ -11,8 +11,6 @@
 #include "gb/cpu/Decoder.h"
 #include "ConsoleInput.h"
 
-#include <SFML/Window/Keyboard.hpp>
-
 #include <iostream>
 #include <string>
 #include <iomanip>
@@ -76,9 +74,8 @@ namespace emulator
 
     void Application::update()
     {
-        static auto result = std::async(std::launch::async, sf::Keyboard::isKeyPressed, sf::Keyboard::Escape);
-
-
+        //For infinite loop detection
+        static uint16_t oldPC = CPU_.getProgramCounter();
         do
         {
             try
@@ -93,17 +90,13 @@ namespace emulator
             }
             
         } while (!CPU_.isFinished());
-        
-        auto status = result.wait_for(std::chrono::microseconds(0));
-        if (status == std::future_status::ready)
+
+        if(oldPC == CPU_.getProgramCounter())
         {
-            if(!just_started_ && result.get())
-            {
-                emulator_running_ = false;
-            }
-            result = std::async(std::launch::async, sf::Keyboard::isKeyPressed, sf::Keyboard::Escape);
-            if(just_started_) just_started_ = false;
+            emulator_running_ = false;
         }
+
+        oldPC = CPU_.getProgramCounter();
     }
 
     void Application::pollCommands()

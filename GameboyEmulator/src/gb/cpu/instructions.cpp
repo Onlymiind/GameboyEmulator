@@ -12,9 +12,9 @@ namespace gb {
         {
             uint8_t value = getByte(source);
 
-            if(destination.Source != decoding::ArgumentSource::IndirectImmediate)
+            if(destination.source != decoding::ArgumentSource::IndirectImmediate)
             {
-                setByteRegister(destination.Register, value);
+                setByteRegister(destination.reg, value);
             }
             else
             {
@@ -24,15 +24,15 @@ namespace gb {
 
             uint8_t cycles = 1;
 
-            if(source.Source == decoding::ArgumentSource::Indirect || destination.Source == decoding::ArgumentSource::Indirect)
+            if(source.source == decoding::ArgumentSource::Indirect || destination.source == decoding::ArgumentSource::Indirect)
             {
                 ++cycles;
             }
-            if(source.Source == decoding::ArgumentSource::Immediate)
+            if(source.source == decoding::ArgumentSource::Immediate)
             {
                 ++cycles;
             }
-            if(source.Source == decoding::ArgumentSource::IndirectImmediate || destination.Source == decoding::ArgumentSource::IndirectImmediate)
+            if(source.source == decoding::ArgumentSource::IndirectImmediate || destination.source == decoding::ArgumentSource::IndirectImmediate)
             {
                 cycles += 3;
             }
@@ -52,39 +52,39 @@ namespace gb {
 
         uint8_t SharpSM83::LD(decoding::UnprefixedInstruction instr)
         {
-            switch(*instr.LDSubtype)
+            switch(*instr.LD_subtype)
             {
                 case decoding::LoadSubtype::Typical:
                 {
-                    bool isloadWord = (instr.Destination.Source == decoding::ArgumentSource::Register && instr.Destination.Type == decoding::ArgumentType::Unsigned16);
+                    bool isloadWord = (instr.destination.source == decoding::ArgumentSource::Register && instr.destination.type == decoding::ArgumentType::Unsigned16);
                     if(isloadWord)
                     {
-                        setWordRegister(instr.Destination.Register, getWord(instr.Source));
-                        return instr.Source.Source == decoding::ArgumentSource::Immediate ? 3 : 2;
+                        setWordRegister(instr.destination.reg, getWord(instr.source));
+                        return instr.source.source == decoding::ArgumentSource::Immediate ? 3 : 2;
                     }
                     else
                     {
-                        return loadByte(instr.Destination, instr.Source);
+                        return loadByte(instr.destination, instr.source);
                     }
                 }
                 case decoding::LoadSubtype::LD_DEC:
                 {
-                    loadByte(instr.Destination, instr.Source);
+                    loadByte(instr.destination, instr.source);
                     --reg_.HL;
                     return 2;
                 }
                 case decoding::LoadSubtype::LD_INC:
                 {
-                    loadByte(instr.Destination, instr.Source);
+                    loadByte(instr.destination, instr.source);
                     ++reg_.HL;
                     return 2;
                 }
                 case decoding::LoadSubtype::LD_IO:
                 {
                     //true if loading from register A, false otherwise
-                    bool direction = instr.Source.Register == decoding::Registers::A;
-                    bool hasImmediate = (instr.Source.Source == decoding::ArgumentSource::Immediate) || (instr.Destination.Source == decoding::ArgumentSource::Immediate);
-                    uint16_t address = 0xFF00 + getByte(direction ? instr.Destination : instr.Source);
+                    bool direction = instr.source.reg == decoding::Registers::A;
+                    bool hasImmediate = (instr.source.source == decoding::ArgumentSource::Immediate) || (instr.destination.source == decoding::ArgumentSource::Immediate);
+                    uint16_t address = 0xFF00 + getByte(direction ? instr.destination : instr.source);
                     if(direction)
                     {
                         write(address, reg_.A);
@@ -119,43 +119,43 @@ namespace gb {
 
         uint8_t SharpSM83::INC(decoding::ArgumentInfo target)
         {
-            if(target.Type == decoding::ArgumentType::Unsigned16)
+            if(target.type == decoding::ArgumentType::Unsigned16)
             {
-                uint16_t value = getWordRegister(target.Register);
+                uint16_t value = getWordRegister(target.reg);
                 ++value;
-                setWordRegister(target.Register, value);
+                setWordRegister(target.reg, value);
                 return 2;
             }
             else
             {
-                uint8_t value = getByteRegister(target.Register);
+                uint8_t value = getByteRegister(target.reg);
                 reg_.flags.H = halfCarryOccured8Add(value, 1);
                 reg_.flags.N = 0;
                 ++value;
-                setByteRegister(target.Register, value);
+                setByteRegister(target.reg, value);
                 reg_.flags.Z = value == 0;
-                return target.Source == decoding::ArgumentSource::Register ? 1 : 3;
+                return target.source == decoding::ArgumentSource::Register ? 1 : 3;
             }
         }
 
         uint8_t SharpSM83::DEC(decoding::ArgumentInfo target)
         {
-            if(target.Type == decoding::ArgumentType::Unsigned16)
+            if(target.type == decoding::ArgumentType::Unsigned16)
             {
-                uint16_t value = getWordRegister(target.Register);
+                uint16_t value = getWordRegister(target.reg);
                 --value;
-                setWordRegister(target.Register, value);
+                setWordRegister(target.reg, value);
                 return 2;
             }
             else
             {
-                uint8_t value = getByteRegister(target.Register);
+                uint8_t value = getByteRegister(target.reg);
                 reg_.flags.H = halfCarryOccured8Sub(value, 1);
                 reg_.flags.N = 1;
                 --value;
-                setByteRegister(target.Register, value);
+                setByteRegister(target.reg, value);
                 reg_.flags.Z = value == 0;
-                return target.Source == decoding::ArgumentSource::Register ? 1 : 3;
+                return target.source == decoding::ArgumentSource::Register ? 1 : 3;
             }
         }
 
@@ -163,11 +163,11 @@ namespace gb {
         {
             reg_.flags.N = 0;
 
-            switch(instr.Destination.Register)
+            switch(instr.destination.reg)
             {
                 case decoding::Registers::HL:
                 {
-                    uint16_t value = getWordRegister(instr.Source.Register);
+                    uint16_t value = getWordRegister(instr.source.reg);
                     reg_.flags.H = halfCarryOccured16Add(reg_.HL, value);
                     reg_.flags.C = carryOccured(reg_.HL, value);
                     reg_.HL += value;
@@ -184,14 +184,14 @@ namespace gb {
                 }
                 case decoding::Registers::A:
                 {
-                    uint8_t value = getByte(instr.Source);
+                    uint8_t value = getByte(instr.source);
                     reg_.flags.H = halfCarryOccured8Add(reg_.A, value);
                     reg_.flags.C = carryOccured(reg_.A, value);
                     reg_.A += value;
                     reg_.flags.Z = reg_.A == 0;
 
                     uint8_t cycles = 1;
-                    if(instr.Source.Source == decoding::ArgumentSource::Immediate || instr.Source.Source == decoding::ArgumentSource::Indirect)
+                    if(instr.source.source == decoding::ArgumentSource::Immediate || instr.source.source == decoding::ArgumentSource::Indirect)
                     {
                         ++cycles;
                     }
@@ -211,7 +211,7 @@ namespace gb {
             reg_.flags.H = ((regA & 0x0F) + (value &0x0F) + reg_.flags.C) > 0x0F;
             reg_.flags.C = static_cast<uint16_t>(regA) + value + reg_.flags.C > 0xFF;
 
-            return argument.Source == decoding::ArgumentSource::Register ? 1 : 2;
+            return argument.source == decoding::ArgumentSource::Register ? 1 : 2;
         }
 
         uint8_t SharpSM83::SUB(decoding::ArgumentInfo argument)
@@ -224,7 +224,7 @@ namespace gb {
             reg_.A -= value;
             reg_.flags.Z = reg_.A == 0;
 
-            return argument.Source == decoding::ArgumentSource::Register ? 1 : 2;
+            return argument.source == decoding::ArgumentSource::Register ? 1 : 2;
         }
 
         uint8_t SharpSM83::SBC(decoding::ArgumentInfo argument)
@@ -238,7 +238,7 @@ namespace gb {
             reg_.flags.H = (regA & 0x0F) < ((value & 0x0F) + reg_.flags.C);
             reg_.flags.C = regA < (static_cast<uint16_t>(value) + reg_.flags.C);
 
-            return argument.Source == decoding::ArgumentSource::Register ? 1 : 2;
+            return argument.source == decoding::ArgumentSource::Register ? 1 : 2;
         }
 
         uint8_t SharpSM83::OR(decoding::ArgumentInfo argument)
@@ -248,7 +248,7 @@ namespace gb {
             reg_.A |= getByte(argument);
             reg_.flags.Z = reg_.A == 0;
 
-            return argument.Source == decoding::ArgumentSource::Register ? 1 : 2;
+            return argument.source == decoding::ArgumentSource::Register ? 1 : 2;
         }
 
         uint8_t SharpSM83::AND(decoding::ArgumentInfo argument)
@@ -258,7 +258,7 @@ namespace gb {
             reg_.A &= getByte(argument);
             reg_.flags.Z = reg_.A == 0;
 
-            return argument.Source == decoding::ArgumentSource::Register ? 1 : 2;
+            return argument.source == decoding::ArgumentSource::Register ? 1 : 2;
         }
 
         uint8_t SharpSM83::XOR(decoding::ArgumentInfo argument)
@@ -267,7 +267,7 @@ namespace gb {
             reg_.A ^= getByte(argument);
             reg_.flags.Z = reg_.A == 0;
 
-            return argument.Source == decoding::ArgumentSource::Register ? 1 : 2;
+            return argument.source == decoding::ArgumentSource::Register ? 1 : 2;
         }
 
         uint8_t SharpSM83::CP(decoding::ArgumentInfo argument)
@@ -279,16 +279,16 @@ namespace gb {
             reg_.flags.C = carryOccured(reg_.A, value, true);
             reg_.flags.Z = (reg_.A - value) == 0;
 
-            return argument.Source == decoding::ArgumentSource::Register ? 1 : 2;
+            return argument.source == decoding::ArgumentSource::Register ? 1 : 2;
         }
 
         uint8_t SharpSM83::JP(decoding::UnprefixedInstruction instr)
         {
-            uint16_t address = getWord(instr.Source);
+            uint16_t address = getWord(instr.source);
 
-            if(instr.Condition.has_value())
+            if(instr.condition.has_value())
             {
-                if(checkCondition(*instr.Condition))
+                if(checkCondition(*instr.condition))
                 {
                     reg_.PC = address;
                     return 4;
@@ -301,7 +301,7 @@ namespace gb {
             else
             {
                 reg_.PC = address;
-                return instr.Source.Source == decoding::ArgumentSource::Register ? 1 : 4;
+                return instr.source.source == decoding::ArgumentSource::Register ? 1 : 4;
             }
         }
 
@@ -584,25 +584,25 @@ namespace gb {
         {
             reg_.flags.N = 0;
             reg_.flags.H = 1;
-            uint8_t value = getByteRegister(instr.Target);
+            uint8_t value = getByteRegister(instr.target);
 
-            value &= 1 << *instr.Bit;
+            value &= 1 << *instr.bit;
             reg_.flags.Z = value == 0;
-            return instr.Target == decoding::Registers::HL ? 3 : 2;
+            return instr.target == decoding::Registers::HL ? 3 : 2;
         }
 
         uint8_t SharpSM83::RES(decoding::PrefixedInstruction instr)
         {
-            uint8_t mask = ~(1 << *instr.Bit);
-            setByteRegister(instr.Target, getByteRegister(instr.Target) & mask);
-            return instr.Target == decoding::Registers::HL ? 4 : 2;
+            uint8_t mask = ~(1 << *instr.bit);
+            setByteRegister(instr.target, getByteRegister(instr.target) & mask);
+            return instr.target == decoding::Registers::HL ? 4 : 2;
         }
 
         uint8_t SharpSM83::SET(decoding::PrefixedInstruction instr)
         {
-            uint8_t mask = 1 << *instr.Bit;
-            setByteRegister(instr.Target, getByteRegister(instr.Target) | mask);
-            return instr.Target == decoding::Registers::HL ? 4 : 2;
+            uint8_t mask = 1 << *instr.bit;
+            setByteRegister(instr.target, getByteRegister(instr.target) | mask);
+            return instr.target == decoding::Registers::HL ? 4 : 2;
         }
     }
 }
