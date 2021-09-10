@@ -18,10 +18,15 @@ namespace emulator
 
         void printTitle() const;
         void printHelp() const;
+
         void print(std::string_view text) const;
+        void println(std::string_view text) const;
 
         template<typename... Args>
         void print(Args... args) const;
+
+        template<typename... Args>
+        void println(Args... args) const;
 
         void reportError(InputError err) const;
         void reportError(std::string_view description, uint16_t program_counter) const;
@@ -37,6 +42,12 @@ namespace emulator
 
     template<typename... Args>
     void Printer::print(Args... args) const
+    {
+        ((output_ << args), ...);
+    }
+
+    template<typename... Args>
+    void Printer::println(Args... args) const
     {
         ((output_ << args), ...);
         output_ << '\n';

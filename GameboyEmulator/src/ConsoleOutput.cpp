@@ -8,24 +8,29 @@ namespace emulator
     void Printer::printTitle() const
     {
         output_ << R"(
-****************************
-*  Welcome to GB emulator  *
-****************************
+    ****************************
+    *  Welcome to GB emulator  *
+    ****************************
             )" << '\n';
     }
 
     void Printer::printHelp() const
     {
         output_ << R"(
-            -help - show this text
-            -romdir <path> -set ROM directory
-            -run <name> -run a ROM
-            -ls - list all ROMs in current directory
-            -config - show current ROM directory
-            -quit - quit the emulator)" << '\n';
+    -help - show this text
+    -romdir <path> -set ROM directory
+    -run <name> -run a ROM
+    -ls - list all ROMs in current directory
+    -config - show current ROM directory
+    -quit - quit the emulator)" << '\n';
     }
 
     void Printer::print(std::string_view text) const
+    {
+        output_ << text;
+    }
+
+    void Printer::println(std::string_view text) const
     {
         output_ << text << '\n';
     }
