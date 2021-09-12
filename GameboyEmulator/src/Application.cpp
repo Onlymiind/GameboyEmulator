@@ -11,15 +11,11 @@
 #include "gb/cpu/Decoder.h"
 #include "ConsoleInput.h"
 
-#include <iostream>
+#include "utils/MemoryObserver.h"
+
 #include <string>
-#include <iomanip>
-#include <memory>
 #include <filesystem>
-#include <algorithm>
 #include <exception>
-#include <future>
-#include <chrono>
 
 #define BIND_READ(x, func) std::bind(func, &x, std::placeholders::_1)
 #define BIND_WRITE(x, func) std::bind(func, &x, std::placeholders::_1, std::placeholders::_2)
@@ -31,10 +27,10 @@ namespace emulator
 
     }
 
-    Application::Application(const Printer& printer) :
+    Application::Application(const Printer& printer, const Reader& reader) :
         RAM_(computeSizeFromAddresses(0x8000, 0xFEFF)), ROM_(), leftover_(computeSizeFromAddresses(0xFF80, 0xFFFF)), GBIO_(),
         bus_(), CPU_(bus_, interrupt_enable_, interrupt_flags_, decoder_), is_running_(true), emulator_running_(false),
-        printer_(printer)
+        input_reader_(reader), printer_(printer)
     {
         init();
     }
@@ -63,10 +59,37 @@ namespace emulator
     {
         bus_.connect(gb::MemoryController(0x0000, 0x7FFF, ROM_));
         bus_.connect(gb::MemoryController(0x8000, 0xFEFF, RAM_));
-        bus_.connect(gb::MemoryController(0xFF80, 0xFFFF, leftover_));
         bus_.connect(gb::MemoryController(0xFF00, 0xFF7F, GBIO_));
+        bus_.connect(gb::MemoryController(0xFF80, 0xFFFF, leftover_));
 
         printer_.printTitle();
+    }
+
+    void Application::addMemoryObserver(MemoryType observed_memory, MemoryObserver& observer)
+    {
+        switch(observed_memory)
+        {
+            case MemoryType::ROM:
+                bus_.disconnect({0x0000, 0x7FFF, ROM_});
+                observer.setMemory(ROM_);
+                bus_.connect({0x0000, 0x7FFF, observer});
+                break;
+            case MemoryType::WRAM:
+                bus_.disconnect({0x8000, 0xFEFF, RAM_});
+                observer.setMemory(RAM_);
+                bus_.connect({0x8000, 0xFEFF, observer});
+                break;
+            case MemoryType::IO:
+                bus_.disconnect({0xFF00, 0xFF7F, GBIO_});
+                observer.setMemory(GBIO_);
+                bus_.connect({0xFF00, 0xFF7F, observer});
+                break;
+            case MemoryType::HRAM:
+                bus_.disconnect({0xFF00, 0xFF7F, leftover_});
+                observer.setMemory(leftover_);
+                bus_.connect({0xFF00, 0xFF7F, observer});
+                break;
+        }
     }
 
     void Application::update()
@@ -100,10 +123,8 @@ namespace emulator
     void Application::pollCommands()
     {
         printer_.print('>');
-        std::string cmd_str;
-        std::getline(std::cin, cmd_str);
 
-        Command cmd = command_parser_.parse(cmd_str);
+        Command cmd = input_reader_.parse(input_reader_.getLine());
 
         switch (cmd.type)
         {

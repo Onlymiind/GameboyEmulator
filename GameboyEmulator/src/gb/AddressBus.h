@@ -17,6 +17,7 @@ namespace gb {
 		~AddressBus() = default;
 
 		inline void connect(const MemoryController& controller) { memory_.insert(controller); }
+		inline void disconnect(const MemoryController& controller) { memory_.erase(controller); }
 
 		size_t getObjectCount() const { return memory_.size(); }
 

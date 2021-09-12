@@ -1,5 +1,5 @@
 #pragma once
-#include "core/gb/AddressBus.h"
+#include "gb/AddressBus.h"
 #include <sstream>
 #include <string>
 #include <array>

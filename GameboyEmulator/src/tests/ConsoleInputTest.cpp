@@ -2,6 +2,7 @@
 #include "Common.h"
 
 #include <cassert>
+#include <iostream>
 
 std::vector<std::string> input = 
 {
@@ -42,11 +43,11 @@ bool operator==(const emulator::Command& lhs, const emulator::Command& rhs)
 
 void TestParser()
 {
-    emulator::Parser p;
+    emulator::Reader r(std::cin);
 
     for(int i = 0; i < input.size(); ++i)
     {
-        assert(p.parse(input[i]) == output[i]);
+        assert(r.parse(input[i]) == output[i]);
     }
 }
 
