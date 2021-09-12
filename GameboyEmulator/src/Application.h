@@ -9,6 +9,8 @@
 #include "ConsoleInput.h"
 #include "ConsoleOutput.h"
 
+#include "utils/MemoryObserver.h"
+
 #include <filesystem>
 #include <string_view>
 
@@ -18,9 +20,10 @@ namespace emulator
     class Application 
     {
     public:
-        Application(const Printer& printer);
+        Application(const Printer& printer, const Reader& reader);
         ~Application();
 
+        void addMemoryObserver(MemoryType observed_memory , MemoryObserver& observer);
 
         void run();
 
@@ -55,7 +58,7 @@ namespace emulator
 
         std::filesystem::path ROM_directory_;
         const std::string extension_ = ".gb";
-        Parser command_parser_;
+        const Reader& input_reader_;
         const Printer& printer_;
     };
 }

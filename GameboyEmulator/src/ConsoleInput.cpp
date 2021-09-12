@@ -5,8 +5,14 @@
 
 namespace emulator
 {
+    std::string Reader::getLine() const
+    {
+        std::string buffer;
+        std::getline(input_, buffer);
+        return buffer;
+    }
 
-    Command Parser::parse(std::string_view text) const
+    Command Reader::parse(std::string_view text) const
     {
         Command result = { CommandType::None, {} };
 
@@ -40,7 +46,7 @@ namespace emulator
         return result;
     }
 
-    std::string Parser::getArguments(std::string_view text, const Parser::CommandInfo& info) const
+    std::string Reader::getArguments(std::string_view text, const Reader::CommandInfo& info) const
     {
         if (info.has_arguments)
         {

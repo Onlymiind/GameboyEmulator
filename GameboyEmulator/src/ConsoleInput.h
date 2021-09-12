@@ -1,4 +1,5 @@
 #pragma once
+#include <iostream>
 #include <string_view>
 #include <string>
 #include <unordered_map>
@@ -16,13 +17,19 @@ namespace emulator
 		std::string argument;
 	};
 
-	class Parser
+	class Reader
 	{
 	public:
-		Parser() = default;
-		~Parser() = default;
+		Reader(std::istream& input)
+			:input_(input)
+		{}
+		~Reader() = default;
 
+		std::string getLine() const;
 		Command parse(std::string_view text) const;
+
+		template<typename T>
+		void get(T& value) const;
 
 	private:
 
@@ -40,5 +47,13 @@ namespace emulator
 			{"-romdir", {CommandType::SetRomDir, true}}, {"-run", {CommandType::RunRom, true}},
 			{"-ls", {CommandType::List, false}}, {"-config", {CommandType::Config, false}}
 		};
+
+		std::istream& input_;
 	};
+
+	template<typename T>
+	void Reader::get(T& value) const
+	{
+		input_ >> value;
+	}
 }
