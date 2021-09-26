@@ -51,14 +51,14 @@ namespace gb
                     cycles_to_finish_ = dispatch(code);
                 }
 
+                if (enable_IME_) 
+                { 
+                    // Enable jumping to interrupt vectors if it is scheduled by EI
+                    IME_ = true;
+                    enable_IME_ = false;
+                }
             }
 
-            if (enable_IME_) 
-            { 
-                // Enable jumping to interrupt vectors if it is scheduled by EI
-                IME_ = true;
-                enable_IME_ = false;
-            }
 
             --cycles_to_finish_;
         }
