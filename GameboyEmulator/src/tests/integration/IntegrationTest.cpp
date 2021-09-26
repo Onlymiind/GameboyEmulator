@@ -30,7 +30,7 @@ public:
 		: printer_(printer)
 	{}
 
-	uint8_t read(uint16_t address) override
+	uint8_t read(uint16_t address) const override
 	{
 		return 0;
 	}

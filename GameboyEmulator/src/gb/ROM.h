@@ -21,7 +21,7 @@ namespace gb {
 		~ROM() = default;
 
 		inline void setData(std::vector<uint8_t>&& rom) { memory_ = std::move(rom); }
-		inline uint8_t read(uint16_t address) override { return memory_[address]; }
+		inline uint8_t read(uint16_t address) const override { return memory_[address]; }
 		inline void write(uint16_t address, uint8_t data) override {/*Do nothing*/}
 	private:
 		std::vector<uint8_t> memory_;

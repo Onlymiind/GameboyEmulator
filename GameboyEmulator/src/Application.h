@@ -3,7 +3,6 @@
 #include "gb/ROM.h"
 #include "gb/AddressBus.h"
 #include "gb/cpu/CPU.h"
-#include "gb/IO.h"
 #include "gb/InterruptRegister.h"
 #include "gb/cpu/Decoder.h"
 #include "ConsoleInput.h"
