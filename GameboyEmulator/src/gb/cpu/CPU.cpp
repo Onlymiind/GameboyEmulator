@@ -4,14 +4,7 @@
 #include "gb/cpu/Operation.h"
 #include "gb/cpu/Decoder.h"
 
-#include <climits>
-#include <iostream>
 #include <cstdint>
-#include <string_view>
-#include <sstream>
-#include <string>
-#include <array>
-#include <functional>
 #include <exception>
 
 //TODO: DAA
@@ -29,25 +22,29 @@ namespace gb
 
         void SharpSM83::tick()
         {
+            std::optional<InterruptFlags> interrupt = getPendingInterrupt();
+
+            //FIXME: possible bug: what if interrupt flag with higher priority is set during HALT "execution"?
+            if(halt_mode_ && interrupt)
+            {
+                halt_mode_ = false;
+            }
+
             if (cycles_to_finish_ == 0)
             {
-                uint8_t pending_interrupts = interrupt_enable_.getFlags() & interrupt_flags_.getFlags() & (~g_unused_interrupt_bits);
-                if(pending_interrupts)
+                if (enable_IME_) 
                 {
-                    //TODO: handle interrupt
-                    //Can actually safely cast this to InterruptFlags
-                    InterruptFlags interrupt = static_cast<InterruptFlags>(pending_interrupts & -pending_interrupts);
-                    if(IME_)
-                    {
-                        interrupt_enable_.clearFlag(interrupt);
-                        //TODO: jump to interrupt vector
-                    }
+                    // Enable jumping to interrupt vectors if it is scheduled by EI
+                    IME_ = true;
+                    enable_IME_ = false;
+                }
+                if(interrupt && IME_)
+                {
+                    handleInterrupt(*interrupt);
                 }
                 else
                 {
-                    decoding::opcode code = fetch();
-                    //TODO: HALT state (with bug)
-                    //TODO: Check if opcode is invalid
+                    decoding::opcode code = halt_bug_ ? read(reg_.PC) : fetch();
                     cycles_to_finish_ = dispatch(code);
                 }
 
@@ -58,9 +55,31 @@ namespace gb
                     enable_IME_ = false;
                 }
             }
+            if(!halt_mode_)
+            {
+                --cycles_to_finish_;
+            }
+        }
 
+        std::optional<InterruptFlags> SharpSM83::getPendingInterrupt() const
+        {
+            uint8_t pending_interrupts = (interrupt_enable_.getFlags() & interrupt_flags_.getFlags()) & (~g_unused_interrupt_bits);
+            if(pending_interrupts != 0)
+            {
+                return static_cast<InterruptFlags>(pending_interrupts & -pending_interrupts);
+            }
+            else
+            {
+                return {};
+            }
+        }
 
-            --cycles_to_finish_;
+        void SharpSM83::handleInterrupt(InterruptFlags interrupt)
+        {
+            interrupt_enable_.clearFlag(interrupt);
+            pushStack(reg_.PC);
+            reg_.PC = interrupt_vectors_.at(interrupt);
+            cycles_to_finish_ = 5;
         }
 
         Registers SharpSM83::getRegisters() const

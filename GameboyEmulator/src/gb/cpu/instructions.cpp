@@ -385,11 +385,22 @@ namespace gb {
 
         uint8_t SharpSM83::HALT()
         {
+            if(getPendingInterrupt() && !IME_)
+            {
+                halt_bug_ = true;
+            }
+            else
+            {
+                halt_mode_ = true;
+            }
             return 1;
         }
 
         uint8_t SharpSM83::STOP()
         {
+            //TODO: this should turn LCD off
+            //TODO: check for corrupted STOP
+            halt_mode_ = true;
             return 1;
         }
 

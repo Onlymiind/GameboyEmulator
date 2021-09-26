@@ -23,7 +23,7 @@ namespace gb
             : interrupts_(g_unused_interrupt_bits)
         {}
 
-        uint8_t read(uint16_t address) override
+        uint8_t read(uint16_t address) const override
         {
             return interrupts_;
         }

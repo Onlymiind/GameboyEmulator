@@ -11,7 +11,7 @@
 #include "gb/cpu/Decoder.h"
 #include "ConsoleInput.h"
 
-#include "utils/MemoryObserver.h"
+#include "gb/MemoryObject.h"
 
 #include <string>
 #include <filesystem>
@@ -28,7 +28,7 @@ namespace emulator
     }
 
     Application::Application(const Printer& printer, const Reader& reader) :
-        RAM_(computeSizeFromAddresses(0x8000, 0xFEFF)), ROM_(), leftover_(computeSizeFromAddresses(0xFF80, 0xFFFF)), GBIO_(),
+        RAM_(computeSizeFromAddresses(0x8000, 0xFEFF)), ROM_(), leftover_(computeSizeFromAddresses(0xFF80, 0xFFFD)),
         bus_(), CPU_(bus_, interrupt_enable_, interrupt_flags_, decoder_), is_running_(true), emulator_running_(false),
         input_reader_(reader), printer_(printer)
     {
@@ -58,38 +58,17 @@ namespace emulator
     void Application::init()
     {
         bus_.connect(gb::MemoryController(0x0000, 0x7FFF, ROM_));
-        bus_.connect(gb::MemoryController(0x8000, 0xFEFF, RAM_));
-        bus_.connect(gb::MemoryController(0xFF00, 0xFF7F, GBIO_));
-        bus_.connect(gb::MemoryController(0xFF80, 0xFFFF, leftover_));
+        bus_.connect(gb::MemoryController(0x8000, 0xFF0E, RAM_));
+        bus_.connect(gb::MemoryController(0xFF0F, 0xFF0F, interrupt_enable_));
+        bus_.connect(gb::MemoryController(0xFF10, 0xFFFE, leftover_));
+        bus_.connect(gb::MemoryController(0xFFFF, 0xFFFF, interrupt_flags_));
 
         printer_.printTitle();
     }
 
-    void Application::addMemoryObserver(MemoryType observed_memory, MemoryObserver& observer)
+    void Application::addMemoryObserver(uint16_t from, uint16_t to, gb::MemoryObject& observer)
     {
-        switch(observed_memory)
-        {
-            case MemoryType::ROM:
-                bus_.disconnect({0x0000, 0x7FFF, ROM_});
-                observer.setMemory(ROM_);
-                bus_.connect({0x0000, 0x7FFF, observer});
-                break;
-            case MemoryType::WRAM:
-                bus_.disconnect({0x8000, 0xFEFF, RAM_});
-                observer.setMemory(RAM_);
-                bus_.connect({0x8000, 0xFEFF, observer});
-                break;
-            case MemoryType::IO:
-                bus_.disconnect({0xFF00, 0xFF7F, GBIO_});
-                observer.setMemory(GBIO_);
-                bus_.connect({0xFF00, 0xFF7F, observer});
-                break;
-            case MemoryType::HRAM:
-                bus_.disconnect({0xFF00, 0xFF7F, leftover_});
-                observer.setMemory(leftover_);
-                bus_.connect({0xFF00, 0xFF7F, observer});
-                break;
-        }
+        bus_.addObserver(gb::MemoryController(from, to, observer));
     }
 
     void Application::update()
