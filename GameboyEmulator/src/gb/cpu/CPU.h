@@ -7,12 +7,9 @@
 #include "gb/cpu/Registers.h"
 
 #include <cstdint>
-#include <string_view>
-#include <string>
-#include <array>
-#include <map>
-#include <functional>
-#include <numeric>
+#include <limits>
+#include <unordered_map>
+#include <optional>
 
 namespace gb
 {
@@ -41,6 +38,9 @@ namespace gb
             uint8_t dispatchPrefixed(decoding::PrefixedInstruction instr);
             uint8_t dispatchUnprefixed(decoding::UnprefixedInstruction instr);
 
+            std::optional<InterruptFlags> getPendingInterrupt() const;
+            void handleInterrupt(InterruptFlags interrupt);
+
             uint8_t read(uint16_t address) const;
 
             void write(uint16_t address, uint8_t data);
@@ -53,6 +53,7 @@ namespace gb
 
             void pushStack(uint16_t value);
 
+
             uint16_t popStack();
 
             bool halfCarryOccured8Add(uint8_t lhs, uint8_t rhs);
@@ -62,18 +63,7 @@ namespace gb
             bool halfCarryOccured16Add(uint16_t lhs, uint16_t rhs);
 
             template<typename T>
-            bool carryOccured(T lhs, T rhs, bool substract = false) const
-            {
-                uint32_t a(lhs), b(rhs);
-                if(substract)
-                {
-                    return a < b;
-                }
-                else
-                {
-                    return (a + b) > std::numeric_limits<T>::max();
-                }
-            }
+            bool carryOccured(T lhs, T rhs, bool substract = false) const;
 
             uint8_t getByte(decoding::ArgumentInfo from);
             uint16_t getWord(decoding::ArgumentInfo from);
@@ -147,11 +137,36 @@ namespace gb
             InterruptRegister& interrupt_flags_;
 
         private: //STUFF
+            const std::unordered_map<InterruptFlags, uint16_t> interrupt_vectors_ = 
+            {
+                {InterruptFlags::VBlank,   0x0040},
+                {InterruptFlags::LCD_STAT, 0x0048},
+                {InterruptFlags::Timer,    0x0050},
+                {InterruptFlags::Serial,   0x0058},
+                {InterruptFlags::Joypad,   0x0060}
+            };
 
             const AddressBus& bus_;
             const decoding::Decoder& decoder_;
 
             uint8_t cycles_to_finish_;
+
+            bool halt_mode_ = false;
+            bool halt_bug_ = false;
         };
+
+        template<typename T>
+        bool SharpSM83::carryOccured(T lhs, T rhs, bool substract) const
+        {
+            uint32_t a(lhs), b(rhs);
+            if(substract)
+            {
+                return a < b;
+            }
+            else
+            {
+                return (a + b) > std::numeric_limits<T>::max();
+            }
+        }
     }
 }
