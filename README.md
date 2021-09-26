@@ -20,7 +20,7 @@ This project has no dependencies.
 Run cmake at project's root directory. Cmake 3.20 was originally used, however, version 3.1 should also work. C++17 is required for building the project.
 ## Testing
 Tests' source code is located under src/tests directory. To build tests add `BUILD_TESTS = TRUE` flag when generating build files.
-Note that integration_test requires path to project folder as a parameter to access test ROMs.  
+Note that integration_test requires path to project folder as a parameter to access test ROMs. Tests ROMs must be located in `src\tests\integration\roms` directory.  
   
 Currently, an error with message `"Reached infinite loop"` is reported when running test ROMs. Such behaviour is expected since test ROMs typically jump to the infinite loop when they are done. This means that this error can occur as a result of normal execution and may signify the end of the test (actually, the infinite loop check is mainly used to terminate emulation when tests are finished). 
 ## TODO list
