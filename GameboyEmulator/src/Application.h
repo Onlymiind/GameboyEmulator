@@ -9,7 +9,7 @@
 #include "ConsoleInput.h"
 #include "ConsoleOutput.h"
 
-#include "utils/MemoryObserver.h"
+#include "gb/MemoryObject.h"
 
 #include <filesystem>
 #include <string_view>
@@ -23,7 +23,7 @@ namespace emulator
         Application(const Printer& printer, const Reader& reader);
         ~Application();
 
-        void addMemoryObserver(MemoryType observed_memory , MemoryObserver& observer);
+        void addMemoryObserver(uint16_t from, uint16_t to, gb::MemoryObject& observer);
 
         void run();
 
@@ -45,7 +45,6 @@ namespace emulator
         gb::RAM RAM_;
         gb::ROM ROM_;
         gb::RAM leftover_;
-        gb::IORegisters GBIO_;
         gb::AddressBus bus_;
         gb::InterruptRegister interrupt_enable_;
         gb::InterruptRegister interrupt_flags_;

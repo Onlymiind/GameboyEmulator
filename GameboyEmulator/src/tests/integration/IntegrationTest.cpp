@@ -1,5 +1,5 @@
 #include "Application.h"
-#include "utils/MemoryObserver.h"
+#include "gb/MemoryObject.h"
 #include "ConsoleInput.h"
 #include "ConsoleOutput.h"
 
@@ -23,7 +23,7 @@ R"(-run 01-special
 -run 11-op a,(hl)
 -quit)";
 
-class TestOutputReader : public emulator::MemoryObserver
+class TestOutputReader : public gb::MemoryObject
 {
 public:
 	TestOutputReader(const emulator::Printer& printer)
@@ -32,20 +32,23 @@ public:
 
 	uint8_t read(uint16_t address) override
 	{
-		return memory_->read(address);
+		return 0;
 	}
 
 	void write(uint16_t address, uint8_t data) override
 	{
-		if (address == 0x02 && data == 0x81)
+        if(address == 0)
+        {
+            symbol = data;
+        }
+		else if (address == 0x01 && data == 0x81)
 		{
-			printer_.print(memory_->read(0x01));
+			printer_.print(symbol);
 		}
-
-		memory_->write(address, data);
 	}
 private:
 	const emulator::Printer& printer_;
+    uint8_t symbol = 0;
 };
 
 int main(int argc, char** argv)
@@ -72,7 +75,7 @@ int main(int argc, char** argv)
 
     TestOutputReader tests_out(p);
 
-    app->addMemoryObserver(emulator::MemoryType::IO, tests_out);
+    app->addMemoryObserver(0xFF01, 0xFF02, tests_out);
 
     app->run();
 

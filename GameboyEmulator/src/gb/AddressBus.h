@@ -17,6 +17,7 @@ namespace gb {
 		~AddressBus() = default;
 
 		inline void connect(const MemoryController& controller) { memory_.insert(controller); }
+		inline void addObserver(const MemoryController& observer) { observers_.insert(observer); }
 		inline void disconnect(const MemoryController& controller) { memory_.erase(controller); }
 
 		size_t getObjectCount() const { return memory_.size(); }
@@ -27,6 +28,7 @@ namespace gb {
 		std::string getErrorDescription(uint16_t address, int value = -1) const;
 
 		std::set<MemoryController, ControllerComparator> memory_;
+		std::set<MemoryController, ControllerComparator> observers_;
 	};
 
 }
