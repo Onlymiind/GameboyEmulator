@@ -9,7 +9,7 @@
 class DummyMemObject : public gb::MemoryObject
 {
 public:
-    uint8_t read(uint16_t /*address*/) override
+    uint8_t read(uint16_t /*address*/) const override
     {
         return value;
     }
@@ -87,7 +87,7 @@ void TestExceptions()
         bus.read(1);
         assert(false);
     }
-    catch(const std::exception& e)
+    catch(const std::exception&)
     {
         
     }
@@ -97,7 +97,7 @@ void TestExceptions()
         bus.write(10, 1);
         assert(false);
     }
-    catch(const std::exception& e)
+    catch(const std::exception&)
     {
         
     }
@@ -111,7 +111,7 @@ void TestExceptions()
         bus.read(7);
         assert(false);
     }
-    catch(const std::exception& e)
+    catch(const std::exception&)
     {
         
     }
@@ -121,7 +121,7 @@ void TestExceptions()
         bus.write(7, 1);
         assert(false);
     }
-    catch(const std::exception& e)
+    catch(const std::exception&)
     {
         
     }

@@ -7,7 +7,6 @@ add_executable(emulator
 	src/gb/cpu/CPU.cpp
 	src/gb/cpu/instructions.cpp
 	src/gb/AddressBus.cpp
-	src/gb/IO.cpp
 	src/gb/Timer.cpp
 	src/Source.cpp
 	src/gb/cpu/Decoder.cpp
@@ -47,7 +46,6 @@ if(BUILD_TESTS)
 		src/gb/cpu/CPU.cpp
 		src/gb/cpu/instructions.cpp
 		src/gb/AddressBus.cpp
-		src/gb/IO.cpp
 		src/gb/Timer.cpp
 		src/tests/integration/IntegrationTest.cpp
 		src/gb/cpu/Decoder.cpp

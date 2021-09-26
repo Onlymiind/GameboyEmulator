@@ -21,7 +21,7 @@ namespace gb {
 		{}
 		~RAM() = default;
 
-		inline uint8_t read(uint16_t address) override { return memory_[address]; }
+		inline uint8_t read(uint16_t address) const override { return memory_[address]; }
 		inline void write(uint16_t address, uint8_t data) override { memory_[address] = data; }
 	private:
 		std::vector<uint8_t> memory_;
