@@ -39,7 +39,12 @@ namespace gb
 
             if (cycles_to_finish_ == 0)
             {
-                //FIXME: not jumping to interrupt vector for some reason...
+                if (enable_IME_) 
+                {
+                    // Enable jumping to interrupt vectors if it is scheduled by EI
+                    IME_ = true;
+                    enable_IME_ = false;
+                }
                 if(interrupt && IME_)
                 {
                     handleInterrupt(*interrupt);
@@ -50,21 +55,17 @@ namespace gb
                     cycles_to_finish_ = dispatch(code);
                 }
 
-                if (enable_IME_) 
-                {
-                    // Enable jumping to interrupt vectors if it is scheduled by EI
-                    IME_ = true;
-                    enable_IME_ = false;
-                }
             }
 
-
-            --cycles_to_finish_;
+            if(!halt_mode_)
+            {
+                --cycles_to_finish_;
+            }
         }
 
         std::optional<InterruptFlags> SharpSM83::getPendingInterrupt() const
         {
-            uint8_t pending_interrupts = interrupt_enable_.getFlags() & interrupt_flags_.getFlags() & (~g_unused_interrupt_bits);
+            uint8_t pending_interrupts = (interrupt_enable_.getFlags() & interrupt_flags_.getFlags()) & (~g_unused_interrupt_bits);
             if(pending_interrupts != 0)
             {
                 return static_cast<InterruptFlags>(pending_interrupts & -pending_interrupts);
