@@ -1,5 +1,5 @@
 #pragma once
-#include "gb/MemoryObject.h"
+#include "gb/memory/Memory.h"
 
 #include <cstdint>
 
@@ -23,12 +23,12 @@ namespace gb
             : interrupts_(g_unused_interrupt_bits)
         {}
 
-        uint8_t read(uint16_t address) const override
+        inline uint8_t read(uint16_t address) const override
         {
             return interrupts_;
         }
 
-        void write(uint16_t address, uint8_t data) override
+        inline void write(uint16_t address, uint8_t data) override
         {
             interrupts_ = (g_unused_interrupt_bits | (data & 0x1F));
         }

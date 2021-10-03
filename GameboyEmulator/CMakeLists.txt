@@ -6,8 +6,10 @@ add_executable(emulator
 	src/Application.cpp
 	src/gb/cpu/CPU.cpp
 	src/gb/cpu/instructions.cpp
+	src/gb/memory/Memory.cpp
 	src/gb/AddressBus.cpp
 	src/gb/Timer.cpp
+	src/gb/memory/BasicComponents.cpp
 	src/Source.cpp
 	src/gb/cpu/Decoder.cpp
 	src/gb/cpu/Operation.cpp
@@ -24,11 +26,13 @@ if(BUILD_TESTS)
 
 	add_executable(
 		interrupt_reg_test
+		src/gb/memory/Memory.cpp
 		src/tests/InterruptRegisterTest.cpp
 	)
 
 	add_executable(
 		bus_test
+		src/gb/memory/Memory.cpp
 		src/gb/AddressBus.cpp
 		src/tests/AddressBusTest.cpp
 	)
@@ -45,6 +49,8 @@ if(BUILD_TESTS)
 		src/Application.cpp
 		src/gb/cpu/CPU.cpp
 		src/gb/cpu/instructions.cpp
+		src/gb/memory/Memory.cpp
+		src/gb/memory/BasicComponents.cpp
 		src/gb/AddressBus.cpp
 		src/gb/Timer.cpp
 		src/tests/integration/IntegrationTest.cpp

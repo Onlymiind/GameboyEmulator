@@ -1,6 +1,5 @@
 #pragma once
-#include "gb/RAM.h"
-#include "gb/ROM.h"
+#include "gb/memory/BasicComponents.h"
 #include "gb/AddressBus.h"
 #include "gb/cpu/CPU.h"
 #include "gb/InterruptRegister.h"
@@ -8,7 +7,7 @@
 #include "ConsoleInput.h"
 #include "ConsoleOutput.h"
 
-#include "gb/MemoryObject.h"
+#include "gb/memory/Memory.h"
 
 #include <filesystem>
 #include <string_view>

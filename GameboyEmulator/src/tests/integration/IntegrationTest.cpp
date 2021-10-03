@@ -1,5 +1,5 @@
 #include "Application.h"
-#include "gb/MemoryObject.h"
+#include "gb/memory/Memory.h"
 #include "ConsoleInput.h"
 #include "ConsoleOutput.h"
 
