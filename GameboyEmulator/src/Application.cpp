@@ -2,16 +2,13 @@
 #include "utils/Utils.h"
 #include "gb/cpu/CPU.h"
 #include "gb/AddressBus.h"
-#include "gb/RAM.h"
-#include "gb/MemoryController.h"
-#include "gb/ROM.h"
+#include "gb//memory/BasicComponents.h"
+#include "gb/memory/Memory.h"
 #include "utils/FileManager.h"
 #include "gb/Timer.h"
 #include "gb/cpu/Operation.h"
 #include "gb/cpu/Decoder.h"
 #include "ConsoleInput.h"
-
-#include "gb/MemoryObject.h"
 
 #include <string>
 #include <filesystem>

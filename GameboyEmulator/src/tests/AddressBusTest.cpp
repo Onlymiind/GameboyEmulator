@@ -1,6 +1,5 @@
 #include "gb/AddressBus.h"
-#include "gb/MemoryObject.h"
-#include "gb/MemoryController.h"
+#include "gb/memory/Memory.h"
 #include "Common.h"
 
 #include <cassert>
