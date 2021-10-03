@@ -284,82 +284,70 @@ namespace gb
 
         uint8_t SharpSM83::getByteRegister(decoding::Registers reg) const
         {
-    #define CASE_BYTE_REG(x) case decoding::Registers::##x: return reg_.##x
-    #define CASE_WORD_REG(x) case decoding::Registers::##x: return read(reg_.##x)
             switch(reg)
             {
-                CASE_BYTE_REG(A);
-                CASE_BYTE_REG(B);
-                CASE_BYTE_REG(C);
-                CASE_BYTE_REG(D);
-                CASE_BYTE_REG(E);
-                CASE_BYTE_REG(H);
-                CASE_BYTE_REG(L);
-                CASE_WORD_REG(HL);
-                CASE_WORD_REG(BC);
-                CASE_WORD_REG(DE);
+                case decoding::Registers::A: return reg_.A;
+                case decoding::Registers::B: return reg_.B;
+                case decoding::Registers::C: return reg_.C;
+                case decoding::Registers::D: return reg_.D;
+                case decoding::Registers::E: return reg_.E;
+                case decoding::Registers::H: return reg_.H;
+                case decoding::Registers::L: return reg_.L;
+                case decoding::Registers::HL: return read(reg_.HL);
+                case decoding::Registers::BC: return read(reg_.BC);
+                case decoding::Registers::DE: return read(reg_.DE);
                 default:
                     throw std::invalid_argument("Trying to get byte from unknown register");
                     return 0;
             }
-    #undef CASE_BYTE_REG
-    #undef CASE_WORD_REG
         }
 
         uint16_t SharpSM83::getWordRegister(decoding::Registers reg) const
         {
-    #define CASE_REG(x) case decoding::Registers::##x: return reg_.##x
             switch(reg)
             {
-                CASE_REG(BC);
-                CASE_REG(DE);
-                CASE_REG(HL);
-                CASE_REG(SP);
+                case decoding::Registers::BC: return reg_.BC;
+                case decoding::Registers::DE: return reg_.DE;
+                case decoding::Registers::HL: return reg_.HL;
+                case decoding::Registers::SP: return reg_.SP;
                 case decoding::Registers::AF: return reg_.AF & 0xFFF0;
                 default:
                     throw std::invalid_argument("Trying to get byte from unknown register");
                     return 0;
             }
-    #undef CASE_REG
         }
 
         void SharpSM83::setByteRegister(decoding::Registers reg, uint8_t data)
         {
-    #define CASE_BYTE_REG(x) case decoding::Registers::##x: reg_.##x = data; return
-    #define CASE_WORD_REG(x) case decoding::Registers::##x: write(reg_.##x, data); return
             switch(reg)
             {
-                CASE_BYTE_REG(A);
-                CASE_BYTE_REG(B);
-                CASE_BYTE_REG(C);
-                CASE_BYTE_REG(D);
-                CASE_BYTE_REG(E);
-                CASE_BYTE_REG(H);
-                CASE_BYTE_REG(L);
-                CASE_WORD_REG(HL);
-                CASE_WORD_REG(BC);
-                CASE_WORD_REG(DE);
+                case decoding::Registers::A: reg_.A = data; return;
+                case decoding::Registers::B: reg_.B = data; return;
+                case decoding::Registers::C: reg_.C = data; return;
+                case decoding::Registers::D: reg_.D = data; return;
+                case decoding::Registers::E: reg_.E = data; return;
+                case decoding::Registers::H: reg_.H = data; return;
+                case decoding::Registers::L: reg_.L = data; return;
+                case decoding::Registers::HL: write(reg_.HL, data); return;
+                case decoding::Registers::BC: write(reg_.BC, data); return;
+                case decoding::Registers::DE: write(reg_.DE, data); return;
                 default:
                     throw std::invalid_argument("Trying to write byte to unknown register");
             }
-    #undef CASE_BYTE_REG
-    #undef CASE_WORD_REG
         }
 
         void SharpSM83::setWordRegister(decoding::Registers reg, uint16_t data)
         {
-    #define CASE_REG(x) case decoding::Registers::##x:  reg_.##x = data; return
             switch(reg)
             {
-                CASE_REG(BC);
-                CASE_REG(DE);
-                CASE_REG(HL);
-                CASE_REG(SP);
+                case decoding::Registers::BC:  reg_.BC = data; return;
+                case decoding::Registers::DE:  reg_.DE = data; return;
+                case decoding::Registers::HL:  reg_.HL = data; return;
+                case decoding::Registers::SP:  reg_.SP = data; return;
                 case decoding::Registers::AF: reg_.AF = data & 0xFFF0; return;
                 default:
                     throw std::invalid_argument("Trying to write word to unknown register");
             }
-    #undef CASE_REG
         }
 
         bool SharpSM83::checkCondition(decoding::Conditions condition)
