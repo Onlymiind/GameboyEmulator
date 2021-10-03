@@ -43,7 +43,7 @@ namespace gb
 
         bool frequency_bit_was_set_ = false;
 
-        //Frequencies of a timer: 4096 Hz, 262144 Hz, 65536 Hz and 16386 Hz respectively. Are set from bits 0-1 of TAC
+        //Frequencies of a timer: 4096 Hz, 262144 Hz, 65536 Hz and 16386 Hz respectively. Frequency is set from bits 0-1 of TAC
         const std::array<uint16_t, 4> frequency_bit_mask_ = { 1 << 9, 1 << 3, 1 << 5, 1 << 7 };
         InterruptRegister& interrupt_flags_;
     };

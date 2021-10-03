@@ -1,6 +1,8 @@
 #include "Timer.h"
 
 #include <limits>
+#include <stdexcept>
+#include <string>
 
 namespace gb
 {
@@ -26,36 +28,38 @@ namespace gb
     {
         switch (address)
         {
-        case 0xFF04: return DIV_;
-        case 0xFF05: return TIMA_;
-        case 0xFF06: return TMA_;
-        case 0xFF07: return (uint8_t(TAC_.enable) << 2) + TAC_.freqency;
+        case 0x00:
+            return DIV_;
+        case 0x01:
+            return TIMA_;
+        case 0x02:
+            return TMA_;
+        case 0x03:
+            return (uint8_t(TAC_.enable) << 2) + TAC_.freqency;
+        default:
+            throw std::invalid_argument("Attempting to read data from timer at invalid adress: " + std::to_string(address));
+            return 0x00;
         }
     }
     void Timer::write(uint16_t address, uint8_t data)
     {
-        switch (address) {
-        case 0xFF04:
+        switch (address)
         {
+        case 0x00:
             counter_ = 0;
             break;
-        }
-        case 0xFF05:
-        {
+        case 0x01:
             TIMA_ = data;
             break;
-        }
-        case 0xFF06:
-        {
+        case 0x02:
             TMA_ = data;
             break;
-        }
-        case 0xFF07:
-        {
+        case 0x03:
             TAC_.enable = (data & 0b00000100) != 0;
             TAC_.freqency = data & 0b00000011;
             break;
-        }
+        default:
+            throw std::invalid_argument("Attempting to write data to timer at invalid adress: " + std::to_string(address) + ", data: " + std::to_string(+data));
         }
     }
 }

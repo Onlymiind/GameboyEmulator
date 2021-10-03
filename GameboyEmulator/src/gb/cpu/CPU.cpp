@@ -139,7 +139,7 @@ namespace gb
                 case type::RES: return RES(instr);
                 case type::SET: return SET(instr);
                 default:
-                    throw std::invalid_argument(PrintToString("", "Unknown prefixed instruction: ", instr.type));
+                    throw std::invalid_argument(printToString("", "Unknown prefixed instruction: ", instr.type));
                     return 0;
             }
         }
@@ -182,7 +182,7 @@ namespace gb
                 case type::LD: return LD(instr);
                 case type::ADD: return ADD(instr);
                 default:
-                    throw std::invalid_argument(PrintToString("", "Unknown unprefixed instruction: ", instr.type));
+                    throw std::invalid_argument(printToString("", "Unknown unprefixed instruction: ", instr.type));
                     return 0;
             }
         }

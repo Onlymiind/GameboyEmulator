@@ -55,5 +55,6 @@ void TestParser()
 int main()
 {
     RUN_TEST(TestParser);
+    std::cin.get();
     return 0;
 }
