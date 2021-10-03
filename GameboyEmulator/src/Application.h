@@ -19,7 +19,6 @@ namespace emulator
     {
     public:
         Application(const Printer& printer, const Reader& reader);
-        ~Application();
 
         void addMemoryObserver(uint16_t from, uint16_t to, gb::MemoryObject& observer);
 
@@ -32,13 +31,26 @@ namespace emulator
         void init();
         void update();
         void pollCommands();
-        void cleanup();
 
         void setROMDirectory(const std::filesystem::path& newPath);
         void listROMs() const;
         void runROM(std::string_view name);
-
     private:
+        struct MemoryObjectInfo
+        {
+            uint16_t min_address, max_address = 0;
+            uint16_t size = static_cast<uint16_t>(max_address - min_address + 1);
+        };
+
+        struct
+        {
+            MemoryObjectInfo ROM = {0x0000, 0x7FFF};
+            MemoryObjectInfo RAM = {0x8000, 0xFF0E};
+            MemoryObjectInfo interrupt_enable = {0xFF0F, 0xFF0F};
+            MemoryObjectInfo leftover = {0xFF10, 0xFFFE};
+            MemoryObjectInfo interrupt_flags = {0xFFFF, 0xFFFF};
+        }
+        const memory_map_;
 
         gb::RAM RAM_;
         gb::ROM ROM_;
@@ -57,5 +69,7 @@ namespace emulator
         const std::string extension_ = ".gb";
         const Reader& input_reader_;
         const Printer& printer_;
+
+
     };
 }

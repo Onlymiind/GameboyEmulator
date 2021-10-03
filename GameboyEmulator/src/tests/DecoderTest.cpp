@@ -70,6 +70,7 @@ int main()
     RUN_TEST(TestPrefix);
     RUN_TEST(TestDecodingPrefixed);
     RUN_TEST(TestDecodingUnprefixed);
-    std::cout << "Done\n"; 
+    std::cout << "Done\n";
+    std::cin.get();
     return 0;
 }

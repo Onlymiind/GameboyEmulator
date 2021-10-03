@@ -4,9 +4,7 @@
 #include "gb/AddressBus.h"
 #include "gb//memory/BasicComponents.h"
 #include "gb/memory/Memory.h"
-#include "utils/FileManager.h"
 #include "gb/Timer.h"
-#include "gb/cpu/Operation.h"
 #include "gb/cpu/Decoder.h"
 #include "ConsoleInput.h"
 
@@ -14,27 +12,19 @@
 #include <filesystem>
 #include <exception>
 
-#define BIND_READ(x, func) std::bind(func, &x, std::placeholders::_1)
-#define BIND_WRITE(x, func) std::bind(func, &x, std::placeholders::_1, std::placeholders::_2)
-
 namespace emulator
 {
     void Application::draw()
     {
-
+        //TODO
     }
 
     Application::Application(const Printer& printer, const Reader& reader) :
-        RAM_(computeSizeFromAddresses(0x8000, 0xFEFF)), ROM_(), leftover_(computeSizeFromAddresses(0xFF80, 0xFFFD)),
+        RAM_(memory_map_.RAM.size), ROM_(), leftover_(memory_map_.leftover.size),
         bus_(), CPU_(bus_, interrupt_enable_, interrupt_flags_, decoder_), is_running_(true), emulator_running_(false),
         input_reader_(reader), printer_(printer)
     {
         init();
-    }
-
-    Application::~Application()
-    {
-        cleanup();
     }
 
     void Application::run()
@@ -54,11 +44,11 @@ namespace emulator
 
     void Application::init()
     {
-        bus_.connect(gb::MemoryController(0x0000, 0x7FFF, ROM_));
-        bus_.connect(gb::MemoryController(0x8000, 0xFF0E, RAM_));
-        bus_.connect(gb::MemoryController(0xFF0F, 0xFF0F, interrupt_enable_));
-        bus_.connect(gb::MemoryController(0xFF10, 0xFFFE, leftover_));
-        bus_.connect(gb::MemoryController(0xFFFF, 0xFFFF, interrupt_flags_));
+        bus_.connect({memory_map_.ROM.min_address, memory_map_.ROM.max_address, ROM_});
+        bus_.connect({memory_map_.RAM.min_address, memory_map_.RAM.max_address, RAM_});
+        bus_.connect({memory_map_.interrupt_enable.min_address, memory_map_.interrupt_enable.max_address, interrupt_enable_});
+        bus_.connect({memory_map_.leftover.min_address, memory_map_.leftover.max_address, leftover_});
+        bus_.connect({memory_map_.interrupt_flags.min_address, memory_map_.interrupt_flags.max_address, interrupt_flags_});
 
         printer_.printTitle();
     }
@@ -162,7 +152,7 @@ namespace emulator
         ROM_path = ROM_path / std::filesystem::path(name).replace_extension(extension_);
         if (std::filesystem::exists(ROM_path))
         {
-            ROM_.setData(FileManager::readFile(ROM_path.string()));
+            ROM_.setData(readFile(ROM_path));
             CPU_.reset();
             emulator_running_ = true;
         }
@@ -171,10 +161,5 @@ namespace emulator
             printer_.reportError(InputError::InvalidRomName);
             printer_.println("ROM: ", ROM_path);
         }
-    }
-
-    void Application::cleanup()
-    {
-
     }
 }

@@ -37,6 +37,7 @@ public:
 
 	void write(uint16_t address, uint8_t data) override
 	{
+        //Used to get output from blargg's test ROMs.
         if(address == 0)
         {
             symbol = data;
@@ -58,15 +59,15 @@ int main(int argc, char** argv)
         std::cout << "Expected single argument: path to project directory" << std::endl;
         return 1;
     }
-    std::filesystem::path proj_path(argv[1]);
-    std::filesystem::path rom_path = proj_path / "src" / "tests" / "integration" / "roms";
+    std::filesystem::path rom_path(argv[1]);
+    rom_path = rom_path / "src" / "tests" / "integration" / "roms";
 
     if(!std::filesystem::exists(rom_path))
     {
         std::cout << "Project path is invalid or directory <path>/src/tests/integration/roms/ doesn't exist\n" << std::endl;
         return 1;
     }
-    std::filesystem::current_path(proj_path / "src" / "tests" / "integration" / "roms");
+    std::filesystem::current_path(rom_path);
     
     std::stringstream in(input);
     emulator::Reader r(in);
