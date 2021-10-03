@@ -85,10 +85,4 @@ endif()
 
 
 
-if(UNIX)
-	target_compile_options(emulator "$<$<CONFIG:DEBUG>:-g>")
-endif()
-
-
-
 
