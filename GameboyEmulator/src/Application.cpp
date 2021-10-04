@@ -20,8 +20,9 @@ namespace emulator
     }
 
     Application::Application(const Printer& printer, const Reader& reader) :
-        RAM_(memory_map_.RAM.size), ROM_(), leftover_(memory_map_.leftover.size),
-        bus_(), CPU_(bus_, interrupt_enable_, interrupt_flags_, decoder_), is_running_(true), emulator_running_(false),
+        RAM_(memory_map_.RAM.size), ROM_(), leftover_(memory_map_.leftover.size), leftover2_(memory_map_.leftover2.size),
+        bus_(), CPU_(bus_, interrupt_enable_, interrupt_flags_, decoder_), timer_(interrupt_flags_),
+        is_running_(true), emulator_running_(false),
         input_reader_(reader), printer_(printer)
     {
         init();
@@ -46,6 +47,8 @@ namespace emulator
     {
         bus_.connect({memory_map_.ROM.min_address, memory_map_.ROM.max_address, ROM_});
         bus_.connect({memory_map_.RAM.min_address, memory_map_.RAM.max_address, RAM_});
+        bus_.connect({memory_map_.timer.min_address, memory_map_.timer.max_address, timer_});
+        bus_.connect({memory_map_.leftover2.min_address, memory_map_.leftover2.max_address, leftover2_});
         bus_.connect({memory_map_.interrupt_enable.min_address, memory_map_.interrupt_enable.max_address, interrupt_enable_});
         bus_.connect({memory_map_.leftover.min_address, memory_map_.leftover.max_address, leftover_});
         bus_.connect({memory_map_.interrupt_flags.min_address, memory_map_.interrupt_flags.max_address, interrupt_flags_});
@@ -62,28 +65,32 @@ namespace emulator
     {
         //For infinite loop detection
         static uint16_t oldPC = CPU_.getProgramCounter();
-        do
-        {
-            try
-            {
-                CPU_.tick();
-            }
-            catch(const std::exception& e)
-            {
-                emulator_running_ = false;
-                printer_.reportError(e.what(), CPU_.getProgramCounter());
-                break;
-            }
-            
-        } while (!CPU_.isFinished());
 
-        if(oldPC == CPU_.getProgramCounter() && emulator_running_)
+        try
+        {
+            CPU_.tick();
+            for(int i = 0; i < 4; ++i)
+            {
+                timer_.update();
+            }
+        }
+        catch(const std::exception& e)
         {
             emulator_running_ = false;
-            printer_.reportError("Reached infinite loop", CPU_.getProgramCounter());
+            printer_.reportError(e.what(), CPU_.getProgramCounter());
+            return;
         }
 
-        oldPC = CPU_.getProgramCounter();
+        if(CPU_.isFinished())
+        {
+            if(oldPC == CPU_.getProgramCounter())
+            {
+                emulator_running_ = false;
+                printer_.reportError("Reached infinite loop", CPU_.getProgramCounter());
+            }
+
+            oldPC = CPU_.getProgramCounter();
+        }
     }
 
     void Application::pollCommands()

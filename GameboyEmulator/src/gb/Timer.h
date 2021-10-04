@@ -37,8 +37,8 @@ namespace gb
 
         struct 
         {
-            uint8_t freqency : 2;
-            uint8_t enable : 1;
+            uint8_t freqency = 0;
+            bool enable = false;
         } TAC_;
 
         bool frequency_bit_was_set_ = false;
