@@ -4,7 +4,7 @@
 #include "gb/InterruptRegister.h"
 #include "gb/cpu/Operation.h"
 #include "gb/cpu/Decoder.h"
-#include "gb/cpu/Registers.h"
+#include "gb/cpu/CPUUtils.h"
 
 #include <cstdint>
 #include <limits>
