@@ -23,6 +23,7 @@ namespace gb
 
         union 
         {
+            //TODO: Wrong init
             uint16_t counter_ = 0xABCC;
 
             struct
