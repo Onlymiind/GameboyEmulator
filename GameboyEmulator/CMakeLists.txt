@@ -79,6 +79,11 @@ if(BUILD_TESTS)
 		src/tests/integration/IntegrationTest.cpp
 		)
 
+	add_executable(
+		coroutine_test
+		src/tests/TestCoroutine.cpp
+		)
+
 
 	foreach(EXE IN LISTS TESTS)
 		target_compile_features(${EXE} PUBLIC cxx_std_17)
