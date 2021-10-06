@@ -7,7 +7,7 @@
 #include <filesystem>
 #include <string_view>
 #include <sstream>
-#include <queue>
+#include <deque>
 #include <functional>
 
 std::vector<uint8_t> readFile(const std::filesystem::path& fileName);
@@ -31,18 +31,21 @@ class Coroutine
 {
 public:
 	template<typename Container>
-	Coroutine(const Context& ctxt, const Result& res, const Container& instructions)
-		: context_(ctxt), result_(res), instructions_(instructions)
+	Coroutine(const Context& ctxt, const Container& instructions)
+		: context_(ctxt), result_(), instructions_(instructions.begin(), instructions.end())
 	{}
 
 	bool IsFinished() const;
 	Result GetResult() const;
 
+	//For testing
+	const Context& GetContext() const;
+
 	void operator()();
 private:
 	Context context_;
 	Result result_;
-	std::queue<std::function<void(Context&, Result&)>> instructions_;
+	std::deque<std::function<void(Context&, Result&)>> instructions_;
 };
 
 template<typename Context, typename Result>
@@ -58,6 +61,12 @@ Result Coroutine<Context, Result>::GetResult() const
 }
 
 template<typename Context, typename Result>
+const Context& Coroutine<Context, Result>::GetContext() const
+{
+	return context_;
+}
+
+template<typename Context, typename Result>
 void Coroutine<Context, Result>::operator()()
 {
 	if(instructions_.empty())
@@ -67,5 +76,5 @@ void Coroutine<Context, Result>::operator()()
 	}
 
 	instructions_.front()(context_, result_);
-	instructions_.pop();
+	instructions_.pop_front();
 }

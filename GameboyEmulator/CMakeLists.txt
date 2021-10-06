@@ -75,12 +75,18 @@ if(BUILD_TESTS)
 		src/ConsoleOutput.cpp
 	)
 
+	add_executable(
+		coroutine_test
+		src/tests/TestCoroutine.cpp
+	)
+
 	target_compile_features(decoder_test PUBLIC cxx_std_17)
 	target_compile_features(interrupt_reg_test PUBLIC cxx_std_17)
 	target_compile_features(bus_test PUBLIC cxx_std_17)
 	target_compile_features(input_test PUBLIC cxx_std_17)
 	target_compile_features(integration_test PUBLIC cxx_std_17)
 	target_compile_features(timer_test PUBLIC cxx_std_17)
+	target_compile_features(coroutine_test PUBLIC cxx_std_17)
 endif()
 
 
