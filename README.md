@@ -24,3 +24,8 @@ Note that integration_test requires path to project folder as a parameter to acc
   
 Currently, an error with message `"Reached infinite loop"` is reported when running test ROMs. Such behaviour is expected since test ROMs typically jump to the infinite loop when they are done. This means that this error can occur as a result of normal execution and may signify the end of the test (actually, the infinite loop check is mainly used to terminate emulation when tests are finished). 
 ## TODO list
+- Fix timer
+- Implement LCD and video chip
+- Print debugging info (CPU registers, memory, etc)
+- Implement console I/O with curses library
+- Keyboard I/O
