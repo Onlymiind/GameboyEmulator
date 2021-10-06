@@ -1,73 +1,44 @@
 #pragma once
+#include "utils/Utils.h"
+
+#include <cstdint>
 
 namespace gb
 {
     namespace cpu
     {
+        //TODO: this class
         class WordRegister
         {
         public:
             WordRegister()
             {}
             WordRegister(uint16_t value)
-            {
-                *this = value;
-            }
+                : high_((value & 0xFF00) >> 8), low_(value & 0x00FF)
+            {}
 
-            uint8_t& getHight()
-            {
-                return high_;
-            }
-            uint8_t& getLow()
-            {
-                return low_;
-            }
+            uint8_t& getHight();
+            uint8_t& getLow();
 
-            uint16_t value() const
-            {
-                return *this;
-            }
+            uint16_t value() const;
 
             bool carried();
             bool halfCarried();
 
-            WordRegister& operator+=(uint16_t value)
-            {
-                *this = *this + value;
-                return *this;
-            }
-            WordRegister& operator-=(uint16_t value)
-            {
-                *this = *this - value;
-                return *this;
-            }
-            WordRegister& operator=(uint16_t value)
-            {
-                low_ = value & 0x00FF;
-                high_ = (value & 0xFF00) >> 8;
-                return *this;
-            }
+            WordRegister& operator+=(uint16_t value);
+            WordRegister& operator-=(uint16_t value);
+            WordRegister& operator=(uint16_t value);
 
-            WordRegister operator--()
-            {
-                *this = *this - 1;
-                return *this;
-            }
-            WordRegister operator++()
-            {
-                *this = *this + 1;
-                return *this;
-            }
+            WordRegister operator--();
+            WordRegister operator++();
 
-            explicit operator bool()
-            {
-                return *this != 0;
-            }
+            explicit operator bool();
 
-            operator uint16_t() const
-            {
-                return (high_ << 8) + low_;
-            }
+            operator uint16_t() const;
+        private:
+            uint16_t pack() const;
+
+            void unpack(uint16_t value);
         private:
             uint8_t high_;
             uint8_t low_;
