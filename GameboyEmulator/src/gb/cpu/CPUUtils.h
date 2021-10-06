@@ -110,5 +110,14 @@ namespace gb
             uint16_t SP;
             uint16_t PC;
         };
+
+        //TODO: is this enough for any instruction?
+        struct InstructionContext
+        {
+            Registers& registers;
+            uint16_t additional_data;
+        };
+
+        using Instruction = Coroutine<InstructionContext, void>;
     }
 }
