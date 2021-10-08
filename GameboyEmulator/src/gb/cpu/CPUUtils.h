@@ -114,8 +114,11 @@ namespace gb
         //TODO: is this enough for any instruction?
         struct InstructionContext
         {
-            Registers& registers;
-            uint16_t additional_data;
+            Registers* registers = nullptr;
+            //Variable to hold address/immediate value
+            uint16_t arg = 0;
+            //Variable to hold intermediate result
+            uint16_t value = 0;
         };
 
         using Instruction = Coroutine<InstructionContext, void>;

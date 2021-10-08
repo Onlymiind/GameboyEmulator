@@ -4,6 +4,7 @@
 
 #include <cstdint>
 #include <climits>
+#include <stdexcept>
 
 namespace gb {
     namespace cpu
@@ -114,6 +115,10 @@ namespace gb {
                     write(address, (reg_.SP & 0xFF00) >> 8);
                     return 5;
                 }
+                default:
+                {
+                    throw std::invalid_argument("Unknown LD instruction");
+                }
             }
         }
 
@@ -196,6 +201,10 @@ namespace gb {
                         ++cycles;
                     }
                     return cycles;
+                }
+                default:
+                {
+                    throw std::invalid_argument("Unknown ADD instruction");
                 }
             }
         }
