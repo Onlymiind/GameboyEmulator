@@ -174,7 +174,7 @@ namespace gb {
                 {
                     uint16_t value = getWordRegister(instr.source.reg);
                     reg_.flags.H = halfCarryOccured16Add(reg_.HL, value);
-                    reg_.flags.C = carryOccured(reg_.HL, value);
+                    reg_.flags.C = carryOccured(static_cast<uint16_t>(reg_.HL), value);
                     reg_.HL += value;
                     return 2;
                 }

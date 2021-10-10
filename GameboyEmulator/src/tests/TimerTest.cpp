@@ -12,7 +12,7 @@ void TestReadWrite()
     gb::InterruptRegister reg;
     gb::Timer timer(reg);
 
-    assert(timer.read(0x00) == 0xCC);
+    assert(timer.read(0x00) == 0xAB);
     assert(timer.read(0x01) == 0);
     assert(timer.read(0x02) == 0);
     assert(timer.read(0x03) == 0);
@@ -34,23 +34,93 @@ void TestInterrupt()
 {
     gb::InterruptRegister reg;
     gb::Timer timer(reg);
+    timer.write(0x00, 0);
+    timer.write(0x03, 4);
 
 
 
     //This should cause timer with default register values to set interrupt bit
-    for(int i = 1024; i > 0; --i)
+    for(int j = 256; j > 0; --j)
     {
-        timer.update();
+        for(int i = 1024; i > 0; --i)
+        {
+            timer.update();
+        }
     }
 
-    //DIV is the upper 8 bits of internal counter, so it should equal 4
-    assert(timer.read(0x00) == 4);
     assert((reg.getFlags() & static_cast<uint8_t>(gb::InterruptFlags::Timer)));
 }
 
 void TestFrequencies()
 {
-    //TODO
+    {
+        gb::InterruptRegister reg;
+        gb::Timer timer(reg);
+
+        //Enable timer, set frequency to the first one
+        timer.write(0x00, 0);
+        timer.write(0x03, 4);
+
+        for(int i = 1024 * 256 - 1; i > 0; --i)
+        {
+            timer.update();
+            assert(!(reg.getFlags() & static_cast<uint8_t>(gb::InterruptFlags::Timer)));
+        }
+
+        timer.update();
+        assert((reg.getFlags() & static_cast<uint8_t>(gb::InterruptFlags::Timer)));
+    }
+    {
+        gb::InterruptRegister reg;
+        gb::Timer timer(reg);
+
+        //Enable timer, set second frequency
+        timer.write(0x00, 0);
+        timer.write(0x03, 5);
+
+        for(int i = 16 * 256 - 1; i > 0; --i)
+        {
+            timer.update();
+            assert(!(reg.getFlags() & static_cast<uint8_t>(gb::InterruptFlags::Timer)));
+        }
+
+        timer.update();
+        assert((reg.getFlags() & static_cast<uint8_t>(gb::InterruptFlags::Timer)));
+    }
+    {
+        gb::InterruptRegister reg;
+        gb::Timer timer(reg);
+
+        //Enable timer, set third frequency
+        timer.write(0x00, 0);
+        timer.write(0x03, 6);
+
+        for(int i = 64 * 256 - 1; i > 0; --i)
+        {
+            timer.update();
+            assert(!(reg.getFlags() & static_cast<uint8_t>(gb::InterruptFlags::Timer)));
+        }
+
+        timer.update();
+        assert((reg.getFlags() & static_cast<uint8_t>(gb::InterruptFlags::Timer)));
+    }
+    {
+        gb::InterruptRegister reg;
+        gb::Timer timer(reg);
+
+        //Enable timer, set last frequency
+        timer.write(0x00, 0);
+        timer.write(0x03, 7);
+
+        for(int i = 256 * 256 - 1; i > 0; --i)
+        {
+            timer.update();
+            assert(!(reg.getFlags() & static_cast<uint8_t>(gb::InterruptFlags::Timer)));
+        }
+
+        timer.update();
+        assert((reg.getFlags() & static_cast<uint8_t>(gb::InterruptFlags::Timer)));
+    }
 }
 
 int main()

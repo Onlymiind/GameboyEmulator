@@ -55,7 +55,7 @@ namespace gb
             TMA_ = data;
             break;
         case 0x03:
-            TAC_.enable = (data & 0b00000100) != 0;
+            TAC_.enable = ((data & 0b00000100) != 0);
             TAC_.freqency = data & 0b00000011;
             break;
         default:

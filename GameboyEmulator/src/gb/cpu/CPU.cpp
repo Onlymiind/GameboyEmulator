@@ -7,7 +7,6 @@
 #include <cstdint>
 #include <exception>
 
-//TODO: DAA
 namespace gb 
 {
     namespace cpu

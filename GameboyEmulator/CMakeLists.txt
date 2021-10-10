@@ -16,6 +16,7 @@ set(SOURCE_FILES
 	src/gb/cpu/Operation.cpp
 	src/ConsoleInput.cpp
 	src/ConsoleOutput.cpp
+	src/gb/cpu/CPUUtils.cpp
 	)
 
 add_executable(
