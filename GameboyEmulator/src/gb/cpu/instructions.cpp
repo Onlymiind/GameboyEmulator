@@ -99,8 +99,8 @@ namespace gb {
                 case decoding::LoadSubtype::LD_Offset_SP:
                 {
                     int8_t offset = fetchSigned();
-                    reg_.flags.H = halfCarryOccured8Add(reg_.SP & 0x00FF, offset);
-                    reg_.flags.C = carryOccured(static_cast<uint8_t>(reg_.SP & 0x00FF), reinterpret_cast<uint8_t&>(offset));
+                    reg_.flags.H = halfCarried(static_cast<uint8_t>(reg_.SP), offset);
+                    reg_.flags.C = carried(static_cast<uint8_t>(reg_.SP & 0x00FF), reinterpret_cast<uint8_t&>(offset));
                     reg_.flags.Z = 0;
                     reg_.flags.N = 0;
                     reg_.HL = reg_.SP + offset;
@@ -134,7 +134,7 @@ namespace gb {
             else
             {
                 uint8_t value = getByteRegister(target.reg);
-                reg_.flags.H = halfCarryOccured8Add(value, 1);
+                reg_.flags.H = halfCarried(value, 1);
                 reg_.flags.N = 0;
                 ++value;
                 setByteRegister(target.reg, value);
@@ -155,7 +155,7 @@ namespace gb {
             else
             {
                 uint8_t value = getByteRegister(target.reg);
-                reg_.flags.H = halfCarryOccured8Sub(value, 1);
+                reg_.flags.H = halfBorrowed(value, 1);
                 reg_.flags.N = 1;
                 --value;
                 setByteRegister(target.reg, value);
@@ -173,8 +173,8 @@ namespace gb {
                 case decoding::Registers::HL:
                 {
                     uint16_t value = getWordRegister(instr.source.reg);
-                    reg_.flags.H = halfCarryOccured16Add(reg_.HL, value);
-                    reg_.flags.C = carryOccured(static_cast<uint16_t>(reg_.HL), value);
+                    reg_.flags.H = halfCarried(reg_.HL.value(), value);
+                    reg_.flags.C = carried(reg_.HL.value(), value);
                     reg_.HL += value;
                     return 2;
                 }
@@ -182,16 +182,16 @@ namespace gb {
                 {
                     reg_.flags.Z = 0;
                     int8_t value = fetchSigned();
-                    reg_.flags.H = halfCarryOccured8Add(reg_.SP & 0x00FF, value); //According to specification H flag should be set if overflow from bit 3
-                    reg_.flags.C = carryOccured(static_cast<uint8_t>(reg_.SP & 0x00FF), static_cast<uint8_t>(value)); //Carry flag should be set if overflow from bit 7
+                    reg_.flags.H = halfCarried(static_cast<uint8_t>(reg_.SP), value); //According to specification H flag should be set if overflow from bit 3
+                    reg_.flags.C = carried(static_cast<uint8_t>(reg_.SP), static_cast<uint8_t>(value)); //Carry flag should be set if overflow from bit 7
                     reg_.SP += value;
                     return 4;
                 }
                 case decoding::Registers::A:
                 {
                     uint8_t value = getByte(instr.source);
-                    reg_.flags.H = halfCarryOccured8Add(reg_.A, value);
-                    reg_.flags.C = carryOccured(reg_.A, value);
+                    reg_.flags.H = halfCarried(reg_.A, value);
+                    reg_.flags.C = carried(reg_.A, value);
                     reg_.A += value;
                     reg_.flags.Z = reg_.A == 0;
 
@@ -213,12 +213,11 @@ namespace gb {
         {
             reg_.flags.N = 0;
             uint8_t value = getByte(argument);
-            uint8_t regA = reg_.A;
 
+            reg_.flags.H = ((reg_.A & 0x0F) + (value &0x0F) + reg_.flags.C) > 0x0F;
+            reg_.flags.C = (static_cast<uint16_t>(reg_.A) + value + reg_.flags.C) > 0xFF;
             reg_.A += value + reg_.flags.C;
             reg_.flags.Z = reg_.A == 0;
-            reg_.flags.H = ((regA & 0x0F) + (value &0x0F) + reg_.flags.C) > 0x0F;
-            reg_.flags.C = static_cast<uint16_t>(regA) + value + reg_.flags.C > 0xFF;
 
             return argument.source == decoding::ArgumentSource::Register ? 1 : 2;
         }
@@ -228,8 +227,8 @@ namespace gb {
             reg_.flags.N = 1;
             uint8_t value = getByte(argument);
 
-            reg_.flags.H = halfCarryOccured8Sub(reg_.A, value);
-            reg_.flags.C = carryOccured(reg_.A, value, true);
+            reg_.flags.H = halfBorrowed(reg_.A, value);
+            reg_.flags.C = borrowed(reg_.A, value);
             reg_.A -= value;
             reg_.flags.Z = reg_.A == 0;
 
@@ -240,12 +239,11 @@ namespace gb {
         {
             reg_.flags.N = 1;
             uint8_t value = getByte(argument);
-            uint8_t regA = reg_.A;
 
+            reg_.flags.H = (reg_.A & 0x0F) < ((value & 0x0F) + reg_.flags.C);
+            reg_.flags.C = reg_.A < (static_cast<uint16_t>(value) + reg_.flags.C);
             reg_.A -= value + reg_.flags.C;
             reg_.flags.Z = reg_.A == 0;
-            reg_.flags.H = (regA & 0x0F) < ((value & 0x0F) + reg_.flags.C);
-            reg_.flags.C = regA < (static_cast<uint16_t>(value) + reg_.flags.C);
 
             return argument.source == decoding::ArgumentSource::Register ? 1 : 2;
         }
@@ -284,8 +282,8 @@ namespace gb {
             uint8_t value = getByte(argument);
 
             reg_.flags.N = 1;
-            reg_.flags.H = halfCarryOccured8Sub(reg_.A, value);
-            reg_.flags.C = carryOccured(reg_.A, value, true);
+            reg_.flags.H = halfBorrowed(reg_.A, value);
+            reg_.flags.C = borrowed(reg_.A, value);
             reg_.flags.Z = (reg_.A - value) == 0;
 
             return argument.source == decoding::ArgumentSource::Register ? 1 : 2;
@@ -489,7 +487,7 @@ namespace gb {
         {
             reg_.flags.value = 0;
             reg_.flags.C = (reg_.A & 0b10000000) != 0;
-            reg_.A = (reg_.A << 1) | (reg_.A >> (sizeof(uint8_t) * CHAR_BIT - 1));
+            reg_.A = (reg_.A << 1) | (reg_.A >> 7);
 
             return 1;
         }
@@ -498,7 +496,7 @@ namespace gb {
         {
             reg_.flags.value = 0;
             reg_.flags.C = (reg_.A & 0b00000001) != 0;
-            reg_.A = (reg_.A >> 1) | (reg_.A << (sizeof(uint8_t) * CHAR_BIT - 1));
+            reg_.A = (reg_.A >> 1) | (reg_.A << 7);
 
             return 1;
         }
@@ -509,7 +507,7 @@ namespace gb {
 
             reg_.flags.value = 0;
             reg_.flags.C = (value & 0x80) != 0;
-            value = (value << 1) | (value >> (sizeof(uint8_t) * CHAR_BIT - 1)); // (value << n) | (value >> (BIT_COUNT - n))
+            value = (value << 1) | (value >> 7); // (value << n) | (value >> (BIT_COUNT - n))
             reg_.flags.Z = value == 0;
 
             setByteRegister(reg, value);
@@ -523,7 +521,7 @@ namespace gb {
 
             reg_.flags.value = 0;
             reg_.flags.C = (value & 0x01) != 0;
-            value = (value >> 1) | (value << (sizeof(uint8_t) * CHAR_BIT - 1)); // (value >> n) | (value << (BIT_COUNT - n))
+            value = (value >> 1) | (value << 7); // (value >> n) | (value << (BIT_COUNT - n))
             reg_.flags.Z = value == 0;
 
             setByteRegister(reg, value);
@@ -638,5 +636,18 @@ namespace gb {
             setByteRegister(instr.target, getByteRegister(instr.target) | mask);
             return instr.target == decoding::Registers::HL ? 4 : 2;
         }
+
+        /*
+        Instruction SharpSM83::SET(decoding::PrefixedInstruction instr)
+        {
+            InstructionContext ctxt;
+            ctxt.registers = &reg_;
+            std::vector<std::function<void(InstrcutionContext&)>>
+
+            uint8_t mask = (1 << *instr.bit);
+
+
+        }
+        */
     }
 }

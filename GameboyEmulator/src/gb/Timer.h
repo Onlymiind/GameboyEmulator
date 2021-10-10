@@ -21,7 +21,7 @@ namespace gb
         void write(uint16_t address, uint8_t data) override;
 
     private:
-        cpu::WordRegister counter_ = 0xABCC;
+        cpu::Word counter_ = 0xABCC;
         uint8_t& DIV_ = counter_.getHight();
 
         uint8_t TIMA_ = 0;

@@ -9,7 +9,7 @@ namespace gb
     void Timer::update()
     {
         ++counter_;
-        bool currentFreqBit = (counter_ & frequency_bit_mask_[TAC_.freqency]);
+        bool currentFreqBit = (counter_.value() & frequency_bit_mask_[TAC_.freqency]);
         if (frequency_bit_was_set_ && !(currentFreqBit && TAC_.enable)) //Falling edge
         {
             if(TIMA_ == std::numeric_limits<uint8_t>::max())

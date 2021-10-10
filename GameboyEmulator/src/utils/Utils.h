@@ -26,17 +26,16 @@ std::string printToString(std::string_view separator, Args... args)
 	return stream.str();
 }
 
-template<typename Context, typename Result>
+template<typename Context>
 class Coroutine
 {
 public:
 	template<typename Container>
 	Coroutine(const Context& ctxt, const Container& instructions)
-		: context_(ctxt), result_(), instructions_(instructions.begin(), instructions.end())
+		: context_(ctxt), instructions_(instructions.begin(), instructions.end())
 	{}
 
 	bool IsFinished() const;
-	Result GetResult() const;
 
 	//For testing
 	const Context& GetContext() const;
@@ -44,30 +43,23 @@ public:
 	void operator()();
 private:
 	Context context_;
-	Result result_;
-	std::deque<std::function<void(Context&, Result&)>> instructions_;
+	std::deque<std::function<void(Context&)>> instructions_;
 };
 
-template<typename Context, typename Result>
-bool Coroutine<Context, Result>::IsFinished() const
+template<typename Context>
+bool Coroutine<Context>::IsFinished() const
 {
 	return instructions_.empty();
 }
 
-template<typename Context, typename Result>
-Result Coroutine<Context, Result>::GetResult() const
-{
-	return result_;
-}
-
-template<typename Context, typename Result>
-const Context& Coroutine<Context, Result>::GetContext() const
+template<typename Context>
+const Context& Coroutine<Context>::GetContext() const
 {
 	return context_;
 }
 
-template<typename Context, typename Result>
-void Coroutine<Context, Result>::operator()()
+template<typename Context>
+void Coroutine<Context>::operator()()
 {
 	if(instructions_.empty())
 	{
@@ -75,6 +67,6 @@ void Coroutine<Context, Result>::operator()()
 		return;
 	}
 
-	instructions_.front()(context_, result_);
+	instructions_.front()(context_);
 	instructions_.pop_front();
 }

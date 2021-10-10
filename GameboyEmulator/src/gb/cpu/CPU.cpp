@@ -86,21 +86,6 @@ namespace gb
             return reg_;
         }
 
-        bool SharpSM83::halfCarryOccured8Add(uint8_t lhs, uint8_t rhs)
-        {
-            return (((lhs & 0x0F) + (rhs & 0x0F)) & 0x10) != 0;
-        }
-
-        bool SharpSM83::halfCarryOccured8Sub(uint8_t lhs, uint8_t rhs)
-        {
-            return (lhs & 0x0F) < (rhs & 0x0F);
-        }
-
-        bool SharpSM83::halfCarryOccured16Add(uint16_t lhs, uint16_t rhs)
-        {
-            return (((lhs & 0x0FFF) + (rhs & 0x0FFF)) & 0x1000) != 0;
-        }
-
         void SharpSM83::write(uint16_t address, uint8_t data)
         {
             bus_.write(address, data);
@@ -292,9 +277,9 @@ namespace gb
                 case decoding::Registers::E: return reg_.E;
                 case decoding::Registers::H: return reg_.H;
                 case decoding::Registers::L: return reg_.L;
-                case decoding::Registers::HL: return read(reg_.HL);
-                case decoding::Registers::BC: return read(reg_.BC);
-                case decoding::Registers::DE: return read(reg_.DE);
+                case decoding::Registers::HL: return read(reg_.HL.value());
+                case decoding::Registers::BC: return read(reg_.BC.value());
+                case decoding::Registers::DE: return read(reg_.DE.value());
                 default:
                     throw std::invalid_argument("Trying to get byte from unknown register");
                     return 0;
@@ -305,9 +290,9 @@ namespace gb
         {
             switch(reg)
             {
-                case decoding::Registers::BC: return reg_.BC;
-                case decoding::Registers::DE: return reg_.DE;
-                case decoding::Registers::HL: return reg_.HL;
+                case decoding::Registers::BC: return reg_.BC.value();
+                case decoding::Registers::DE: return reg_.DE.value();
+                case decoding::Registers::HL: return reg_.HL.value();
                 case decoding::Registers::SP: return reg_.SP;
                 case decoding::Registers::AF: return reg_.AF & 0xFFF0;
                 default:
@@ -327,9 +312,9 @@ namespace gb
                 case decoding::Registers::E: reg_.E = data; return;
                 case decoding::Registers::H: reg_.H = data; return;
                 case decoding::Registers::L: reg_.L = data; return;
-                case decoding::Registers::HL: write(reg_.HL, data); return;
-                case decoding::Registers::BC: write(reg_.BC, data); return;
-                case decoding::Registers::DE: write(reg_.DE, data); return;
+                case decoding::Registers::HL: write(reg_.HL.value(), data); return;
+                case decoding::Registers::BC: write(reg_.BC.value(), data); return;
+                case decoding::Registers::DE: write(reg_.DE.value(), data); return;
                 default:
                     throw std::invalid_argument("Trying to write byte to unknown register");
             }

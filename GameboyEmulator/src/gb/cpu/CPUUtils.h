@@ -2,17 +2,18 @@
 #include "utils/Utils.h"
 
 #include <cstdint>
+#include <array>
 
 namespace gb
 {
     namespace cpu
     {
-        class WordRegister
+        class Word
         {
         public:
-            WordRegister()
+            Word()
             {}
-            WordRegister(uint16_t value)
+            Word(uint16_t value)
                 : high_((value & 0xFF00) >> 8), low_(value & 0x00FF)
             {}
 
@@ -21,20 +22,14 @@ namespace gb
 
             uint16_t value() const;
 
-            //TODO
-            // bool carried();
-            // bool halfCarried();
+            Word& operator+=(uint16_t value);
+            Word& operator-=(uint16_t value);
+            Word& operator=(uint16_t value);
 
-            WordRegister& operator+=(uint16_t value);
-            WordRegister& operator-=(uint16_t value);
-            WordRegister& operator=(uint16_t value);
-
-            WordRegister operator--();
-            WordRegister operator++();
+            Word operator--();
+            Word operator++();
 
             explicit operator bool();
-
-            operator uint16_t() const;
         private:
             uint16_t pack() const;
 
@@ -43,6 +38,14 @@ namespace gb
             uint8_t high_;
             uint8_t low_;
         };
+
+        bool carried(uint8_t lhs, uint8_t rhs);
+        bool borrowed(uint8_t lhs, uint8_t rhs); 
+        bool carried(uint16_t lhs, uint16_t rhs);
+
+        bool halfCarried(uint8_t lhs, uint8_t rhs);
+        bool halfBorrowed(uint8_t lhs, uint8_t rhs);
+        bool halfCarried(uint16_t rhs, uint16_t lhs);
 
         struct Registers
         {
@@ -67,15 +70,15 @@ namespace gb
                 };
             };
 
-            WordRegister BC;
+            Word BC;
             uint8_t& C = BC.getLow();
             uint8_t& B = BC.getHight();
 
-            WordRegister DE;
+            Word DE;
             uint8_t& E = DE.getLow();
             uint8_t& D = DE.getHight();
 
-            WordRegister HL;
+            Word HL;
             uint8_t& L = HL.getLow();
             uint8_t& H = HL.getHight();
 
@@ -88,12 +91,14 @@ namespace gb
         struct InstructionContext
         {
             Registers* registers = nullptr;
-            //Variable to hold address/immediate value
-            uint16_t arg = 0;
-            //Variable to hold intermediate result
-            uint16_t value = 0;
+            
+            //Stores all kinds of intermediate results, e.g. values of registers or addresses
+            std::array<uint16_t, 3> storage;
+            //Some common indexes for more readable code
+            const int value_indx = 0;
+            const int addr_indx = 1;
         };
 
-        using Instruction = Coroutine<InstructionContext, void>;
+        using Instruction = Coroutine<InstructionContext>;
     }
 }
