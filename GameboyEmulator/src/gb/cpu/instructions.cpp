@@ -427,8 +427,14 @@ namespace gb {
                 correction |= 0x06;
             }
 
-            if (reg_.flags.N) reg_.A -= correction;
-            else reg_.A += correction;
+            if (reg_.flags.N) 
+            {
+                reg_.A -= correction;
+            }
+            else 
+            {
+                reg_.A += correction;
+            }
 
             reg_.flags.H = 0;
             reg_.flags.Z = reg_.A == 0;
@@ -499,51 +505,59 @@ namespace gb {
 
         uint8_t SharpSM83::RLC(decoding::Registers reg)
         {
-            reg_.flags.value = 0;
             uint8_t value = getByteRegister(reg);
 
+            reg_.flags.value = 0;
             reg_.flags.C = (value & 0x80) != 0;
             value = (value << 1) | (value >> (sizeof(uint8_t) * CHAR_BIT - 1)); // (value << n) | (value >> (BIT_COUNT - n))
-            setByteRegister(reg, value);
             reg_.flags.Z = value == 0;
+
+            setByteRegister(reg, value);
+
             return reg == decoding::Registers::HL ? 4 : 2;
         }
 
         uint8_t SharpSM83::RRC(decoding::Registers reg)
         {
-            reg_.flags.value = 0;
             uint8_t value = getByteRegister(reg);
 
+            reg_.flags.value = 0;
             reg_.flags.C = (value & 0x01) != 0;
             value = (value >> 1) | (value << (sizeof(uint8_t) * CHAR_BIT - 1)); // (value >> n) | (value << (BIT_COUNT - n))
-            setByteRegister(reg, value);
             reg_.flags.Z = value == 0;
+
+            setByteRegister(reg, value);
+
             return reg == decoding::Registers::HL ? 4 : 2;
         }
 
         uint8_t SharpSM83::RL(decoding::Registers reg)
         {
-            uint8_t firstBit = reg_.flags.C;
-            reg_.flags.value = 0;
             uint8_t value = getByteRegister(reg);
 
+            uint8_t firstBit = reg_.flags.C;
+            reg_.flags.value = 0;
             reg_.flags.C = (value & 0x80) != 0;
             value = (value << 1) | firstBit;
-            setByteRegister(reg, value);
             reg_.flags.Z = value == 0;
+
+            setByteRegister(reg, value);
+
             return reg == decoding::Registers::HL ? 4 : 2;
         }
 
         uint8_t SharpSM83::RR(decoding::Registers reg)
         {
-            uint8_t lastBit = static_cast<uint8_t>(reg_.flags.C) << 7;
-            reg_.flags.value = 0;
             uint8_t value = getByteRegister(reg);
 
+            uint8_t lastBit = static_cast<uint8_t>(reg_.flags.C) << 7;
+            reg_.flags.value = 0;
             reg_.flags.C = (value & 0x01) != 0;
             value = (value >> 1) | lastBit;
-            setByteRegister(reg, value);
             reg_.flags.Z = value == 0;
+
+            setByteRegister(reg, value);
+            
             return reg == decoding::Registers::HL ? 4 : 2;
         }
 

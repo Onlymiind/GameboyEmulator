@@ -52,6 +52,7 @@ if(BUILD_TESTS)
 	add_executable(
 		timer_test
 		src/gb/Timer.cpp
+		src/gb/cpu/CPUUtils.cpp
 		src/tests/TimerTest.cpp
 		)
 

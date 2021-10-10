@@ -2,6 +2,7 @@
 
 #include "gb/InterruptRegister.h"
 #include "gb/memory/Memory.h"
+#include "gb/cpu/CPUUtils.h"
 
 #include <cstdint>
 #include <array>
@@ -20,18 +21,8 @@ namespace gb
         void write(uint16_t address, uint8_t data) override;
 
     private:
-
-        union 
-        {
-            //TODO: Wrong init
-            uint16_t counter_ = 0xABCC;
-
-            struct
-            {
-                uint8_t align;
-                uint8_t DIV_;
-            };
-        };
+        cpu::WordRegister counter_ = 0xABCC;
+        uint8_t& DIV_ = counter_.getHight();
 
         uint8_t TIMA_ = 0;
         uint8_t TMA_ = 0;
