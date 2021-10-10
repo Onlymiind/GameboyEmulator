@@ -7,7 +7,6 @@ namespace gb
 {
     namespace cpu
     {
-        //TODO: this class
         class WordRegister
         {
         public:
@@ -22,8 +21,9 @@ namespace gb
 
             uint16_t value() const;
 
-            bool carried();
-            bool halfCarried();
+            //TODO
+            // bool carried();
+            // bool halfCarried();
 
             WordRegister& operator+=(uint16_t value);
             WordRegister& operator-=(uint16_t value);
@@ -67,44 +67,17 @@ namespace gb
                 };
             };
 
-            // WordRegister BC;
-            // uint8_t& C = BC.getLow();
-            // uint8_t& B = BC.getHight();
+            WordRegister BC;
+            uint8_t& C = BC.getLow();
+            uint8_t& B = BC.getHight();
 
-            union {
-                uint16_t BC;
+            WordRegister DE;
+            uint8_t& E = DE.getLow();
+            uint8_t& D = DE.getHight();
 
-                struct {
-                    uint8_t C;
-                    uint8_t B;
-                };
-            };
-
-            // WordRegister DE;
-            // uint8_t& E = DE.getLow();
-            // uint8_t& D = DE.getHight();
-
-            union {
-                uint16_t DE;
-
-                struct {
-                    uint8_t E;
-                    uint8_t D;
-                };
-            };
-
-            // WordRegister HL;
-            // uint8_t& L = HL.getLow();
-            // uint8_t& H = HL.getHight();
-            
-            union {
-                uint16_t HL;
-
-                struct {
-                    uint8_t L;
-                    uint8_t H;
-                };
-            };
+            WordRegister HL;
+            uint8_t& L = HL.getLow();
+            uint8_t& H = HL.getHight();
 
             // Stack pointer, program counter
             uint16_t SP;
