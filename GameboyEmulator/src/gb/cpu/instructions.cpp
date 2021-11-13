@@ -1,3 +1,4 @@
+#include "gb/cpu/Instructions.h"
 #include "gb/cpu/CPU.h"
 #include "utils/Utils.h"
 
