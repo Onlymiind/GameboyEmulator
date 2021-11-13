@@ -115,7 +115,6 @@ namespace gb
         };
 
 
-
         //Struct for easy opcode decomposition;
         struct opcode 
         {

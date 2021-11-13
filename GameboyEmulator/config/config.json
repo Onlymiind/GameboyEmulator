@@ -1,0 +1,14 @@
+{
+    "boot_rom" : 
+    {
+        "original" : "",
+        "init_only" : ""
+    },
+    "configuration" : 
+    {
+        "rom_directory" : "",
+        "boot_rom_directory" : "/boot",
+        "boot_rom_name" : "rom",
+        "use_boot_rom" : true
+    }
+}

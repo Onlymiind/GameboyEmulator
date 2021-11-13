@@ -5,7 +5,8 @@ namespace gb
 {
     namespace cpu
     {
-        inline void addByte(InstructionContext& context);
+
+        void addByte(InstructionContext& context);
         void addSP(InstructionContext& context);
         void addHL(InstructionContext& context);
         void adc(InstructionContext& context);
