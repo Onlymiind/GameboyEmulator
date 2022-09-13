@@ -19,7 +19,7 @@ namespace emulator
     class Application 
     {
     public:
-        Application(const Printer& printer, const Reader& reader);
+        Application(const Printer& printer, const Reader& reader, bool exit_on_infinite_loop = false);
 
         void addMemoryObserver(uint16_t from, uint16_t to, gb::MemoryObject& observer);
 
@@ -68,6 +68,7 @@ namespace emulator
         
         bool is_running_;
         bool emulator_running_;
+        bool exit_on_infinite_loop_;
 
 
         std::filesystem::path ROM_directory_;

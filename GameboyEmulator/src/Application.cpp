@@ -19,10 +19,10 @@ namespace emulator
         //TODO
     }
 
-    Application::Application(const Printer& printer, const Reader& reader) :
+    Application::Application(const Printer& printer, const Reader& reader, bool  exit_on_infinite_loop) :
         RAM_(memory_map_.RAM.size), ROM_(), leftover_(memory_map_.leftover.size), leftover2_(memory_map_.leftover2.size),
         bus_(), CPU_(bus_, interrupt_enable_, interrupt_flags_, decoder_), timer_(interrupt_flags_),
-        is_running_(true), emulator_running_(false),
+        is_running_(true), emulator_running_(false), exit_on_infinite_loop_(exit_on_infinite_loop),
         input_reader_(reader), printer_(printer)
     {
         init();
@@ -86,6 +86,11 @@ namespace emulator
             if(oldPC == CPU_.getProgramCounter())
             {
                 emulator_running_ = false;
+                if(exit_on_infinite_loop_)
+                {
+                    is_running_ = false;
+                    return;
+                }
                 printer_.reportError("Reached infinite loop", CPU_.getProgramCounter());
             }
 
