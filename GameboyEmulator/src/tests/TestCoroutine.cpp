@@ -53,6 +53,5 @@ int main()
     RUN_TEST(TestInitialization);
     RUN_TEST(TestSingleInstruction);
     RUN_TEST(TestMultipleInstructions);
-    std::cin.get();
     return 0;
 }

@@ -128,6 +128,5 @@ int main()
     RUN_TEST(TestReadWrite);
     RUN_TEST(TestInterrupt);
     RUN_TEST(TestFrequencies);
-    std::cin.get();
     return 0;
 }

@@ -1,8 +1,10 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.19)
 project(GameboyEmulator)
 
 option(BUILD_TESTS "Build tests" ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin/$<CONFIG>/)
+cmake_policy(SET CMP0110 NEW)
+enable_testing()
 set(SOURCE_FILES
 	src/utils/Utils.cpp
 	src/Application.cpp
@@ -52,15 +54,28 @@ target_compile_features(emulator PUBLIC cxx_std_17)
 
 if(BUILD_TESTS) 
 
-	set(TESTS
+	set(NO_ARGS_TESTS
 		decoder_test
 		interrupt_reg_test
 		bus_test
 		input_test
-		integration_test
 		timer_test
 		coroutine_test
 		)
+
+	set(TEST_ROMS
+		"01-special"
+		"02-interrupts"
+		"03-op sp,hl"
+		"04-op r,imm"
+		"05-op rp"
+		"06-ld r,r"
+		"07-jr,jp,call,ret,rst"
+		"08-misc instrs"
+		"09-op r,r"
+		"10-bit ops"
+		"11-op a,(hl)"
+	)
 
 	add_executable(
 		decoder_test
@@ -94,10 +109,12 @@ if(BUILD_TESTS)
 		)
 
 	add_executable(
-		integration_test
+		run_test_rom
 		${SOURCE_FILES}
 		src/tests/integration/IntegrationTest.cpp
-		)
+		src/tests/integration/IntegrationTest.h
+		src/tests/integration/RunTestRom.cpp
+	)
 
 	add_executable(
 		coroutine_test
@@ -105,8 +122,13 @@ if(BUILD_TESTS)
 		)
 
 
-	foreach(EXE IN LISTS TESTS)
+	foreach(EXE IN LISTS NO_ARGS_TESTS)
 		target_compile_features(${EXE} PUBLIC cxx_std_17)
+		add_test(NAME ${EXE} COMMAND ${EXE})
+	endforeach()
+
+	foreach(ROM IN LISTS TEST_ROMS)
+		add_test(NAME ${ROM} COMMAND run_test_rom ${ROM} WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
 	endforeach()
 
 endif()

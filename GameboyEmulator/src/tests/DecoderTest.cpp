@@ -71,6 +71,5 @@ int main()
     RUN_TEST(TestDecodingPrefixed);
     RUN_TEST(TestDecodingUnprefixed);
     std::cout << "Done\n";
-    std::cin.get();
     return 0;
 }

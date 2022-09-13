@@ -34,7 +34,6 @@ void TestInterruptRegister()
 int main()
 {
     RUN_TEST(TestInterruptRegister);
-    std::cin.get();
     return 0;
 }
 

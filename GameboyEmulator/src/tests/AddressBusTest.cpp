@@ -134,6 +134,5 @@ int main()
     RUN_TEST(TestReading);
     RUN_TEST(TestWriting);
     RUN_TEST(TestExceptions);
-    std::cin.get();
     return 0;
 }
