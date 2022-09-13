@@ -83,7 +83,7 @@ void runTestRom(const std::string& rom_name) {
     std::cout << separator << '\n';
 }
 
-int main(int argc, char** argv) {
+int main() {
     namespace  fs = std::filesystem;
     fs::path rom_path = fs::current_path() / "src" / "tests" / "integration" / "roms";
 
