@@ -86,10 +86,9 @@ void runTestRom(const std::string& rom_name) {
 int main(int argc, char** argv) {
     namespace  fs = std::filesystem;
     fs::path rom_path = fs::current_path() / "src" / "tests" / "integration" / "roms";
-    std::cout << rom_path << '\n';
 
     if(!fs::exists(rom_path)) {
-        std::cout << "Project path is invalid or directory <path>/src/tests/integration/roms/ doesn't exist\n" << std::endl;
+        std::cout << "Project path is invalid or directory" << rom_path << " doesn't exist\n" << std::endl;
         return 1;
     }
     fs::current_path(rom_path);
