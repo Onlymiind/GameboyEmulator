@@ -390,3 +390,5 @@ FodyWeavers.xsd
 /GameboyEmulator/dependencies/SFML/include/SFML/Graphics
 /GameboyEmulator/dependencies/SFML/include/SFML/Network
 /GameboyEmulator/dependencies/GLFW/bin_int/Debug-windows-x86_64/GLFW
+
+build/

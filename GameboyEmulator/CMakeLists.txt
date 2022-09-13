@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 project(GameboyEmulator)
 
-option(BUILD_TESTS "Build tests" OFF)
+option(BUILD_TESTS "Build tests" ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin/$<CONFIG>/)
 set(SOURCE_FILES
 	src/utils/Utils.cpp
@@ -19,9 +19,28 @@ set(SOURCE_FILES
 	src/gb/cpu/CPUUtils.cpp
 	)
 
+set(HDRS
+	src/utils/Utils.h
+	src/Application.h
+	src/ConsoleInput.h
+	src/ConsoleOutput.h
+	src/Error.h
+	src/gb/AddressBus.h
+	src/gb/InterruptRegister.h
+	src/gb/Timer.h
+	src/gb/memory/BasicComponents.h
+	src/gb/memory/Memory.h
+	src/gb/cpu/CPU.h
+	src/gb/cpu/CPUUtils.h
+	src/gb/cpu/Decoder.h
+	src/gb/cpu/InstructionStep.h
+	src/gb/cpu/Operation.h
+)
+
 add_executable(
 	emulator 
 	${SOURCE_FILES}
+	${HDRS}
 	src/Source.cpp
 	)
 

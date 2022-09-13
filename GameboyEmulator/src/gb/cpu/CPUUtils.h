@@ -84,6 +84,44 @@ namespace gb
             uint16_t PC;
         };
 
+        #define BIT(x) 1 << x
+        enum class Flags : uint8_t {
+            CARRY = BIT(4),
+            HALF_CARRY = BIT(5),
+            NEGATIVE = BIT(6),
+            ZERO = BIT(7)
+        };
+        #undef BIT
+
+        class FlagsRegister {
+        public:
+            FlagsRegister(uint8_t& flags)
+                :flags_(flags) {}
+
+            bool isSet(Flags flag) const {
+                return flags_ & static_cast<uint8_t>(flag);
+            }
+
+            void clear() {
+                flags_ = 0;
+            }
+
+            void set(Flags flag, bool value) {
+                uint8_t mask = value ? static_cast<uint8_t>(flag) : 0;
+                flags_ = (flags_ & (~mask)) | mask;
+            }
+        private:
+            uint8_t& flags_;
+        };
+
+        bool carried(uint8_t lhs, uint8_t rhs);
+        bool borrowed(uint8_t lhs, uint8_t rhs); 
+        bool carried(uint16_t lhs, uint16_t rhs);
+
+        bool halfCarried(uint8_t lhs, uint8_t rhs);
+        bool halfBorrowed(uint8_t lhs, uint8_t rhs);
+        bool halfCarried(uint16_t rhs, uint16_t lhs);
+
         //TODO: is this enough for any instruction?
         struct InstructionContext
         {
