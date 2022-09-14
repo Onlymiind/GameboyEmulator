@@ -1,4 +1,8 @@
 #include "tests/integration/IntegrationTest.h"
+#include "Application.h"
+#include "gb/memory/Memory.h"
+#include "ConsoleInput.h"
+#include "ConsoleOutput.h"
 
 #include <filesystem>
 #include <string>
@@ -17,6 +21,6 @@ int main(int argc, const char** argv) {
     fs::current_path(rom_path);
 
     assert(argc == 2);
-    
+
     return runTestRom(argv[1], std::cout);
 }

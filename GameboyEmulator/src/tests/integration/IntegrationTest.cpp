@@ -19,12 +19,10 @@ uint8_t TestOutputReader::read(uint16_t address) const {
 
 void TestOutputReader::write(uint16_t address, uint8_t data) {
     //Used to get output from blargg's test ROMs.
-    if(address == 0)
-    {
+    if(address == 0) {
         symbol = data;
     }
-	else if (address == 0x01 && data == 0x81)
-	{
+	else if (address == 0x01 && data == 0x81) {
 		printer_.print(symbol);
 	}
 }
@@ -35,9 +33,10 @@ int runTestRom(const std::string& rom_name, std::ostream& out_stream) {
     std::stringstream dummy;
     emulator::Reader r(in);
     emulator::Printer p(dummy);
+    emulator::Printer printer(out);
     std::unique_ptr<emulator::Application> app = std::make_unique<emulator::Application>(p, r, true);
 
-    TestOutputReader test_out(out);
+    TestOutputReader test_out(printer);
     app->addMemoryObserver(0xFF01, 0xFF02, test_out);
 
     app->run();

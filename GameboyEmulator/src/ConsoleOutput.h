@@ -10,7 +10,7 @@ namespace emulator
     class Printer
     {
     public:
-        Printer(std::ostream& output)
+        explicit Printer(std::ostream& output)
             : output_(output)
         {}
 
