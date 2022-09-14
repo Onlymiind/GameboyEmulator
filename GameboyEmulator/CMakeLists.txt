@@ -4,6 +4,8 @@ project(GameboyEmulator)
 option(BUILD_TESTS "Build tests" ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin/$<CONFIG>/)
 cmake_policy(SET CMP0110 NEW)
+set(CXX_STANDARD 17)
+set(CXX_STANDARD_REQUIRED ON)
 enable_testing()
 set(SOURCE_FILES
 	src/utils/Utils.cpp
@@ -127,6 +129,7 @@ if(BUILD_TESTS)
 		add_test(NAME ${EXE} COMMAND ${EXE})
 	endforeach()
 
+	target_compile_features(run_test_rom PUBLIC cxx_std_17)
 	foreach(ROM IN LISTS TEST_ROMS)
 		add_test(NAME ${ROM} COMMAND run_test_rom ${ROM} WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
 	endforeach()
