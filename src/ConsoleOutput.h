@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string_view>
 #include <iomanip>
+#include <cstdint>
 
 namespace emulator
 {
