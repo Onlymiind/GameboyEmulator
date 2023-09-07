@@ -5,7 +5,7 @@ A gameboy (DMG model) emulator.
 ## Current status
 Currently, CPU, basic memory operations and console I/O are implemented. This theoretically should be enough to run any ROMs that are not using MBC chips. However, most programs require LCD to fully function.
 
-The project was tested on Windows and Linux using unit tests and test ROMs (blargg's test ROMs were used). Note that version at `main` and `dev` branches might not pass all tests (you should use version at `stable` branch instead).
+The project was tested on Windows and Linux using unit tests and test ROMs (blargg's test ROMs were used). Note that version at `dev` branch might not pass all tests (you should use version at `stable` branch instead).
 ## Commands
 - `-help` - show list of commands
 - `-romdir <path>` - set directory in which ROMs will be looked for.
