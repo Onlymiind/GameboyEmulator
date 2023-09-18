@@ -4,12 +4,12 @@ namespace gb
 {
     uint8_t MemoryController::read(uint16_t address) const
     { 
-        return memory_object_.read(address - min_address_);
+        return memory_object_->read(address - min_address_);
     }
 
 	void MemoryController::write(uint16_t address, uint8_t data) const
     { 
-        memory_object_.write(address - min_address_, data);
+        memory_object_->write(address - min_address_, data);
     }
 
 	bool MemoryController::isInRange(uint16_t address) const
@@ -17,12 +17,12 @@ namespace gb
         return address >= min_address_ && address <= max_address_; 
     }
 
-	uint16_t MemoryController::GetMinAddress() const
+	uint16_t MemoryController::getMinAddress() const
     {
         return min_address_;
     }
 
-	uint16_t MemoryController::GetMaxAddress() const 
+	uint16_t MemoryController::getMaxAddress() const 
     {
         return max_address_;
     }

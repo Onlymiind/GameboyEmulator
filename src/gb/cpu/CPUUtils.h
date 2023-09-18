@@ -68,14 +68,15 @@ namespace gb
             };
 
             WordRegister BC;
+            WordRegister DE;
+            WordRegister HL;
+            
             uint8_t& C = BC.getLow();
             uint8_t& B = BC.getHight();
 
-            WordRegister DE;
             uint8_t& E = DE.getLow();
             uint8_t& D = DE.getHight();
 
-            WordRegister HL;
             uint8_t& L = HL.getLow();
             uint8_t& H = HL.getHight();
 

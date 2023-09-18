@@ -1,28 +1,33 @@
 #include "gb/AddressBus.h"
+#include "gb/memory/Memory.h"
 #include "utils/Utils.h"
 
 #include <string>
 #include <sstream>
 #include <exception>
+#include <algorithm>
 
 
 namespace gb {
 
+    bool less(MemoryController mem, uint16_t address) {
+        return address < mem.getMinAddress();
+    }
 
     uint8_t AddressBus::read(uint16_t address) const
     {
-        auto it = memory_.find(address);
-        if (it == memory_.end())
+        auto it = std::lower_bound(memory_.begin(), memory_.end(), address, less);
+        if (it == memory_.end() || it->getMaxAddress() < address)
         {
             throw std::out_of_range(getErrorDescription(address));
         }
 
         if(!observers_.empty())
         {
-            auto obs_it = observers_.find(address);
-            if(obs_it != observers_.end())
+            it = std::lower_bound(observers_.begin(), observers_.end(), address, less);
+            if(it != observers_.end() && address <= it->getMaxAddress())
             {
-                obs_it->read(address);
+                it->read(address);
             }
         }
         
@@ -31,18 +36,18 @@ namespace gb {
 
     void AddressBus::write(uint16_t address, uint8_t data) const
     {
-        auto it = memory_.find(address);
-        if (it == memory_.end())
+        auto it = std::lower_bound(memory_.begin(), memory_.end(), address, less);
+        if (it == memory_.end() || it->getMaxAddress() < address)
         {
-            throw std::out_of_range(getErrorDescription(address, data));
+            throw std::out_of_range(getErrorDescription(address));
         }
 
         if(!observers_.empty())
         {
-            auto obs_it = observers_.find(address);
-            if(obs_it != observers_.end())
+            it = std::lower_bound(observers_.begin(), observers_.end(), address, less);
+            if(it != observers_.end() && address <= it->getMaxAddress())
             {
-                obs_it->write(address, data);
+                it->write(address, data);
             }
         }
 
@@ -67,5 +72,15 @@ namespace gb {
         }
 
         return err.str();
+    }
+
+    void AddressBus::connect(const MemoryController& controller) {
+        auto it = std::lower_bound(memory_.begin(), memory_.end(), controller);
+        memory_.insert(it, controller);
+    }
+
+    void AddressBus::addObserver(const MemoryController& observer) {
+        auto it = std::lower_bound(observers_.begin(), observers_.end(), observer);
+        observers_.insert(it, observer);
     }
 }

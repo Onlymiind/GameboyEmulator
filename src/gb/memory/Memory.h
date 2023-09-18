@@ -17,7 +17,7 @@ namespace gb
 	public:
 
 		MemoryController(uint16_t minAddress, uint16_t maxAddress, MemoryObject& object)
-			: min_address_(minAddress), max_address_(maxAddress), memory_object_(object) 
+			: min_address_(minAddress), max_address_(maxAddress), memory_object_(&object) 
 		{}
 		MemoryController(const MemoryController& other)
 			: min_address_(other.min_address_), max_address_(other.max_address_), memory_object_(other.memory_object_)
@@ -30,8 +30,8 @@ namespace gb
 
 		bool isInRange(uint16_t address) const;
 
-		uint16_t GetMinAddress() const;
-		uint16_t GetMaxAddress() const;
+		uint16_t getMinAddress() const;
+		uint16_t getMaxAddress() const;
 
 		bool operator < (const MemoryController& other) const;
 
@@ -41,7 +41,7 @@ namespace gb
 	private:
 
 		uint16_t min_address_, max_address_;
-		MemoryObject& memory_object_;
+		MemoryObject* memory_object_;
 	};
 
 	struct ControllerComparator

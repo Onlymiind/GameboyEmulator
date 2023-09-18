@@ -3,9 +3,9 @@ project(GameboyEmulator)
 
 option(BUILD_TESTS "Build tests" ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin/$<CONFIG>/)
-cmake_policy(SET CMP0110 NEW)
-set(CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 17)
 set(CXX_STANDARD_REQUIRED ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 enable_testing()
 set(SOURCE_FILES
 	src/utils/Utils.cpp
