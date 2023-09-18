@@ -11,13 +11,13 @@
 namespace gb {
 
     bool less(MemoryController mem, uint16_t address) {
-        return address < mem.getMinAddress();
+        return mem.getMaxAddress() < address;
     }
 
     uint8_t AddressBus::read(uint16_t address) const
     {
         auto it = std::lower_bound(memory_.begin(), memory_.end(), address, less);
-        if (it == memory_.end() || it->getMaxAddress() < address)
+        if (it == memory_.end() || it->getMinAddress() > address)
         {
             throw std::out_of_range(getErrorDescription(address));
         }
@@ -25,7 +25,7 @@ namespace gb {
         if(!observers_.empty())
         {
             it = std::lower_bound(observers_.begin(), observers_.end(), address, less);
-            if(it != observers_.end() && address <= it->getMaxAddress())
+            if(it != observers_.end() && address >= it->getMinAddress())
             {
                 it->read(address);
             }
@@ -37,7 +37,7 @@ namespace gb {
     void AddressBus::write(uint16_t address, uint8_t data) const
     {
         auto it = std::lower_bound(memory_.begin(), memory_.end(), address, less);
-        if (it == memory_.end() || it->getMaxAddress() < address)
+        if (it == memory_.end() || it->getMinAddress() > address)
         {
             throw std::out_of_range(getErrorDescription(address));
         }
@@ -45,7 +45,7 @@ namespace gb {
         if(!observers_.empty())
         {
             it = std::lower_bound(observers_.begin(), observers_.end(), address, less);
-            if(it != observers_.end() && address <= it->getMaxAddress())
+            if(it != observers_.end() && address >= it->getMinAddress())
             {
                 it->write(address, data);
             }
