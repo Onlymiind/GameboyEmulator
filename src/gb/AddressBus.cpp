@@ -24,10 +24,10 @@ namespace gb {
 
         if(!observers_.empty())
         {
-            it = std::lower_bound(observers_.begin(), observers_.end(), address, less);
-            if(it != observers_.end() && address >= it->getMinAddress())
+            auto obs_it = std::lower_bound(observers_.begin(), observers_.end(), address, less);
+            if(obs_it != observers_.end() && address >= obs_it->getMinAddress())
             {
-                it->read(address);
+                obs_it->read(address);
             }
         }
         
@@ -44,10 +44,10 @@ namespace gb {
 
         if(!observers_.empty())
         {
-            it = std::lower_bound(observers_.begin(), observers_.end(), address, less);
-            if(it != observers_.end() && address >= it->getMinAddress())
+            auto obs_it = std::lower_bound(observers_.begin(), observers_.end(), address, less);
+            if(obs_it != observers_.end() && address >= obs_it->getMinAddress())
             {
-                it->write(address, data);
+                obs_it->write(address, data);
             }
         }
 

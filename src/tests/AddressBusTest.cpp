@@ -49,6 +49,7 @@ void TestReading()
     //Edge cases
     assert(bus.read(1) == 1);
     assert(bus.read(2) == 1);
+    assert(bus.read(6) == 3);
     assert(bus.read(7) == 8);
 
     //Common case
