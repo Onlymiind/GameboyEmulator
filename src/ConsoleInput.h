@@ -8,7 +8,7 @@ namespace emulator
 {
     enum class CommandType
 	{
-		None, Invalid, Help, Quit, SetRomDir, RunRom, List, Config
+		None, Invalid, Help, Quit, SetRomDir, RunRom, List, Config, LaunchGUI
 	};
 
 	struct Command
@@ -45,7 +45,8 @@ namespace emulator
 		{
 			{"-help", {CommandType::Help, false}}, {"-quit", {CommandType::Quit, false}},
 			{"-romdir", {CommandType::SetRomDir, true}}, {"-run", {CommandType::RunRom, true}},
-			{"-ls", {CommandType::List, false}}, {"-config", {CommandType::Config, false}}
+			{"-ls", {CommandType::List, false}}, {"-config", {CommandType::Config, false}},
+			{"-gui",{CommandType::LaunchGUI, false}}
 		};
 
 		std::istream& input_;

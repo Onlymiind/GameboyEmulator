@@ -8,6 +8,11 @@
 #include "gb/cpu/Decoder.h"
 #include "ConsoleInput.h"
 
+#include "GLFW/glfw3.h"
+#include "imgui.h"
+#include "backends/imgui_impl_glfw.h"
+#include "backends/imgui_impl_opengl3.h"
+
 #include <string>
 #include <filesystem>
 #include <exception>
@@ -16,7 +21,15 @@ namespace emulator
 {
     void Application::draw()
     {
-        //TODO
+        
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+        ImGui::ShowDemoWindow(); // Show demo window! :)
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        glfwSwapBuffers(window_);
+        glfwPollEvents();
     }
 
     Application::Application(const Printer& printer, const Reader& reader, bool  exit_on_infinite_loop) :
@@ -30,7 +43,7 @@ namespace emulator
 
     void Application::run()
     {
-        while (is_running_) {
+        while (!glfwWindowShouldClose(window_)/*is_running_*/) {
 
             if (emulator_running_)
             {
@@ -38,7 +51,8 @@ namespace emulator
             }
             else
             {
-                pollCommands();
+                //pollCommands();
+                draw();
             }
         }
     }
@@ -54,6 +68,25 @@ namespace emulator
         bus_.connect({memory_map_.interrupt_flags.min_address, memory_map_.interrupt_flags.max_address, interrupt_flags_});
 
         printer_.printTitle();
+
+        glfwInit();
+        window_ = glfwCreateWindow(600, 600, "test", nullptr, nullptr);
+        glfwMakeContextCurrent(window_);
+
+
+        ImGui::CreateContext();
+        ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+
+        ImGui_ImplGlfw_InitForOpenGL(window_, true);
+        ImGui_ImplOpenGL3_Init();
+    }
+
+    Application::~Application() 
+    {
+        ImGui_ImplOpenGL3_Shutdown();
+        ImGui_ImplGlfw_Shutdown();
+        glfwDestroyWindow(window_);
+        glfwTerminate();
     }
 
     void Application::addMemoryObserver(uint16_t from, uint16_t to, gb::MemoryObject& observer)
@@ -126,6 +159,9 @@ namespace emulator
                 break;
             case CommandType::Invalid:
                 printer_.reportError(InputError::InvalidCommand);
+                break;
+            case CommandType::LaunchGUI:
+                break;
         }
     }
 

@@ -7,8 +7,9 @@
 #include "ConsoleInput.h"
 #include "ConsoleOutput.h"
 #include "gb/Timer.h"
-
 #include "gb/memory/Memory.h"
+
+#include "GLFW/glfw3.h"
 
 #include <filesystem>
 #include <string_view>
@@ -20,6 +21,7 @@ namespace emulator
     {
     public:
         Application(const Printer& printer, const Reader& reader, bool exit_on_infinite_loop = false);
+        ~Application();
 
         void addMemoryObserver(uint16_t from, uint16_t to, gb::MemoryObject& observer);
 
@@ -52,8 +54,7 @@ namespace emulator
             MemoryObjectInfo interrupt_enable = {0xFF0F, 0xFF0F};
             MemoryObjectInfo leftover = {0xFF10, 0xFFFE};
             MemoryObjectInfo interrupt_flags = {0xFFFF, 0xFFFF};
-        }
-        const memory_map_;
+        } const memory_map_;
 
         gb::RAM RAM_;
         gb::ROM ROM_;
@@ -66,9 +67,10 @@ namespace emulator
         gb::cpu::SharpSM83 CPU_;
         gb::Timer timer_;
         
-        bool is_running_;
-        bool emulator_running_;
-        bool exit_on_infinite_loop_;
+        bool is_running_ = false;
+        bool emulator_running_ = false;
+        bool exit_on_infinite_loop_ = true;
+        bool gui_ = false;
 
 
         std::filesystem::path ROM_directory_;
@@ -76,6 +78,6 @@ namespace emulator
         const Reader& input_reader_;
         const Printer& printer_;
 
-
+        GLFWwindow* window_ = nullptr;
     };
 }

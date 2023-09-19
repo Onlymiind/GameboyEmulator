@@ -81,7 +81,7 @@ include_directories(
 	${PROJECT_SOURCE_DIR}/glfw/include
 	)
 
-target_link_libraries(emulator glfw)
+target_link_libraries(emulator PUBLIC glfw)
 	
 target_compile_features(emulator PUBLIC cxx_std_17)
 
@@ -144,10 +144,14 @@ if(BUILD_TESTS)
 	add_executable(
 		run_test_rom
 		${SOURCE_FILES}
+		${IMGUI_LIB}
+		${IMGUI_BACKEND}
 		src/tests/integration/IntegrationTest.cpp
 		src/tests/integration/IntegrationTest.h
 		src/tests/integration/RunTestRom.cpp
 	)
+
+	target_link_libraries(run_test_rom glfw)
 
 	add_executable(
 		coroutine_test
