@@ -13,6 +13,7 @@
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
 
+
 #include <string>
 #include <filesystem>
 #include <exception>
@@ -21,11 +22,18 @@ namespace emulator
 {
     void Application::draw()
     {
-        
+        glClear(GL_COLOR_BUFFER_BIT);
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-        ImGui::ShowDemoWindow(); // Show demo window! :)
+
+        ImGui::SetNextWindowPos(ImVec2(0, 0));
+        ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize);
+
+        ImGui::Begin("name", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove);
+        ImGui::End();        
+
+
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         glfwSwapBuffers(window_);
@@ -35,24 +43,31 @@ namespace emulator
     Application::Application(const Printer& printer, const Reader& reader, bool  exit_on_infinite_loop) :
         RAM_(memory_map_.RAM.size), ROM_(), leftover_(memory_map_.leftover.size), leftover2_(memory_map_.leftover2.size),
         bus_(), CPU_(bus_, interrupt_enable_, interrupt_flags_, decoder_), timer_(interrupt_flags_),
-        is_running_(true), emulator_running_(false), exit_on_infinite_loop_(exit_on_infinite_loop),
-        input_reader_(reader), printer_(printer)
+        exit_on_infinite_loop_(exit_on_infinite_loop), input_reader_(reader), printer_(printer)
     {
         init();
     }
 
     void Application::run()
     {
-        while (!glfwWindowShouldClose(window_)/*is_running_*/) {
+        while (is_running_) {
 
             if (emulator_running_)
             {
                 update();
             }
-            else
+            else if(gui_enabled_)
             {
-                //pollCommands();
                 draw();
+            }
+            else 
+            {
+                pollCommands();
+            }
+
+            if(window_ && glfwWindowShouldClose(window_))
+            {
+                is_running_ = false;
             }
         }
     }
@@ -68,10 +83,22 @@ namespace emulator
         bus_.connect({memory_map_.interrupt_flags.min_address, memory_map_.interrupt_flags.max_address, interrupt_flags_});
 
         printer_.printTitle();
+    }
 
+    void Application::initGUI()
+    {
+        if(gui_init_) 
+        {
+            return;
+        }
+        
         glfwInit();
-        window_ = glfwCreateWindow(600, 600, "test", nullptr, nullptr);
+        window_ = glfwCreateWindow(600, 600, "emulator", nullptr, nullptr);
         glfwMakeContextCurrent(window_);
+        if(gladLoadGL() == 0)
+        {
+            printer_.reportError("failed to load OpenGL", 0);
+        }
 
 
         ImGui::CreateContext();
@@ -79,14 +106,18 @@ namespace emulator
 
         ImGui_ImplGlfw_InitForOpenGL(window_, true);
         ImGui_ImplOpenGL3_Init();
+        gui_init_ = true;
     }
 
     Application::~Application() 
     {
-        ImGui_ImplOpenGL3_Shutdown();
-        ImGui_ImplGlfw_Shutdown();
-        glfwDestroyWindow(window_);
-        glfwTerminate();
+        if(gui_init_)
+        {
+            ImGui_ImplOpenGL3_Shutdown();
+            ImGui_ImplGlfw_Shutdown();
+            glfwDestroyWindow(window_);
+            glfwTerminate();
+        }
     }
 
     void Application::addMemoryObserver(uint16_t from, uint16_t to, gb::MemoryObject& observer)
@@ -161,6 +192,8 @@ namespace emulator
                 printer_.reportError(InputError::InvalidCommand);
                 break;
             case CommandType::LaunchGUI:
+                initGUI();
+                gui_enabled_ = true;
                 break;
         }
     }

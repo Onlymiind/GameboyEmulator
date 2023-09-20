@@ -9,6 +9,7 @@
 #include "gb/Timer.h"
 #include "gb/memory/Memory.h"
 
+#include "glad/glad.h"
 #include "GLFW/glfw3.h"
 
 #include <filesystem>
@@ -32,6 +33,7 @@ namespace emulator
     private:
 
         void init();
+        void initGUI();
         void update();
         void pollCommands();
 
@@ -67,10 +69,11 @@ namespace emulator
         gb::cpu::SharpSM83 CPU_;
         gb::Timer timer_;
         
-        bool is_running_ = false;
+        bool is_running_ = true;
         bool emulator_running_ = false;
         bool exit_on_infinite_loop_ = true;
-        bool gui_ = false;
+        bool gui_enabled_ = false;
+        bool gui_init_ = false;
 
 
         std::filesystem::path ROM_directory_;
