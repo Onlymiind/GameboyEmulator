@@ -4,27 +4,13 @@
 #include "ConsoleOutput.h"
 
 #include "catch2/catch_test_macros.hpp"
+#include "catch2/generators/catch_generators.hpp"
 
 #include <string>
 #include <sstream>
-#include <iostream>
-#include <vector>
 #include <memory>
 
 std::string run_cmd = "-run ";
-std::vector<std::string> roms {
-    "01-special",
-    "02-interrupts",
-    "03-op sp,hl",
-    "04-op r,imm",
-    "05-op rp",
-    "06-ld r,r",
-    "07-jr,jp,call,ret,rst",
-    "08-misc instrs",
-    "09-op r,r",
-    "10-bit ops",
-    "11-op a,(hl)",
-};
 
 class TestOutputReader : public gb::MemoryObject
 {
@@ -72,9 +58,18 @@ void runTestRom(const std::string& rom_name) {
 }
 
 TEST_CASE("run cpu test roms") {
-    for(const auto& name : roms) {
-        SECTION(name) {
-            runTestRom(name);
-        }
-    }
+    auto name  = GENERATE(as<std::string>{}, 
+        "01-special",
+        "02-interrupts",
+        "03-op sp,hl",
+        "04-op r,imm",
+        "05-op rp",
+        "06-ld r,r",
+        "07-jr,jp,call,ret,rst",
+        "08-misc instrs",
+        "09-op r,r",
+        "10-bit ops",
+        "11-op a,(hl)"
+    );
+    runTestRom(name);
 }
