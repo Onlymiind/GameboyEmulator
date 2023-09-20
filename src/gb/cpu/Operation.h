@@ -108,12 +108,12 @@ namespace gb
 
             std::optional<uint8_t> bit;
 
-            inline bool operator == (PrefixedInstruction other)
-            {
-                return type == other.type && target == other.target && bit == other.bit;
-            }
         };
 
+        inline bool operator == (PrefixedInstruction lhs, PrefixedInstruction rhs)
+        {
+            return lhs.type == rhs.type && lhs.target == rhs.target && lhs.bit == rhs.bit;
+        }
 
 
         //Struct for easy opcode decomposition;

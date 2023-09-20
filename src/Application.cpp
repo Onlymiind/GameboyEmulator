@@ -229,8 +229,13 @@ namespace emulator
 
     void Application::runROM(std::string_view name)
     {
-        std::filesystem::path ROM_path = ROM_directory_;
+        std::filesystem::path ROM_path;
+        if(!ROM_directory_.empty()) {
+            ROM_path = ROM_directory_;
+        }
         ROM_path = ROM_path / std::filesystem::path(name).replace_extension(extension_);
+        auto str = ROM_path.string();
+        auto str2 = std::filesystem::current_path();
         if (std::filesystem::exists(ROM_path))
         {
             ROM_.setData(readFile(ROM_path));

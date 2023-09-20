@@ -1,8 +1,8 @@
 #include "gb/cpu/Decoder.h"
+#include "gb/cpu/Operation.h"
 
-#include "Common.h"
+#include "catch2/catch_test_macros.hpp"
 
-#include <cassert>
 #include <iostream>
 #include <utility>
 #include <array>
@@ -25,14 +25,14 @@ constexpr std::array<std::pair<uint8_t, UnprefixedInstruction>, 10> unprefixed_s
     {0x76, {{}, {}, {}, {}, {}, UnprefixedType::HALT}}
 }};
 
-void TestPrefix()
+TEST_CASE("prefix")
 {
     Decoder decoder;
 
-    assert(decoder.isPrefix({0xCB}));
+    REQUIRE(decoder.isPrefix({0xCB}));
 }
 
-void TestDecodingPrefixed()
+TEST_CASE("decoding prefixed instructions")
 {
     Decoder decoder;
 
@@ -45,13 +45,13 @@ void TestDecodingPrefixed()
     PrefixedInstruction SET_0_B = {PrefixedType::SET, Registers::B, 0};
     uint8_t SET_0_B_code = 0xC0;
 
-    assert(decoder.decodePrefixed(RLC_B_code) == RLC_B);
-    assert(decoder.decodePrefixed(SRA_A_code) == SRA_A);
-    assert(decoder.decodePrefixed(BIT_6_A_code) == BIT_6_A);
-    assert(decoder.decodePrefixed(SET_0_B_code) == SET_0_B);
+    REQUIRE(decoder.decodePrefixed(RLC_B_code) == RLC_B);
+    REQUIRE(decoder.decodePrefixed(SRA_A_code) == SRA_A);
+    REQUIRE(decoder.decodePrefixed(BIT_6_A_code) == BIT_6_A);
+    REQUIRE(decoder.decodePrefixed(SET_0_B_code) == SET_0_B);
 }
 
-void TestDecodingUnprefixed()
+TEST_CASE("decoding unprefixed instructions")
 {
     Decoder decoder;
 
@@ -60,16 +60,8 @@ void TestDecodingUnprefixed()
         if(instr.type != UnprefixedType::None)
         {
             std::cout << "Testing instruction: " << std::hex << "0x" << std::setfill('0') << std::setw(sizeof(uint8_t) * 2) << +code << std::endl;
-            assert(decoder.decodeUnprefixed(code) == instr);
+            REQUIRE(decoder.decodeUnprefixed(code) == instr);
         }
     }
 }
 
-int main()
-{
-    RUN_TEST(TestPrefix);
-    RUN_TEST(TestDecodingPrefixed);
-    RUN_TEST(TestDecodingUnprefixed);
-    std::cout << "Done\n";
-    return 0;
-}
