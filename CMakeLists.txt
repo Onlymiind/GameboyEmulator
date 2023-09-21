@@ -2,18 +2,15 @@ cmake_minimum_required(VERSION 3.19)
 project(GameboyEmulator)
 
 option(BUILD_TESTS "Build tests" ON)
+option(TESTS_ONLY "Build only tests" OFF)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin/$<CONFIG>/)
 set(CMAKE_CXX_STANDARD 17)
 set(CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 enable_testing()
 
-add_subdirectory(glfw)
-add_subdirectory(Catch2)
-
-set(SOURCE_FILES
+set(EMULATOR_LIB
     src/utils/Utils.cpp
-    src/Application.cpp
     src/gb/cpu/CPU.cpp
     src/gb/cpu/instructions.cpp
     src/gb/memory/Memory.cpp
@@ -26,7 +23,6 @@ set(SOURCE_FILES
     src/ConsoleOutput.cpp
     src/gb/cpu/CPUUtils.cpp
     src/utils/Utils.h
-    src/Application.h
     src/ConsoleInput.h
     src/ConsoleOutput.h
     src/Error.h
@@ -42,6 +38,10 @@ set(SOURCE_FILES
     src/gb/cpu/Operation.h
 )
 
+add_library(emulator_lib
+    ${EMULATOR_LIB}
+)
+target_include_directories(emulator_lib PRIVATE src)
 
 set(IMGUI_LIB
     imgui/imconfig.h
@@ -70,40 +70,33 @@ set(GLAD
     glad/include/KHR/khrplatform.h
 )
 
-set(INCLUDE_DIRS
-    src
-    imgui
-    glfw/include
-    glad/include
-)
 
-add_library(emulator_lib
-    ${SOURCE_FILES}
-    ${IMGUI_LIB}
-    ${IMGUI_BACKEND}
-    ${GLAD}
-)
+if(NOT TESTS_ONLY)
+    add_subdirectory(glfw)
 
-target_link_libraries(emulator_lib glfw)
+    add_executable(
+        emulator
+
+        ${IMGUI_LIB}
+        ${IMGUI_BACKEND}
+        ${GLAD}
+
+        src/Application.h
+        src/Application.cpp
+        src/Source.cpp
+    )
 
 
-add_executable(
-    emulator 
-    src/Source.cpp
-)
+    target_link_libraries(emulator PUBLIC emulator_lib glfw)
+    target_include_directories(emulator PRIVATE src imgui glfw/include glad/include)
 
-include_directories(
-    src
-    imgui
-    glfw/include
-    glad/include
-)
+    target_compile_features(emulator PUBLIC cxx_std_17)
 
-target_link_libraries(emulator PUBLIC emulator_lib)
-    
-target_compile_features(emulator PUBLIC cxx_std_17)
+endif()
 
-if(BUILD_TESTS) 
+if(BUILD_TESTS OR TESTS_ONLY)
+
+    add_subdirectory(Catch2)
 
     add_executable(tests
         src/tests/AddressBusTest.cpp
@@ -112,7 +105,7 @@ if(BUILD_TESTS)
         src/tests/integration/IntegrationTest.cpp
     )
     target_link_libraries(tests PRIVATE emulator_lib Catch2WithMain)
-    target_include_directories(tests PUBLIC ${INCLUDE_DIRS} src/tests)
+    target_include_directories(tests PUBLIC src src/tests)
 
     include(CTest)
     include(Catch)

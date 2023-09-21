@@ -1,11 +1,13 @@
-#include "Application.h"
+#include "gb/Emulator.h"
 #include "gb/memory/Memory.h"
 #include "ConsoleInput.h"
 #include "ConsoleOutput.h"
 
 #include "catch2/catch_test_macros.hpp"
 #include "catch2/generators/catch_generators.hpp"
+#include "utils/Utils.h"
 
+#include <filesystem>
 #include <string>
 #include <sstream>
 #include <memory>
@@ -37,20 +39,21 @@ private:
 };
 
 void runTestRom(const std::string& rom_name) {
-    std::stringstream in(run_cmd + rom_name);
-    std::stringstream dummy;
-    emulator::Reader r(in);
-    emulator::Printer p(dummy);
-    std::unique_ptr<emulator::Application> app = std::make_unique<emulator::Application>(p, r, true);
 
     std::stringstream out;
     emulator::Printer printer(out);
     TestOutputReader test_out(printer);
-    app->addMemoryObserver(0xFF01, 0xFF02, test_out);
 
-    app->run();
+    gb::Emulator emulator;
+    REQUIRE(std::filesystem::exists(rom_name));
+    emulator.setROM(readFile(rom_name));
 
-    std::string d = dummy.str();
+    emulator.addMemoryObserver({0xFF01, 0xFF02, test_out});
+    emulator.start();
+    while(!emulator.terminated()) {
+        emulator.tick();
+    }
+
     std::string output = out.str();
 
     INFO(output);
@@ -59,17 +62,17 @@ void runTestRom(const std::string& rom_name) {
 
 TEST_CASE("run cpu test roms") {
     auto name  = GENERATE(as<std::string>{}, 
-        "01-special",
-        "02-interrupts",
-        "03-op sp,hl",
-        "04-op r,imm",
-        "05-op rp",
-        "06-ld r,r",
-        "07-jr,jp,call,ret,rst",
-        "08-misc instrs",
-        "09-op r,r",
-        "10-bit ops",
-        "11-op a,(hl)"
+        "01-special.gb",
+        "02-interrupts.gb",
+        "03-op sp,hl.gb",
+        "04-op r,imm.gb",
+        "05-op rp.gb",
+        "06-ld r,r.gb",
+        "07-jr,jp,call,ret,rst.gb",
+        "08-misc instrs.gb",
+        "09-op r,r.gb",
+        "10-bit ops.gb",
+        "11-op a,(hl).gb"
     );
     runTestRom(name);
 }

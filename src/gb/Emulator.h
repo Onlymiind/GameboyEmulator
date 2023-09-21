@@ -20,13 +20,13 @@ namespace gb {
         uint16_t size = static_cast<uint16_t>(max_address - min_address + 1);
     };
 
-    constexpr MemoryObjectInfo g_ROM = {0x0000, 0x7FFF};
-    constexpr MemoryObjectInfo g_RAM = {0x8000, 0xFF03};
-    constexpr MemoryObjectInfo g_timer = {0xFF04, 0xFF07};
-    constexpr MemoryObjectInfo g_leftover2 = {0xFF08, 0xFF0E};
-    constexpr MemoryObjectInfo g_interrupt_enable = {0xFF0F, 0xFF0F};
-    constexpr MemoryObjectInfo g_leftover = {0xFF10, 0xFFFE};
-    constexpr MemoryObjectInfo g_interrupt_flags = {0xFFFF, 0xFFFF};
+    constexpr MemoryObjectInfo g_memory_rom = {0x0000, 0x7FFF};
+    constexpr MemoryObjectInfo g_memory_ram = {0x8000, 0xFF03};
+    constexpr MemoryObjectInfo g_memory_timer = {0xFF04, 0xFF07};
+    constexpr MemoryObjectInfo g_memory_leftover2 = {0xFF08, 0xFF0E};
+    constexpr MemoryObjectInfo g_memory_interrupt_enable = {0xFF0F, 0xFF0F};
+    constexpr MemoryObjectInfo g_memory_leftover = {0xFF10, 0xFFFE};
+    constexpr MemoryObjectInfo g_memory_interrupt_flags = {0xFFFF, 0xFFFF};
 
     class Emulator {
     public:
@@ -40,17 +40,19 @@ namespace gb {
 
         void tick();
 
-        bool terminated() const;
+        bool terminated() const { return !is_running_; }
 
         void reset() { cpu_.reset(); }
 
-        void setROM(std::vector<uint8_t> rom) { ROM_.setData(std::move(rom)); }
+        void setROM(std::vector<uint8_t> rom) { 
+            rom_.setData(std::move(rom)); 
+        }
 
         void start() { is_running_ = true; }
 
     private:
-        RAM RAM_;
-        ROM ROM_;
+        RAM ram_;
+        ROM rom_;
         RAM leftover_;
         RAM leftover2_;
         AddressBus bus_;
@@ -64,14 +66,40 @@ namespace gb {
     };
 
     inline Emulator::Emulator()
-        :RAM_(g_RAM.size), leftover_(g_leftover.size), leftover2_(g_leftover2.size)
+        :ram_(g_memory_ram.size), leftover_(g_memory_leftover.size), leftover2_(g_memory_leftover2.size)
     {
-        bus_.connect({g_ROM.min_address, g_ROM.max_address, ROM_});
-        bus_.connect({g_RAM.min_address, g_RAM.max_address, RAM_});
-        bus_.connect({g_timer.min_address, g_timer.max_address, timer_});
-        bus_.connect({g_leftover2.min_address, g_leftover2.max_address, leftover2_});
-        bus_.connect({g_interrupt_enable.min_address, g_interrupt_enable.max_address, interrupt_enable_});
-        bus_.connect({g_leftover.min_address, g_leftover.max_address, leftover_});
-        bus_.connect({g_interrupt_flags.min_address, g_interrupt_flags.max_address, interrupt_flags_});
+        bus_.connect({g_memory_rom.min_address, g_memory_rom.max_address, rom_});
+        bus_.connect({g_memory_ram.min_address, g_memory_ram.max_address, ram_});
+        bus_.connect({g_memory_timer.min_address, g_memory_timer.max_address, timer_});
+        bus_.connect({g_memory_leftover2.min_address, g_memory_leftover2.max_address, leftover2_});
+        bus_.connect({g_memory_interrupt_enable.min_address, g_memory_interrupt_enable.max_address, interrupt_enable_});
+        bus_.connect({g_memory_leftover.min_address, g_memory_leftover.max_address, leftover_});
+        bus_.connect({g_memory_interrupt_flags.min_address, g_memory_interrupt_flags.max_address, interrupt_flags_});
+    }
+
+    inline void Emulator::tick() {
+        if(!is_running_) {
+            return;
+        }
+        static uint16_t oldPC = cpu_.getProgramCounter();
+
+        try {
+            cpu_.tick();
+            for(int i = 0; i < 4; ++i) {
+                timer_.update();
+            }
+        }
+        catch(const std::exception& e) {
+            is_running_ = false;
+            return;
+        }
+
+        if(cpu_.isFinished()) {
+            if(oldPC == cpu_.getProgramCounter()) {
+                is_running_ = false;
+            }
+
+            oldPC = cpu_.getProgramCounter();
+        }
     }
 }
