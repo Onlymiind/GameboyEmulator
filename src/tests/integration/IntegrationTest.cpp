@@ -8,6 +8,7 @@
 #include "utils/Utils.h"
 
 #include <filesystem>
+#include <ostream>
 #include <string>
 #include <sstream>
 #include <memory>
@@ -17,8 +18,8 @@ std::string run_cmd = "-run ";
 class TestOutputReader : public gb::MemoryObject
 {
 public:
-	TestOutputReader(const emulator::Printer& printer)
-		: printer_(printer)
+	TestOutputReader(std::ostream& out)
+		: out_(out)
 	{}
 
 	uint8_t read(uint16_t address) const override {
@@ -30,19 +31,18 @@ public:
         if(address == 0) {
             symbol = data;
         } else if (address == 0x01 && data == 0x81) {
-	    	printer_.print(symbol);
+	    	out_ << symbol;
 	    }
     }
 private:
-	const emulator::Printer& printer_;
+	std::ostream& out_;
     uint8_t symbol = 0;
 };
 
 void runTestRom(const std::string& rom_name) {
 
     std::stringstream out;
-    emulator::Printer printer(out);
-    TestOutputReader test_out(printer);
+    TestOutputReader test_out(out);
 
     gb::Emulator emulator;
     REQUIRE(std::filesystem::exists(rom_name));
