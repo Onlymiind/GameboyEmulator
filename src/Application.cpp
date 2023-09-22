@@ -18,10 +18,8 @@
 #include <filesystem>
 #include <exception>
 
-namespace emulator
-{
-    void Application::draw()
-    {
+namespace emulator {
+    void Application::draw() {
         glClear(GL_COLOR_BUFFER_BIT);
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
@@ -40,63 +38,40 @@ namespace emulator
         glfwPollEvents();
     }
 
-    Application::Application(const Printer& printer, const Reader& reader, bool  exit_on_infinite_loop) :
-        RAM_(memory_map_.RAM.size), ROM_(), leftover_(memory_map_.leftover.size), leftover2_(memory_map_.leftover2.size),
-        bus_(), CPU_(bus_, interrupt_enable_, interrupt_flags_, decoder_), timer_(interrupt_flags_),
-        exit_on_infinite_loop_(exit_on_infinite_loop), input_reader_(reader), printer_(printer)
+    Application::Application(const Printer& printer, const Reader& reader)
+        :input_reader_(reader), printer_(printer) 
     {
-        init();
+        printer_.printTitle();
     }
 
-    void Application::run()
-    {
+    void Application::run() {
         while (is_running_) {
 
-            if (emulator_running_)
-            {
+            if (emulator_running_) {
                 update();
             }
-            else if(gui_enabled_)
-            {
+            else if(gui_enabled_) {
                 draw();
             }
-            else 
-            {
+            else {
                 pollCommands();
             }
 
-            if(window_ && glfwWindowShouldClose(window_))
-            {
+            if(window_ && glfwWindowShouldClose(window_)) {
                 is_running_ = false;
             }
         }
     }
 
-    void Application::init()
-    {
-        bus_.connect({memory_map_.ROM.min_address, memory_map_.ROM.max_address, ROM_});
-        bus_.connect({memory_map_.RAM.min_address, memory_map_.RAM.max_address, RAM_});
-        bus_.connect({memory_map_.timer.min_address, memory_map_.timer.max_address, timer_});
-        bus_.connect({memory_map_.leftover2.min_address, memory_map_.leftover2.max_address, leftover2_});
-        bus_.connect({memory_map_.interrupt_enable.min_address, memory_map_.interrupt_enable.max_address, interrupt_enable_});
-        bus_.connect({memory_map_.leftover.min_address, memory_map_.leftover.max_address, leftover_});
-        bus_.connect({memory_map_.interrupt_flags.min_address, memory_map_.interrupt_flags.max_address, interrupt_flags_});
-
-        printer_.printTitle();
-    }
-
-    void Application::initGUI()
-    {
-        if(gui_init_) 
-        {
+    void Application::initGUI() {
+        if(gui_init_) {
             return;
         }
         
         glfwInit();
         window_ = glfwCreateWindow(600, 600, "emulator", nullptr, nullptr);
         glfwMakeContextCurrent(window_);
-        if(gladLoadGL() == 0)
-        {
+        if(gladLoadGL() == 0) {
             printer_.reportError("failed to load OpenGL", 0);
         }
 
@@ -109,10 +84,8 @@ namespace emulator
         gui_init_ = true;
     }
 
-    Application::~Application() 
-    {
-        if(gui_init_)
-        {
+    Application::~Application() {
+        if(gui_init_) {
             ImGui_ImplOpenGL3_Shutdown();
             ImGui_ImplGlfw_Shutdown();
             glfwDestroyWindow(window_);
@@ -120,56 +93,22 @@ namespace emulator
         }
     }
 
-    void Application::addMemoryObserver(uint16_t from, uint16_t to, gb::MemoryObject& observer)
-    {
-        bus_.addObserver(gb::MemoryController(from, to, observer));
-    }
-
-    void Application::update()
-    {
-        //For infinite loop detection
-        static uint16_t oldPC = CPU_.getProgramCounter();
-
-        try
-        {
-            CPU_.tick();
-            for(int i = 0; i < 4; ++i)
-            {
-                timer_.update();
+    void Application::update() {
+        emulator_.tick();
+        if(emulator_.terminated()) {
+            const auto& err = emulator_.getErrorDescription();
+            if(!err.empty()) {
+                printer_.reportError(err, 0);
             }
-        }
-        catch(const std::exception& e)
-        {
-            emulator_running_ = false;
-            printer_.reportError(e.what(), CPU_.getProgramCounter());
-            return;
-        }
-
-        if(CPU_.isFinished())
-        {
-            if(oldPC == CPU_.getProgramCounter())
-            {
-                emulator_running_ = false;
-                if(exit_on_infinite_loop_)
-                {
-                    is_running_ = false;
-                    return;
-                }
-                printer_.reportError("Reached infinite loop", CPU_.getProgramCounter());
-            }
-
-            oldPC = CPU_.getProgramCounter();
         }
     }
 
-    void Application::pollCommands()
-    {
+    void Application::pollCommands() {
         printer_.print('>');
 
         Command cmd = input_reader_.parse(input_reader_.getLine());
 
-        switch (cmd.type)
-        {
+        switch (cmd.type) {
             case CommandType::List:
                 listROMs();
                 break;
@@ -198,50 +137,40 @@ namespace emulator
         }
     }
 
-    void Application::setROMDirectory(const std::filesystem::path& newPath)
-    {
-        if (std::filesystem::exists(newPath) && std::filesystem::is_directory(newPath))
-        {
+    void Application::setROMDirectory(const std::filesystem::path& newPath) {
+        if (std::filesystem::exists(newPath) && std::filesystem::is_directory(newPath)) {
             ROM_directory_ = newPath;
         }
-        else
-        {
+        else {
             printer_.reportError(InputError::InvalidDirectory);
         }
     }
 
-    void Application::listROMs() const
-    {
-        if(!std::filesystem::exists(ROM_directory_))
-        {
+    void Application::listROMs() const {
+        if(!std::filesystem::exists(ROM_directory_)) {
             printer_.reportError(InputError::InvalidDirectory);
             return;
         }
 
-        for (const auto& file : std::filesystem::directory_iterator(ROM_directory_))
-        {
-            if (file.path().extension().string() == ".gb")
-            {
+        for (const auto& file : std::filesystem::directory_iterator(ROM_directory_)) {
+            if (file.path().extension().string() == ".gb") {
                 printer_.println("ROM: ", file.path().filename());
             }
         }
     }
 
-    void Application::runROM(std::string_view name)
-    {
+    void Application::runROM(std::string_view name) {
         std::filesystem::path ROM_path;
         if(!ROM_directory_.empty()) {
             ROM_path = ROM_directory_;
         }
         ROM_path = ROM_path / std::filesystem::path(name).replace_extension(extension_);
-        if (std::filesystem::exists(ROM_path))
-        {
-            ROM_.setData(readFile(ROM_path));
-            CPU_.reset();
-            emulator_running_ = true;
+        if (std::filesystem::exists(ROM_path)) {
+            emulator_.reset();
+            emulator_.setROM(readFile(ROM_path));
+            emulator_.start();
         }
-        else
-        {
+        else {
             printer_.reportError(InputError::InvalidRomName);
             printer_.println("ROM: ", ROM_path);
         }

@@ -9,8 +9,10 @@
 #include "ConsoleOutput.h"
 #include "gb/Timer.h"
 #include "gb/memory/Memory.h"
+#include "utils/Utils.h"
 
 #include <cstdint>
+#include <sstream>
 #include <vector>
 
 namespace gb {
@@ -42,13 +44,18 @@ namespace gb {
 
         bool terminated() const { return !is_running_; }
 
-        void reset() { cpu_.reset(); }
+        void reset() { 
+            cpu_.reset();
+            error_description_.clear();
+        }
 
         void setROM(std::vector<uint8_t> rom) { 
             rom_.setData(std::move(rom)); 
         }
 
         void start() { is_running_ = true; }
+
+        const std::string& getErrorDescription() const { return error_description_; }
 
     private:
         RAM ram_;
@@ -63,6 +70,8 @@ namespace gb {
         Timer timer_{interrupt_flags_};
 
         bool is_running_ = false;
+
+        std::string error_description_;
     };
 
     inline Emulator::Emulator()
@@ -91,12 +100,16 @@ namespace gb {
         }
         catch(const std::exception& e) {
             is_running_ = false;
+            error_description_ = e.what();
             return;
         }
 
         if(cpu_.isFinished()) {
             if(oldPC == cpu_.getProgramCounter()) {
                 is_running_ = false;
+                std::stringstream s;
+                s << "reached infinite loop at address 0x" << std::setfill('0') << std::setw(sizeof(oldPC) * 2) << std::hex << oldPC;
+                error_description_ = s.str();
             }
 
             oldPC = cpu_.getProgramCounter();

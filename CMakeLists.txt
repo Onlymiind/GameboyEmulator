@@ -10,13 +10,11 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 enable_testing()
 
 set(EMULATOR_LIB
-    src/utils/Utils.cpp
     src/gb/cpu/CPU.cpp
     src/gb/cpu/instructions.cpp
     src/gb/memory/Memory.cpp
     src/gb/AddressBus.cpp
     src/gb/Timer.cpp
-    src/gb/memory/BasicComponents.cpp
     src/gb/cpu/Decoder.cpp
     src/gb/cpu/Operation.cpp
     src/ConsoleInput.cpp

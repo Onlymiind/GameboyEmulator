@@ -18,24 +18,24 @@ std::string run_cmd = "-run ";
 class TestOutputReader : public gb::MemoryObject
 {
 public:
-	TestOutputReader(std::ostream& out)
-		: out_(out)
-	{}
+    TestOutputReader(std::ostream& out)
+        : out_(out)
+    {}
 
-	uint8_t read(uint16_t address) const override {
+    uint8_t read(uint16_t address) const override {
         return 0;
     }
 
-	void write(uint16_t address, uint8_t data) override {
+    void write(uint16_t address, uint8_t data) override {
         //Used to get output from blargg's test ROMs.
         if(address == 0) {
             symbol = data;
         } else if (address == 0x01 && data == 0x81) {
-	    	out_ << symbol;
-	    }
+            out_ << symbol;
+        }
     }
 private:
-	std::ostream& out_;
+    std::ostream& out_;
     uint8_t symbol = 0;
 };
 

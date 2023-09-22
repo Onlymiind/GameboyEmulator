@@ -14,19 +14,15 @@ namespace gb {
         return mem.getMaxAddress() < address;
     }
 
-    uint8_t AddressBus::read(uint16_t address) const
-    {
+    uint8_t AddressBus::read(uint16_t address) const {
         auto it = std::lower_bound(memory_.begin(), memory_.end(), address, less);
-        if (it == memory_.end() || it->getMinAddress() > address)
-        {
+        if (it == memory_.end() || it->getMinAddress() > address) {
             throw std::out_of_range(getErrorDescription(address));
         }
 
-        if(!observers_.empty())
-        {
+        if(!observers_.empty()) {
             auto obs_it = std::lower_bound(observers_.begin(), observers_.end(), address, less);
-            if(obs_it != observers_.end() && address >= obs_it->getMinAddress())
-            {
+            if(obs_it != observers_.end() && address >= obs_it->getMinAddress()) {
                 obs_it->read(address);
             }
         }
@@ -34,19 +30,15 @@ namespace gb {
         return it->read(address);
     }
 
-    void AddressBus::write(uint16_t address, uint8_t data) const
-    {
+    void AddressBus::write(uint16_t address, uint8_t data) const {
         auto it = std::lower_bound(memory_.begin(), memory_.end(), address, less);
-        if (it == memory_.end() || it->getMinAddress() > address)
-        {
+        if (it == memory_.end() || it->getMinAddress() > address) {
             throw std::out_of_range(getErrorDescription(address));
         }
 
-        if(!observers_.empty())
-        {
+        if(!observers_.empty()) {
             auto obs_it = std::lower_bound(observers_.begin(), observers_.end(), address, less);
-            if(obs_it != observers_.end() && address >= obs_it->getMinAddress())
-            {
+            if(obs_it != observers_.end() && address >= obs_it->getMinAddress()) {
                 obs_it->write(address, data);
             }
         }
@@ -54,17 +46,15 @@ namespace gb {
         it->write(address, data);
 
     }
-    std::string AddressBus::getErrorDescription(uint16_t address, int value) const
-    {
+
+    std::string AddressBus::getErrorDescription(uint16_t address, int value) const {
         std::stringstream err;
         
-        if (value == -1)
-        {
+        if (value == -1) {
             err << "Attempting to read from invalid memory address: ";
             toHexOutput(err, address);
         }
-        else
-        {
+        else {
             err << "Attempting to write to invalid memory address: ";
             toHexOutput(err, address);
             err << ". Data: ";
