@@ -7,7 +7,7 @@ int main() {
 	emulator::Printer p(std::cout);
 	emulator::Reader r(std::cin);
 
-	emulator::Application* app = new emulator::Application(p, r);
+	std::unique_ptr<emulator::Application> app = std::make_unique<emulator::Application>(p, r);
 
 	app->run();
 
