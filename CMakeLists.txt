@@ -17,7 +17,6 @@ set(EMULATOR_LIB
     src/gb/Timer.cpp
     src/gb/cpu/Decoder.cpp
     src/gb/cpu/Operation.cpp
-    src/gb/cpu/CPUUtils.cpp
     src/utils/Utils.h
     src/Error.h
     src/gb/AddressBus.h

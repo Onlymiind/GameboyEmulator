@@ -3,49 +3,10 @@
 
 #include <cstdint>
 
-namespace gb::cpu
-{
-    class WordRegister
-    {
-    public:
-        WordRegister()
-        {}
-        WordRegister(uint16_t value)
-            : high_((value & 0xFF00) >> 8), low_(value & 0x00FF)
-        {}
+namespace gb::cpu {
 
-        uint8_t& getHight();
-        uint8_t& getLow();
-
-        uint16_t value() const;
-
-        //TODO
-        // bool carried();
-        // bool halfCarried();
-
-        WordRegister& operator+=(uint16_t value);
-        WordRegister& operator-=(uint16_t value);
-        WordRegister& operator=(uint16_t value);
-
-        WordRegister operator--();
-        WordRegister operator++();
-
-        explicit operator bool();
-
-        operator uint16_t() const;
-    private:
-        uint16_t pack() const;
-
-        void unpack(uint16_t value);
-    private:
-        uint8_t high_;
-        uint8_t low_;
-    };
-
-    struct Registers
-    {
-        union 
-        {
+    struct Registers {
+        union {
             uint16_t AF;
                 
             struct {
@@ -59,24 +20,35 @@ namespace gb::cpu
                         uint8_t N : 1;
                         uint8_t Z : 1;
                     };
-                }flags;
+                } flags;
 
                 uint8_t A;
             };
         };
 
-        WordRegister BC;
-        WordRegister DE;
-        WordRegister HL;
-            
-        uint8_t& C = BC.getLow();
-        uint8_t& B = BC.getHight();
+        union {
+            uint16_t BC;
+            struct {
+                uint8_t C;
+                uint8_t B;
+            };
+        };
 
-        uint8_t& E = DE.getLow();
-        uint8_t& D = DE.getHight();
+        union {
+            uint16_t DE;
+            struct {
+                uint8_t E;
+                uint8_t D;
+            };
+        };
 
-        uint8_t& L = HL.getLow();
-        uint8_t& H = HL.getHight();
+        union {
+            uint16_t HL;
+            struct {
+                uint8_t L;
+                uint8_t H;
+            };
+        };
 
         // Stack pointer, program counter
         uint16_t SP;
@@ -92,32 +64,11 @@ namespace gb::cpu
     };
     #undef BIT
 
-    class FlagsRegister {
-    public:
-        FlagsRegister(uint8_t& flags)
-            :flags_(flags) {}
+    inline bool carried(uint8_t lhs, uint8_t rhs) { return (std::numeric_limits<uint8_t>::max() - rhs) < lhs; }
+    inline bool borrowed(uint8_t lhs, uint8_t rhs) { return lhs < rhs; }
+    inline bool carried(uint16_t lhs, uint16_t rhs) { return (std::numeric_limits<uint16_t>::max() - rhs) < lhs; }
 
-        bool isSet(Flags flag) const {
-            return flags_ & static_cast<uint8_t>(flag);
-        }
-
-        void clear() {
-            flags_ = 0;
-        }
-
-        void set(Flags flag, bool value) {
-            uint8_t mask = value ? static_cast<uint8_t>(flag) : 0;
-            flags_ = (flags_ & (~mask)) | mask;
-        }
-    private:
-        uint8_t& flags_;
-    };
-
-    bool carried(uint8_t lhs, uint8_t rhs);
-    bool borrowed(uint8_t lhs, uint8_t rhs); 
-    bool carried(uint16_t lhs, uint16_t rhs);
-
-    bool halfCarried(uint8_t lhs, uint8_t rhs);
-    bool halfBorrowed(uint8_t lhs, uint8_t rhs);
-    bool halfCarried(uint16_t rhs, uint16_t lhs);
+    inline bool halfCarried(uint8_t lhs, uint8_t rhs) { return ((lhs & 0x0F) + (rhs & 0x0F)) > 0x0F; }
+    inline bool halfBorrowed(uint8_t lhs, uint8_t rhs) { return (lhs & 0x0F) < (rhs & 0x0F); }
+    inline bool halfCarried(uint16_t rhs, uint16_t lhs) { return ((lhs & 0x0FFF) + (rhs & 0x0FFF)) > 0x0FFF; }
 }
