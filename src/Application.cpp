@@ -36,7 +36,7 @@ namespace emulator {
         drawMenu();
         ImGui::End();
 
-        //ImGui::ShowDemoWindow();
+        ImGui::ShowDemoWindow();
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -52,11 +52,10 @@ namespace emulator {
         if(ImGui::BeginMenu("File")) {
 
             if(ImGui::BeginMenu("Change ROM Directory")) {
-
-                ImGui::TextWrapped("%s", ROM_directory_.c_str());
-                ImGui::InputText("new ROM directory", &new_romdir_);
-
-                if(ImGui::Button("accept")) {
+                if(!ROM_directory_.empty()) {
+                    ImGui::TextWrapped("%s", ROM_directory_.c_str());
+                }
+                if(ImGui::InputText("###newdir", &new_romdir_, ImGuiInputTextFlags_EnterReturnsTrue)) {
                     if(!setROMDirectory(new_romdir_)) {
                         std::cout << "failed to change ROM directory\n";
                     }
