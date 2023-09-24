@@ -17,12 +17,8 @@ set(EMULATOR_LIB
     src/gb/Timer.cpp
     src/gb/cpu/Decoder.cpp
     src/gb/cpu/Operation.cpp
-    src/ConsoleInput.cpp
-    src/ConsoleOutput.cpp
     src/gb/cpu/CPUUtils.cpp
     src/utils/Utils.h
-    src/ConsoleInput.h
-    src/ConsoleOutput.h
     src/Error.h
     src/gb/AddressBus.h
     src/gb/InterruptRegister.h
@@ -53,6 +49,8 @@ set(IMGUI_LIB
     imgui/imstb_rectpack.h
     imgui/imstb_textedit.h
     imgui/imstb_truetype.h
+    imgui/misc/cpp/imgui_stdlib.h
+    imgui/misc/cpp/imgui_stdlib.cpp
 )
 
 set(IMGUI_BACKEND

@@ -6,10 +6,10 @@
 #include "gb/memory/Memory.h"
 #include "gb/Timer.h"
 #include "gb/cpu/Decoder.h"
-#include "ConsoleInput.h"
 
 #include "GLFW/glfw3.h"
 #include "imgui.h"
+#include "misc/cpp/imgui_stdlib.h"
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
 
@@ -28,9 +28,15 @@ namespace emulator {
         ImGui::SetNextWindowPos(ImVec2(0, 0));
         ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize);
 
-        ImGui::Begin("name", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove);
-        ImGui::End();        
+        ImGui::Begin("name", nullptr, ImGuiWindowFlags_NoResize 
+            | ImGuiWindowFlags_NoTitleBar 
+            | ImGuiWindowFlags_NoMove 
+            | ImGuiWindowFlags_MenuBar
+        );
+        drawMenu();
+        ImGui::End();
 
+        //ImGui::ShowDemoWindow();
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -38,10 +44,70 @@ namespace emulator {
         glfwPollEvents();
     }
 
-    Application::Application(const Printer& printer, const Reader& reader)
-        :input_reader_(reader), printer_(printer) 
-    {
-        printer_.printTitle();
+    void Application::drawMenu() {
+        if(!ImGui::BeginMenuBar()) {
+            return;
+        }
+
+        if(ImGui::BeginMenu("File")) {
+
+            if(ImGui::BeginMenu("Change ROM Directory")) {
+
+                ImGui::TextWrapped("%s", ROM_directory_.c_str());
+                ImGui::InputText("new ROM directory", &new_romdir_);
+
+                if(ImGui::Button("accept")) {
+                    if(!setROMDirectory(new_romdir_)) {
+                        std::cout << "failed to change ROM directory\n";
+                    }
+                    new_romdir_.clear();
+                }
+
+                ImGui::EndMenu();
+            }
+
+            if(ImGui::BeginMenu("Available ROMs")) {
+                for(const auto& rom : roms_) {
+                    if(ImGui::Selectable(rom.filename().c_str())) {
+                        if(!runROM(rom)) {
+                            std::cout << "failed to run rom: " << rom << '\n';
+                        }
+                    }
+                }
+
+                ImGui::EndMenu();
+            }
+
+            if(ImGui::BeginMenu("Recent ROMs")) {
+
+                for(const auto& rom : recent_roms_) {
+                    if(ImGui::Selectable(rom.filename().c_str())) {
+                        if(!runROM(rom)) {
+                            std::cout << "failed to run rom: " << rom << '\n';
+                        }
+                    }
+                }
+
+                ImGui::EndMenu();
+            }
+
+            if(ImGui::Selectable("Stop execution")) {
+                emulator_.stop();
+            }
+
+            if(ImGui::Selectable("Quit")) {
+                is_running_ = false;
+            }
+
+
+            ImGui::EndMenu();
+        }
+
+        ImGui::EndMenuBar();
+    }
+
+    Application::Application() {
+        initGUI();
     }
 
     void Application::run() {
@@ -50,12 +116,8 @@ namespace emulator {
             if (emulator_running_) {
                 update();
             }
-            else if(gui_enabled_) {
-                draw();
-            }
-            else {
-                pollCommands();
-            }
+
+            draw();
 
             if(window_ && glfwWindowShouldClose(window_)) {
                 is_running_ = false;
@@ -72,7 +134,9 @@ namespace emulator {
         window_ = glfwCreateWindow(600, 600, "emulator", nullptr, nullptr);
         glfwMakeContextCurrent(window_);
         if(gladLoadGL() == 0) {
-            printer_.reportError("failed to load OpenGL", 0);
+            std::cout << "failed to load OpenGL" << std::endl;
+            is_running_ = false;
+            return;
         }
 
 
@@ -94,85 +158,53 @@ namespace emulator {
     }
 
     void Application::update() {
-        emulator_.tick();
-        if(emulator_.terminated()) {
-            const auto& err = emulator_.getErrorDescription();
-            if(!err.empty()) {
-                printer_.reportError(err, 0);
-            }
+        try {
+            emulator_.tick();
+        } catch (const std::exception& e) {
+            std::cout << "exception occured during emulator update: " << e.what() << std::endl;
         }
     }
 
-    void Application::pollCommands() {
-        printer_.print('>');
-
-        Command cmd = input_reader_.parse(input_reader_.getLine());
-
-        switch (cmd.type) {
-            case CommandType::List:
-                listROMs();
-                break;
-            case CommandType::Help:
-                printer_.printHelp();
-                break;
-            case CommandType::SetRomDir:
-                setROMDirectory(cmd.argument);
-                break;
-            case CommandType::Quit:
-                is_running_ = false;
-                break;
-            case CommandType::RunRom:
-                runROM(cmd.argument);
-                break;
-            case CommandType::Config:
-                printer_.println("Current ROM directory: ", std::filesystem::absolute(ROM_directory_));
-                break;
-            case CommandType::Invalid:
-                printer_.reportError(InputError::InvalidCommand);
-                break;
-            case CommandType::LaunchGUI:
-                initGUI();
-                gui_enabled_ = true;
-                break;
-        }
-    }
-
-    void Application::setROMDirectory(const std::filesystem::path& newPath) {
+    bool Application::setROMDirectory(const std::filesystem::path& newPath) {
         if (std::filesystem::exists(newPath) && std::filesystem::is_directory(newPath)) {
             ROM_directory_ = newPath;
-        }
-        else {
-            printer_.reportError(InputError::InvalidDirectory);
-        }
-    }
-
-    void Application::listROMs() const {
-        if(!std::filesystem::exists(ROM_directory_)) {
-            printer_.reportError(InputError::InvalidDirectory);
-            return;
-        }
-
-        for (const auto& file : std::filesystem::directory_iterator(ROM_directory_)) {
-            if (file.path().extension().string() == ".gb") {
-                printer_.println("ROM: ", file.path().filename());
+            roms_.clear();
+            for(const auto& item : std::filesystem::directory_iterator(ROM_directory_)) {
+                if(item.is_regular_file() && item.path().extension() == extension_) {
+                    roms_.push_back(item.path());
+                }
             }
+            return true;
         }
+        
+        return false;
     }
 
-    void Application::runROM(std::string_view name) {
-        std::filesystem::path ROM_path;
-        if(!ROM_directory_.empty()) {
-            ROM_path = ROM_directory_;
+    bool Application::runROM(const std::filesystem::path path) {
+
+        if(!std::filesystem::exists(path)) {
+            return false;
         }
-        ROM_path = ROM_path / std::filesystem::path(name).replace_extension(extension_);
-        if (std::filesystem::exists(ROM_path)) {
-            emulator_.reset();
-            emulator_.setROM(readFile(ROM_path));
-            emulator_.start();
+        
+        std::vector<uint8_t> data = readFile(path);
+        if(data.empty()) {
+            return false;
         }
-        else {
-            printer_.reportError(InputError::InvalidRomName);
-            printer_.println("ROM: ", ROM_path);
+
+        pushRecent(path);
+
+
+        emulator_.reset();
+        emulator_.setROM(std::move(data));
+        emulator_.start();
+
+        return true;
+    }
+
+    void Application::pushRecent(const std::filesystem::path& path) {
+        recent_roms_.push_back(path);
+        if(recent_roms_.size() > 10) {
+            recent_roms_.pop_front();
         }
     }
 }

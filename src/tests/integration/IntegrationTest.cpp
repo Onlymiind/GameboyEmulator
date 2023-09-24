@@ -1,7 +1,5 @@
 #include "gb/Emulator.h"
 #include "gb/memory/Memory.h"
-#include "ConsoleInput.h"
-#include "ConsoleOutput.h"
 
 #include "catch2/catch_test_macros.hpp"
 #include "catch2/generators/catch_generators.hpp"

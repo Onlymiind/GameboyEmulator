@@ -5,14 +5,13 @@
 #include "gb/cpu/CPU.h"
 #include "gb/InterruptRegister.h"
 #include "gb/cpu/Decoder.h"
-#include "ConsoleInput.h"
-#include "ConsoleOutput.h"
 #include "gb/Timer.h"
 #include "gb/memory/Memory.h"
 #include "utils/Utils.h"
 
 #include <cstdint>
 #include <sstream>
+#include <stdexcept>
 #include <vector>
 
 namespace gb {
@@ -44,10 +43,7 @@ namespace gb {
 
         bool terminated() const { return !is_running_; }
 
-        void reset() { 
-            cpu_.reset();
-            error_description_.clear();
-        }
+        void reset() { cpu_.reset(); }
 
         void setROM(std::vector<uint8_t> rom) { 
             rom_.setData(std::move(rom)); 
@@ -55,7 +51,7 @@ namespace gb {
 
         void start() { is_running_ = true; }
 
-        const std::string& getErrorDescription() const { return error_description_; }
+        void stop() { is_running_ = false; }
 
     private:
         RAM ram_;
@@ -70,8 +66,6 @@ namespace gb {
         Timer timer_{interrupt_flags_};
 
         bool is_running_ = false;
-
-        std::string error_description_;
     };
 
     inline Emulator::Emulator()
@@ -98,10 +92,9 @@ namespace gb {
                 timer_.update();
             }
         }
-        catch(const std::exception& e) {
+        catch(...) {
             is_running_ = false;
-            error_description_ = e.what();
-            return;
+            throw;
         }
 
         if(cpu_.isFinished()) {
@@ -109,7 +102,7 @@ namespace gb {
                 is_running_ = false;
                 std::stringstream s;
                 s << "reached infinite loop at address 0x" << std::setfill('0') << std::setw(sizeof(oldPC) * 2) << std::hex << oldPC;
-                error_description_ = s.str();
+                throw std::runtime_error(s.str());
             }
 
             oldPC = cpu_.getProgramCounter();
