@@ -4,30 +4,22 @@
 #include <stdexcept>
 #include <string>
 
-namespace gb
-{
-    void Timer::update()
-    {
+namespace gb {
+    void Timer::update() {
         ++counter_;
-        bool currentFreqBit = (counter_ & frequency_bit_mask_[TAC_.freqency]);
-        if (frequency_bit_was_set_ && !(currentFreqBit && TAC_.enable)) //Falling edge
-        {
-            if(TIMA_ == std::numeric_limits<uint8_t>::max())
-            {
+        bool currentFreqBit = (counter_ & frequency_bit_mask_[TAC_.freqency]) != 0;
+        if (frequency_bit_was_set_ && !(currentFreqBit && TAC_.enable)) { //Falling edge
+            ++TIMA_;
+            if(TIMA_ == 0) {
                 TIMA_ = TMA_;
                 interrupt_flags_.setFlag(InterruptFlags::Timer);
-            }
-            else
-            {
-                ++TIMA_;
             }
         }
         frequency_bit_was_set_ = currentFreqBit && TAC_.enable;
     }
-    uint8_t Timer::read(uint16_t address) const
-    {
-        switch (address)
-        {
+
+    uint8_t Timer::read(uint16_t address) const {
+        switch (address) {
         case 0x00:
             return DIV_;
         case 0x01:
@@ -35,12 +27,13 @@ namespace gb
         case 0x02:
             return TMA_;
         case 0x03:
-            return (uint8_t(TAC_.enable) << 2) + TAC_.freqency;
+            return (uint8_t(TAC_.enable) << 2) | TAC_.freqency;
         default:
             throw std::invalid_argument("Attempting to read data from timer at invalid adress: " + std::to_string(address));
             return 0x00;
         }
     }
+
     void Timer::write(uint16_t address, uint8_t data)
     {
         switch (address)
@@ -55,7 +48,7 @@ namespace gb
             TMA_ = data;
             break;
         case 0x03:
-            TAC_.enable = ((data & 0b00000100) != 0);
+            TAC_.enable = (data & 0b00000100) != 0;
             TAC_.freqency = data & 0b00000011;
             break;
         default:

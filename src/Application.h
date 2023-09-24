@@ -41,7 +41,6 @@ namespace emulator {
         gb::Emulator emulator_;
         
         bool is_running_ = true;
-        bool emulator_running_ = false;
         bool gui_init_ = false;
 
 

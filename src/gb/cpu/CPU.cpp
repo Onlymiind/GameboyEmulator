@@ -1,5 +1,6 @@
 #include "gb/cpu/CPU.h"
 #include "gb/AddressBus.h"
+#include "gb/InterruptRegister.h"
 #include "utils/Utils.h"
 #include "gb/cpu/Operation.h"
 #include "gb/cpu/Decoder.h"
@@ -20,7 +21,7 @@ namespace gb::cpu {
         std::optional<InterruptFlags> interrupt = getPendingInterrupt();
 
         //FIXME: possible bug: what if interrupt flag with higher priority is set during HALT "execution"?
-        if(halt_mode_ && interrupt) {
+        if(halt_mode_ && (interrupt_flags_.getFlags() & (~g_unused_interrupt_bits))) {
             halt_mode_ = false;
         }
 
@@ -59,6 +60,7 @@ namespace gb::cpu {
 
     void SharpSM83::handleInterrupt(InterruptFlags interrupt) {
         interrupt_enable_.clearFlag(interrupt);
+        interrupt_flags_.clearFlag(interrupt);
         pushStack(reg_.PC);
         reg_.PC = interrupt_vectors_.at(interrupt);
         cycles_to_finish_ = 5;

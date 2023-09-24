@@ -112,9 +112,7 @@ namespace emulator {
     void Application::run() {
         while (is_running_) {
 
-            if (emulator_running_) {
-                update();
-            }
+            for(int i = 0; i < 1000; ++i) update();
 
             draw();
 

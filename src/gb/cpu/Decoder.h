@@ -12,9 +12,9 @@ https://gb-archive.github.io/salvage/decoding_gbz80_opcodes/Decoding%20Gamboy%20
 */
 namespace gb::decoding {
 
-        UnprefixedInstruction decodeUnprefixed(opcode code);
-        PrefixedInstruction decodePrefixed(opcode code);
+    UnprefixedInstruction decodeUnprefixed(opcode code);
+    PrefixedInstruction decodePrefixed(opcode code);
 
-        inline bool isPrefix(opcode code) { return code.code == 0xCB; }
+    inline bool isPrefix(opcode code) { return code.code == 0xCB; }
 }
 

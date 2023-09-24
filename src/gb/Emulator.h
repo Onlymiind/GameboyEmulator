@@ -25,9 +25,9 @@ namespace gb {
     constexpr MemoryObjectInfo g_memory_ram = {0x8000, 0xFF03};
     constexpr MemoryObjectInfo g_memory_timer = {0xFF04, 0xFF07};
     constexpr MemoryObjectInfo g_memory_leftover2 = {0xFF08, 0xFF0E};
-    constexpr MemoryObjectInfo g_memory_interrupt_enable = {0xFF0F, 0xFF0F};
+    constexpr MemoryObjectInfo g_memory_interrupt_enable = {0xFFFF, 0xFFFF};
     constexpr MemoryObjectInfo g_memory_leftover = {0xFF10, 0xFFFE};
-    constexpr MemoryObjectInfo g_memory_interrupt_flags = {0xFFFF, 0xFFFF};
+    constexpr MemoryObjectInfo g_memory_interrupt_flags = {0xFF0F, 0xFF0F};
 
     class Emulator {
     public:
