@@ -53,8 +53,7 @@ namespace gb {
         if (value == -1) {
             err << "Attempting to read from invalid memory address: ";
             toHexOutput(err, address);
-        }
-        else {
+        } else {
             err << "Attempting to write to invalid memory address: ";
             toHexOutput(err, address);
             err << ". Data: ";

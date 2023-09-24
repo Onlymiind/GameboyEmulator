@@ -11,8 +11,7 @@
 
 using namespace gb::decoding;
 
-constexpr std::array<std::pair<uint8_t, UnprefixedInstruction>, 10> unprefixed_sample = 
-{{
+constexpr std::array<std::pair<uint8_t, UnprefixedInstruction>, 10> unprefixed_sample =  {{
     {0x00, {{},{},{},{},{}, UnprefixedType::NOP}},
     {0x40, {{}, LoadSubtype::Typical, {}, {ArgumentSource::Register, ArgumentType::Unsigned8, Registers::B}, {ArgumentSource::Register, ArgumentType::Unsigned8, Registers::B}, UnprefixedType::LD}},
     {0x82, {{}, {}, {}, {ArgumentSource::Register, ArgumentType::Unsigned8, Registers::D}, {ArgumentSource::Register, ArgumentType::Unsigned8, Registers::A}, UnprefixedType::ADD}},
@@ -25,17 +24,11 @@ constexpr std::array<std::pair<uint8_t, UnprefixedInstruction>, 10> unprefixed_s
     {0x76, {{}, {}, {}, {}, {}, UnprefixedType::HALT}}
 }};
 
-TEST_CASE("prefix")
-{
-    Decoder decoder;
-
-    REQUIRE(decoder.isPrefix({0xCB}));
+TEST_CASE("prefix") {
+    REQUIRE(gb::decoding::isPrefix({0xCB}));
 }
 
-TEST_CASE("decoding prefixed instructions")
-{
-    Decoder decoder;
-
+TEST_CASE("decoding prefixed instructions") {
     PrefixedInstruction RLC_B = { PrefixedType::RLC, Registers::B};
     uint8_t RLC_B_code = 0x00;
     PrefixedInstruction SRA_A = { PrefixedType::SRA, Registers::A};
@@ -45,22 +38,18 @@ TEST_CASE("decoding prefixed instructions")
     PrefixedInstruction SET_0_B = {PrefixedType::SET, Registers::B, 0};
     uint8_t SET_0_B_code = 0xC0;
 
-    REQUIRE(decoder.decodePrefixed(RLC_B_code) == RLC_B);
-    REQUIRE(decoder.decodePrefixed(SRA_A_code) == SRA_A);
-    REQUIRE(decoder.decodePrefixed(BIT_6_A_code) == BIT_6_A);
-    REQUIRE(decoder.decodePrefixed(SET_0_B_code) == SET_0_B);
+    REQUIRE(gb::decoding::decodePrefixed(RLC_B_code) == RLC_B);
+    REQUIRE(gb::decoding::decodePrefixed(SRA_A_code) == SRA_A);
+    REQUIRE(gb::decoding::decodePrefixed(BIT_6_A_code) == BIT_6_A);
+    REQUIRE(gb::decoding::decodePrefixed(SET_0_B_code) == SET_0_B);
 }
 
-TEST_CASE("decoding unprefixed instructions")
-{
-    Decoder decoder;
+TEST_CASE("decoding unprefixed instructions") {
 
-    for(const auto& [code, instr] : unprefixed_sample)
-    {
-        if(instr.type != UnprefixedType::None)
-        {
+    for(const auto& [code, instr] : unprefixed_sample) {
+        if(instr.type != UnprefixedType::None) {
             std::cout << "Testing instruction: " << std::hex << "0x" << std::setfill('0') << std::setw(sizeof(uint8_t) * 2) << +code << std::endl;
-            REQUIRE(decoder.decodeUnprefixed(code) == instr);
+            REQUIRE(gb::decoding::decodeUnprefixed(code) == instr);
         }
     }
 }

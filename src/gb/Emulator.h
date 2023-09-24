@@ -61,8 +61,7 @@ namespace gb {
         AddressBus bus_;
         InterruptRegister interrupt_enable_;
         InterruptRegister interrupt_flags_;
-        decoding::Decoder decoder_;
-        cpu::SharpSM83 cpu_{bus_, interrupt_enable_, interrupt_flags_, decoder_};
+        cpu::SharpSM83 cpu_{bus_, interrupt_enable_, interrupt_flags_};
         Timer timer_{interrupt_flags_};
 
         bool is_running_ = false;

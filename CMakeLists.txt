@@ -12,7 +12,6 @@ enable_testing()
 set(EMULATOR_LIB
     src/gb/cpu/CPU.cpp
     src/gb/cpu/instructions.cpp
-    src/gb/memory/Memory.cpp
     src/gb/AddressBus.cpp
     src/gb/Timer.cpp
     src/gb/cpu/Decoder.cpp
@@ -27,7 +26,6 @@ set(EMULATOR_LIB
     src/gb/cpu/CPU.h
     src/gb/cpu/CPUUtils.h
     src/gb/cpu/Decoder.h
-    src/gb/cpu/InstructionStep.h
     src/gb/cpu/Operation.h
 )
 
