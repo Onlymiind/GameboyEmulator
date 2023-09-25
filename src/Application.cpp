@@ -116,9 +116,13 @@ namespace emulator {
             double time_start = glfwGetTime();
 
             size_t iterations = 0;
-            if(delta != 0) {
+            if(!single_step_ && delta != 0) {
                 iterations = size_t(std::round(double(g_cycles_per_second) / delta));
             }
+
+            if(single_step_ && ImGui::IsKeyPressed(ImGuiKey_S, false)) {
+                update();
+            } 
 
             for(int i = 0; i < iterations; ++i) {
                 update();
