@@ -14,6 +14,7 @@
 #include "backends/imgui_impl_opengl3.h"
 
 
+#include <cmath>
 #include <string>
 #include <filesystem>
 #include <exception>
@@ -110,15 +111,26 @@ namespace emulator {
     }
 
     void Application::run() {
+        double delta = 0;
         while (is_running_) {
+            double time_start = glfwGetTime();
 
-            for(int i = 0; i < 1000; ++i) update();
+            size_t iterations = 0;
+            if(delta != 0) {
+                iterations = size_t(std::round(double(g_cycles_per_second) / delta));
+            }
+
+            for(int i = 0; i < iterations; ++i) {
+                update();
+            }
 
             draw();
 
             if(window_ && glfwWindowShouldClose(window_)) {
                 is_running_ = false;
             }
+
+            delta = glfwGetTime() - time_start;
         }
     }
 
@@ -188,7 +200,7 @@ namespace emulator {
             return false;
         }
 
-        pushRecent(path);
+        pushRecent(recent_roms_, path);
 
 
         emulator_.reset();
@@ -196,12 +208,5 @@ namespace emulator {
         emulator_.start();
 
         return true;
-    }
-
-    void Application::pushRecent(const std::filesystem::path& path) {
-        recent_roms_.push_back(path);
-        if(recent_roms_.size() > 10) {
-            recent_roms_.pop_front();
-        }
     }
 }
