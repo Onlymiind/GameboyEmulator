@@ -12,16 +12,16 @@
 using namespace gb::decoding;
 
 constexpr std::array<std::pair<uint8_t, UnprefixedInstruction>, 10> unprefixed_sample =  {{
-    {0x00, {{},{},{},{},{}, UnprefixedType::NOP}},
-    {0x40, {{}, LoadSubtype::Typical, {}, {ArgumentSource::Register, ArgumentType::Unsigned8, Registers::B}, {ArgumentSource::Register, ArgumentType::Unsigned8, Registers::B}, UnprefixedType::LD}},
-    {0x82, {{}, {}, {}, {ArgumentSource::Register, ArgumentType::Unsigned8, Registers::D}, {ArgumentSource::Register, ArgumentType::Unsigned8, Registers::A}, UnprefixedType::ADD}},
-    {0xC6, {{}, {}, {}, {ArgumentSource::Immediate, ArgumentType::Unsigned8, Registers::None}, {ArgumentSource::Register, ArgumentType::Unsigned8, Registers::A}, UnprefixedType::ADD}},
-    {0xE0, {{}, LoadSubtype::LD_IO, {}, {ArgumentSource::Register, ArgumentType::Unsigned8, Registers::A}, {ArgumentSource::Immediate, ArgumentType::Unsigned8, Registers::None}, UnprefixedType::LD}},
-    {0x31, {{}, LoadSubtype::Typical, {}, {ArgumentSource::Immediate, ArgumentType::Unsigned16, Registers::None}, {ArgumentSource::Register, ArgumentType::Unsigned16, Registers::SP}, UnprefixedType::LD}},
-    {0xC2, {{}, {}, Conditions::NotZero, {ArgumentSource::Immediate, ArgumentType::Unsigned16, Registers::None}, {}, UnprefixedType::JP}},
-    {0xFF, {0x38, {}, {}, {}, {}, UnprefixedType::RST}},
-    {0x18, {{}, {}, {}, {ArgumentSource::Immediate, ArgumentType::Signed8, Registers::None}, {}, UnprefixedType::JR}},
-    {0x76, {{}, {}, {}, {}, {}, UnprefixedType::HALT}}
+    {0x00, {{},{},{},{},{}, InstructionType::NOP}},
+    {0x40, {{}, LoadSubtype::Typical, {}, {ArgumentSource::Register, ArgumentType::Unsigned8, Registers::B}, {ArgumentSource::Register, ArgumentType::Unsigned8, Registers::B}, InstructionType::LD}},
+    {0x82, {{}, {}, {}, {ArgumentSource::Register, ArgumentType::Unsigned8, Registers::D}, {ArgumentSource::Register, ArgumentType::Unsigned8, Registers::A}, InstructionType::ADD}},
+    {0xC6, {{}, {}, {}, {ArgumentSource::Immediate, ArgumentType::Unsigned8, Registers::None}, {ArgumentSource::Register, ArgumentType::Unsigned8, Registers::A}, InstructionType::ADD}},
+    {0xE0, {{}, LoadSubtype::LD_IO, {}, {ArgumentSource::Register, ArgumentType::Unsigned8, Registers::A}, {ArgumentSource::Immediate, ArgumentType::Unsigned8, Registers::None}, InstructionType::LD}},
+    {0x31, {{}, LoadSubtype::Typical, {}, {ArgumentSource::Immediate, ArgumentType::Unsigned16, Registers::None}, {ArgumentSource::Register, ArgumentType::Unsigned16, Registers::SP}, InstructionType::LD}},
+    {0xC2, {{}, {}, Conditions::NotZero, {ArgumentSource::Immediate, ArgumentType::Unsigned16, Registers::None}, {}, InstructionType::JP}},
+    {0xFF, {0x38, {}, {}, {}, {}, InstructionType::RST}},
+    {0x18, {{}, {}, {}, {ArgumentSource::Immediate, ArgumentType::Signed8, Registers::None}, {}, InstructionType::JR}},
+    {0x76, {{}, {}, {}, {}, {}, InstructionType::HALT}}
 }};
 
 TEST_CASE("prefix") {
@@ -29,13 +29,13 @@ TEST_CASE("prefix") {
 }
 
 TEST_CASE("decoding prefixed instructions") {
-    PrefixedInstruction RLC_B = { PrefixedType::RLC, Registers::B};
+    PrefixedInstruction RLC_B = { InstructionType::RLC, Registers::B};
     uint8_t RLC_B_code = 0x00;
-    PrefixedInstruction SRA_A = { PrefixedType::SRA, Registers::A};
+    PrefixedInstruction SRA_A = { InstructionType::SRA, Registers::A};
     uint8_t SRA_A_code = 0x2F;
-    PrefixedInstruction BIT_6_A = {PrefixedType::BIT, Registers::A, 6};
+    PrefixedInstruction BIT_6_A = {InstructionType::BIT, Registers::A, 6};
     uint8_t BIT_6_A_code = 0x77;
-    PrefixedInstruction SET_0_B = {PrefixedType::SET, Registers::B, 0};
+    PrefixedInstruction SET_0_B = {InstructionType::SET, Registers::B, 0};
     uint8_t SET_0_B_code = 0xC0;
 
     REQUIRE(gb::decoding::decodePrefixed(RLC_B_code) == RLC_B);
@@ -47,7 +47,7 @@ TEST_CASE("decoding prefixed instructions") {
 TEST_CASE("decoding unprefixed instructions") {
 
     for(const auto& [code, instr] : unprefixed_sample) {
-        if(instr.type != UnprefixedType::None) {
+        if(instr.type != InstructionType::None) {
             std::cout << "Testing instruction: " << std::hex << "0x" << std::setfill('0') << std::setw(sizeof(uint8_t) * 2) << +code << std::endl;
             REQUIRE(gb::decoding::decodeUnprefixed(code) == instr);
         }

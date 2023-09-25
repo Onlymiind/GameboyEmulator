@@ -53,6 +53,10 @@ namespace gb {
 
         void stop() { is_running_ = false; }
 
+        bool instructionFinished() const { return cpu_.isFinished(); }
+
+        cpu::Instruction getCurrentInstruction() const { return cpu_.getCurrentInstruction(); }
+
     private:
         RAM ram_;
         ROM rom_;

@@ -45,7 +45,7 @@ namespace gb
 
         inline uint8_t getFlags()
         {
-            return interrupts_;
+            return interrupts_ & (~g_unused_interrupt_bits);
         }
 
     private:

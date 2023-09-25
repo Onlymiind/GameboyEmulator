@@ -6,7 +6,7 @@
 
 namespace gb::decoding {
 
-    enum class UnprefixedType : uint8_t {
+    enum class InstructionType : uint8_t {
         None = 0,
         NOP, LD, INC, RLA, RLCA,
         ADD, JR, DEC, RRA, RRCA,
@@ -14,7 +14,11 @@ namespace gb::decoding {
         ADC, JP, POP, RST, CALL,
         SBC, DI, RET, CPL, RETI,
         CCF, EI, DAA, SCF, HALT,
-        CP, STOP
+        CP, STOP,
+
+        RLC, RRC, SLA, SRA,
+        SRL, BIT, RES, SET,
+        RL, RR, SWAP
     };
 
     enum class PrefixedType : uint8_t {
@@ -68,7 +72,7 @@ namespace gb::decoding {
         std::optional<Conditions> condition;
         ArgumentInfo source;
         ArgumentInfo destination;
-        UnprefixedType type = UnprefixedType::None;
+        InstructionType type = InstructionType::None;
 
         //For Debugging
         inline bool operator==(UnprefixedInstruction other) const {
@@ -82,7 +86,7 @@ namespace gb::decoding {
     };
 
     struct PrefixedInstruction {
-        PrefixedType type;
+        InstructionType type;
         Registers target = Registers::None;
         std::optional<uint8_t> bit;
     };
@@ -112,7 +116,7 @@ namespace gb::decoding {
         uint8_t code;
     };
 
-    std::ostream& operator<<(std::ostream& os, UnprefixedType type);
+    std::ostream& operator<<(std::ostream& os, InstructionType type);
     std::ostream& operator<<(std::ostream& os, PrefixedType type);
     //TODO
     // std::ostream& operator<<(std::ostream& os, LoadSubtype subtype);

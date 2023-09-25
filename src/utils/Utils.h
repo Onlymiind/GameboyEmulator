@@ -8,6 +8,8 @@
 #include <string_view>
 #include <sstream>
 #include <fstream>
+#include <variant>
+#include <optional>
 
 inline std::vector<uint8_t> readFile(const std::filesystem::path& path) {
     std::ifstream file(path, std::ios::binary | std::ios::ate);
@@ -33,3 +35,23 @@ std::string printToString(std::string_view separator, Args... args) {
     ((stream << separator << args), ...);
     return stream.str();
 }
+
+template<typename... Args>
+class Variant : public std::variant<Args...> {
+public:
+	using Base = std::variant<Args...>;
+
+	using Base::variant;
+	using Base::operator=;
+	
+	template<typename T>
+	bool is() { return std::holds_alternative<T>(*this); }
+
+	template<typename T>
+	T& get() { return std::get<T>(*this); }
+
+	template<typename T>
+	T* get_if() { return std::get_if<T>(this); }
+
+	bool empty() { return std::holds_alternative<std::monostate>(*this); }
+};

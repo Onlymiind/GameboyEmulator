@@ -21,7 +21,7 @@ namespace gb::cpu {
         std::optional<InterruptFlags> interrupt = getPendingInterrupt();
 
         //FIXME: possible bug: what if interrupt flag with higher priority is set during HALT "execution"?
-        if(halt_mode_ && (interrupt_flags_.getFlags() & (~g_unused_interrupt_bits))) {
+        if(halt_mode_ && interrupt_flags_.getFlags()) {
             halt_mode_ = false;
         }
 
@@ -50,7 +50,7 @@ namespace gb::cpu {
     }
 
     std::optional<InterruptFlags> SharpSM83::getPendingInterrupt() const {
-        uint8_t pending_interrupts = (interrupt_enable_.getFlags() & interrupt_flags_.getFlags()) & (~g_unused_interrupt_bits);
+        uint8_t pending_interrupts = interrupt_enable_.getFlags() & interrupt_flags_.getFlags();
         if(pending_interrupts != 0) {
             return static_cast<InterruptFlags>(pending_interrupts & -pending_interrupts);
         } else {
@@ -98,7 +98,13 @@ namespace gb::cpu {
     }
 
     uint8_t SharpSM83::dispatchPrefixed(decoding::PrefixedInstruction instr) {
-        using type = decoding::PrefixedType;
+        using type = decoding::InstructionType;
+        current_instruction_.type = instr.type;
+        current_instruction_.arg() = instr.target;
+        if(instr.bit) {
+            current_instruction_.bit() = *instr.bit;
+        }
+
         switch(instr.type) {
             case type::RLC: return RLC(instr.target);
             case type::RRC: return RRC(instr.target);
@@ -118,7 +124,11 @@ namespace gb::cpu {
     }
 
     uint8_t SharpSM83::dispatchUnprefixed(decoding::UnprefixedInstruction instr) {
-        using type = decoding::UnprefixedType;
+        using type = decoding::InstructionType;
+        current_instruction_.type = instr.type;
+        current_instruction_.load_subtype = instr.LD_subtype;
+        current_instruction_.condition = instr.condition;
+
         switch(instr.type) {
             case type::NOP: return NOP();
             case type::RLA: return RLA();
@@ -312,6 +322,14 @@ namespace gb::cpu {
             default:
                 //Never happens
                 return false;
+        }
+    }
+
+    void SharpSM83::set_arg_data(Instruction::Argument& arg, decoding::ArgumentInfo info, uint8_t data) {
+        if(info.source == decoding::ArgumentSource::Register) {
+            arg = info.reg;
+        } else {
+            arg = data;
         }
     }
 }

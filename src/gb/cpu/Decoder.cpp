@@ -1,11 +1,11 @@
 #include "gb/cpu/Decoder.h"
+#include "gb/cpu/Operation.h"
 
 #include <utility>
 
 namespace gb::decoding {
 
-    using type = UnprefixedType;
-    using pref_type = PrefixedType;
+    using type = InstructionType;
     using arg_src = ArgumentSource;
     using arg_t = ArgumentType;
     using reg = Registers;
@@ -42,47 +42,47 @@ namespace gb::decoding {
         Conditions::Carry
     };
 
-    constexpr std::array<UnprefixedType, 8> g_ALU_ = {
-        UnprefixedType::ADD, UnprefixedType::ADC, UnprefixedType::SUB, UnprefixedType::SBC,
-        UnprefixedType::AND, UnprefixedType::XOR, UnprefixedType::OR,  UnprefixedType::CP
+    constexpr std::array<InstructionType, 8> g_ALU_ = {
+        InstructionType::ADD, InstructionType::ADC, InstructionType::SUB, InstructionType::SBC,
+        InstructionType::AND, InstructionType::XOR, InstructionType::OR,  InstructionType::CP
     };
 
-    constexpr std::array<PrefixedType, 8> g_bit_operations_ = {
-        PrefixedType::RLC,  PrefixedType::RRC,
-        PrefixedType::RL,   PrefixedType::RR,
-        PrefixedType::SLA,  PrefixedType::SRA,
-        PrefixedType::SWAP, PrefixedType::SRL
+    constexpr std::array<InstructionType, 8> g_bit_operations_ = {
+        InstructionType::RLC,  InstructionType::RRC,
+        InstructionType::RL,   InstructionType::RR,
+        InstructionType::SLA,  InstructionType::SRA,
+        InstructionType::SWAP, InstructionType::SRL
     };
 
-    static const std::unordered_map<uint8_t, UnprefixedType, column_hash, collideable_equal> g_columns_ = {
-        { 0x01, UnprefixedType::LD }, { 0x02, UnprefixedType::LD }, { 0x03, UnprefixedType::INC },
-        { 0x04, UnprefixedType::INC }, { 0x05, UnprefixedType::DEC }, { 0x06, UnprefixedType::LD },
-        { 0x09, UnprefixedType::ADD }, { 0x0A, UnprefixedType::LD }, { 0x0B, UnprefixedType::DEC },
-        { 0x0C, UnprefixedType::INC }, { 0x0D, UnprefixedType::DEC }, { 0x0E, UnprefixedType::LD },
-        { 0xC1, UnprefixedType::POP }, { 0xC5, UnprefixedType::PUSH }, { 0xC7, UnprefixedType::RST },
-        { 0xCF, UnprefixedType::RST }
+    static const std::unordered_map<uint8_t, InstructionType, column_hash, collideable_equal> g_columns_ = {
+        { 0x01, InstructionType::LD }, { 0x02, InstructionType::LD }, { 0x03, InstructionType::INC },
+        { 0x04, InstructionType::INC }, { 0x05, InstructionType::DEC }, { 0x06, InstructionType::LD },
+        { 0x09, InstructionType::ADD }, { 0x0A, InstructionType::LD }, { 0x0B, InstructionType::DEC },
+        { 0x0C, InstructionType::INC }, { 0x0D, InstructionType::DEC }, { 0x0E, InstructionType::LD },
+        { 0xC1, InstructionType::POP }, { 0xC5, InstructionType::PUSH }, { 0xC7, InstructionType::RST },
+        { 0xCF, InstructionType::RST }
     };
 
-    static const std::unordered_map<uint8_t, UnprefixedType> g_random_instructions_ = {
-        { 0x00, UnprefixedType::NOP }, { 0x07, UnprefixedType::RLCA }, { 0x08, UnprefixedType::LD }, { 0x0F, UnprefixedType::RRCA },
+    static const std::unordered_map<uint8_t, InstructionType> g_random_instructions_ = {
+        { 0x00, InstructionType::NOP }, { 0x07, InstructionType::RLCA }, { 0x08, InstructionType::LD }, { 0x0F, InstructionType::RRCA },
         
-        { 0x10, UnprefixedType::STOP }, { 0x17, UnprefixedType::RLA }, { 0x18, UnprefixedType::JR }, { 0x1F, UnprefixedType::RRA },
+        { 0x10, InstructionType::STOP }, { 0x17, InstructionType::RLA }, { 0x18, InstructionType::JR }, { 0x1F, InstructionType::RRA },
         
-        { 0x20, UnprefixedType::JR }, { 0x27, UnprefixedType::DAA }, { 0x28, UnprefixedType::JR }, { 0x2F, UnprefixedType::CPL },
+        { 0x20, InstructionType::JR }, { 0x27, InstructionType::DAA }, { 0x28, InstructionType::JR }, { 0x2F, InstructionType::CPL },
         
-        { 0x30, UnprefixedType::JR }, { 0x37, UnprefixedType::SCF }, { 0x38, UnprefixedType::JR }, { 0x3F, UnprefixedType::CCF },
-        { 0xC0, UnprefixedType::RET }, { 0xC2, UnprefixedType::JP }, { 0xC3, UnprefixedType::JP }, { 0xC4, UnprefixedType::CALL },
-        { 0xC8, UnprefixedType::RET }, { 0xC9, UnprefixedType::RET }, { 0xCA, UnprefixedType::JP }, { 0xCC, UnprefixedType::CALL },
-        { 0xCD, UnprefixedType::CALL }, 
+        { 0x30, InstructionType::JR }, { 0x37, InstructionType::SCF }, { 0x38, InstructionType::JR }, { 0x3F, InstructionType::CCF },
+        { 0xC0, InstructionType::RET }, { 0xC2, InstructionType::JP }, { 0xC3, InstructionType::JP }, { 0xC4, InstructionType::CALL },
+        { 0xC8, InstructionType::RET }, { 0xC9, InstructionType::RET }, { 0xCA, InstructionType::JP }, { 0xCC, InstructionType::CALL },
+        { 0xCD, InstructionType::CALL }, 
         
-        { 0xD0, UnprefixedType::RET }, { 0xD2, UnprefixedType::JP }, { 0xD4, UnprefixedType::CALL }, { 0xD8, UnprefixedType::RET },
-        { 0xD9, UnprefixedType::RETI }, {0xDA, UnprefixedType::JP }, { 0xDC, UnprefixedType::CALL }, 
+        { 0xD0, InstructionType::RET }, { 0xD2, InstructionType::JP }, { 0xD4, InstructionType::CALL }, { 0xD8, InstructionType::RET },
+        { 0xD9, InstructionType::RETI }, {0xDA, InstructionType::JP }, { 0xDC, InstructionType::CALL }, 
         
-        { 0xE0, UnprefixedType::LD }, { 0xE2, UnprefixedType::LD }, { 0xE8, UnprefixedType::ADD }, { 0xE9, UnprefixedType::JP }, 
-        { 0xEA, UnprefixedType::LD },
+        { 0xE0, InstructionType::LD }, { 0xE2, InstructionType::LD }, { 0xE8, InstructionType::ADD }, { 0xE9, InstructionType::JP }, 
+        { 0xEA, InstructionType::LD },
         
-        { 0xF0, UnprefixedType::LD }, { 0xF2, UnprefixedType::LD }, { 0xF3, UnprefixedType::DI }, { 0xF8, UnprefixedType::LD }, 
-        { 0xF9, UnprefixedType::LD }, { 0xFA, UnprefixedType::LD }, { 0xFB, UnprefixedType::EI },
+        { 0xF0, InstructionType::LD }, { 0xF2, InstructionType::LD }, { 0xF3, InstructionType::DI }, { 0xF8, InstructionType::LD }, 
+        { 0xF9, InstructionType::LD }, { 0xFA, InstructionType::LD }, { 0xFB, InstructionType::EI },
     };
 
     //Some LD instructions are a pain to decode, so it is done with this lookup table
@@ -93,7 +93,7 @@ namespace gb::decoding {
                 {}, //Condition
                 {ArgumentSource::Register, ArgumentType::Unsigned16, Registers::SP}, //Source
                 {ArgumentSource::IndirectImmediate, ArgumentType::Unsigned16, Registers::None}, //Destination
-                UnprefixedType::LD //Instruction type
+                InstructionType::LD //Instruction type
             }},
         {0xE0, {
                 {},
@@ -101,7 +101,7 @@ namespace gb::decoding {
                 {},
                 {ArgumentSource::Register, ArgumentType::Unsigned8, Registers::A},
                 {ArgumentSource::Immediate, ArgumentType::Unsigned8, Registers::None},
-                UnprefixedType::LD
+                InstructionType::LD
             }}, 
         {0xF0, {
                 {},
@@ -109,7 +109,7 @@ namespace gb::decoding {
                 {},
                 {ArgumentSource::Immediate, ArgumentType::Unsigned8, Registers::None},
                 {ArgumentSource::Register, ArgumentType::Unsigned8, Registers::A},
-                UnprefixedType::LD
+                InstructionType::LD
             }},
         {0xE2, {
                 {},
@@ -117,7 +117,7 @@ namespace gb::decoding {
                 {},
                 {ArgumentSource::Register, ArgumentType::Unsigned8, Registers::A},
                 {ArgumentSource::Indirect, ArgumentType::Unsigned8, Registers::C},
-                UnprefixedType::LD
+                InstructionType::LD
             }},
         {0xF2, {
                 {},
@@ -125,7 +125,7 @@ namespace gb::decoding {
                 {},
                 {ArgumentSource::Indirect, ArgumentType::Unsigned8, Registers::C},
                 {ArgumentSource::Register, ArgumentType::Unsigned8, Registers::A},
-                UnprefixedType::LD
+                InstructionType::LD
             }},
         {0xF8, {
                 {},
@@ -133,7 +133,7 @@ namespace gb::decoding {
                 {},
                 {ArgumentSource::Immediate, ArgumentType::Signed8, Registers::None},
                 {ArgumentSource::Register, ArgumentType::Unsigned16, Registers::HL},
-                UnprefixedType::LD
+                InstructionType::LD
             }},
         {0xF9, {
                 {},
@@ -141,7 +141,7 @@ namespace gb::decoding {
                 {},
                 {ArgumentSource::Register, ArgumentType::Unsigned16, Registers::HL},
                 {ArgumentSource::Register, ArgumentType::Unsigned16, Registers::SP},
-                UnprefixedType::LD
+                InstructionType::LD
             }},
         {0xEA, {
                 {},
@@ -149,7 +149,7 @@ namespace gb::decoding {
                 {},
                 {ArgumentSource::Register, ArgumentType::Unsigned8, Registers::A},
                 {ArgumentSource::IndirectImmediate, ArgumentType::Unsigned16, Registers::None},
-                UnprefixedType::LD
+                InstructionType::LD
             }},
         {0xFA, {
                 {},
@@ -157,7 +157,7 @@ namespace gb::decoding {
                 {},
                 {ArgumentSource::IndirectImmediate, ArgumentType::Unsigned16, Registers::None},
                 {ArgumentSource::Register, ArgumentType::Unsigned8, Registers::A},
-                UnprefixedType::LD
+                InstructionType::LD
             }}
     };
 
@@ -387,15 +387,15 @@ namespace gb::decoding {
                 result.type = g_bit_operations_[code.getY()];
                 break;
             case 1: 
-                result.type = pref_type::BIT;
+                result.type = type::BIT;
                 result.bit = code.getY();
                 break;
             case 2: 
-                result.type = pref_type::RES;
+                result.type = type::RES;
                 result.bit = code.getY();
                 break;
             case 3: 
-                result.type = pref_type::SET;
+                result.type = type::SET;
                 result.bit = code.getY();
                 break;
         }

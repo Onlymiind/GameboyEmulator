@@ -10,8 +10,25 @@
 #include <limits>
 #include <unordered_map>
 #include <optional>
+#include <variant>
 
 namespace gb::cpu {
+
+    struct Instruction {
+        using Argument = Variant<std::monostate, decoding::Registers, int8_t, uint8_t, uint16_t>;
+
+        decoding::InstructionType type = decoding::InstructionType::None;
+        std::optional<decoding::LoadSubtype> load_subtype;
+        std::optional<decoding::Conditions> condition;
+
+        Argument src;
+        Argument dst;
+
+        Argument& arg() { return src; }
+        Argument& arg1() { return src; }
+        Argument& arg2() { return dst; }
+        Argument& bit() { return dst; }
+    };
     
     class SharpSM83 {
     public:
@@ -25,6 +42,8 @@ namespace gb::cpu {
         inline uint16_t getProgramCounter() const { return reg_.PC; }
 
         inline bool isFinished() const { return cycles_to_finish_ == 0; }
+
+        Instruction getCurrentInstruction() const { return current_instruction_; }
 
         void reset();
 
@@ -73,6 +92,8 @@ namespace gb::cpu {
         void setWordRegister(decoding::Registers reg, uint16_t data);
 
         bool checkCondition(decoding::Conditions condition);
+
+        void set_arg_data(Instruction::Argument& arg, decoding::ArgumentInfo info, uint8_t data);
 
 
         //Unprefixed instrictions. Return the amount of machine cycles needed for the instruction
@@ -147,6 +168,8 @@ namespace gb::cpu {
 
         bool halt_mode_ = false;
         bool halt_bug_ = false;
+
+        Instruction current_instruction_;
     };
 
     template<typename T>

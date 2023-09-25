@@ -4,42 +4,42 @@
 
 namespace gb::decoding {
 
-    std::ostream& operator<<(std::ostream& os, UnprefixedType type) {
+    std::ostream& operator<<(std::ostream& os, InstructionType type) {
     #define CASE_TYPE(x) case UnprefixedType::##x: os << #x; break
         switch(type) {
-            case UnprefixedType::None: os << "None"; break;
-            case UnprefixedType::NOP: os << "NOP"; break;
-            case UnprefixedType::LD: os << "LD"; break;
-            case UnprefixedType::INC: os << "INC"; break;
-            case UnprefixedType::RLA: os << "RLA"; break;
-            case UnprefixedType::RLCA: os << "RLCA"; break;
-            case UnprefixedType::ADD: os << "ADD"; break;
-            case UnprefixedType::JR: os << "JR"; break;
-            case UnprefixedType::DEC: os << "DEC"; break;
-            case UnprefixedType::RRA: os << "RRA"; break;
-            case UnprefixedType::RRCA: os << "RRCA"; break;
-            case UnprefixedType::SUB: os << "SUB"; break;
-            case UnprefixedType::OR: os << "OR"; break;
-            case UnprefixedType::AND: os << "AND"; break;
-            case UnprefixedType::XOR: os << "XOR"; break;
-            case UnprefixedType::PUSH: os << "PUSH"; break;
-            case UnprefixedType::ADC: os << "ADC"; break;
-            case UnprefixedType::JP: os << "JP"; break;
-            case UnprefixedType::POP: os << "POP"; break;
-            case UnprefixedType::RST: os << "RST"; break;
-            case UnprefixedType::CALL: os << "CALL"; break;
-            case UnprefixedType::SBC: os << "SBC"; break;
-            case UnprefixedType::DI: os << "DI"; break;
-            case UnprefixedType::RET: os << "RET"; break;
-            case UnprefixedType::CPL: os << "CPL"; break;
-            case UnprefixedType::RETI: os << "RETI"; break;
-            case UnprefixedType::CCF: os << "CCF"; break;
-            case UnprefixedType::EI: os << "EI"; break;
-            case UnprefixedType::DAA: os << "DAA"; break;
-            case UnprefixedType::SCF: os << "SCF"; break;
-            case UnprefixedType::HALT: os << "HALT"; break;
-            case UnprefixedType::CP: os << "CP"; break;
-            case UnprefixedType::STOP: os << "STOP"; break;
+            case InstructionType::None: os << "None"; break;
+            case InstructionType::NOP: os << "NOP"; break;
+            case InstructionType::LD: os << "LD"; break;
+            case InstructionType::INC: os << "INC"; break;
+            case InstructionType::RLA: os << "RLA"; break;
+            case InstructionType::RLCA: os << "RLCA"; break;
+            case InstructionType::ADD: os << "ADD"; break;
+            case InstructionType::JR: os << "JR"; break;
+            case InstructionType::DEC: os << "DEC"; break;
+            case InstructionType::RRA: os << "RRA"; break;
+            case InstructionType::RRCA: os << "RRCA"; break;
+            case InstructionType::SUB: os << "SUB"; break;
+            case InstructionType::OR: os << "OR"; break;
+            case InstructionType::AND: os << "AND"; break;
+            case InstructionType::XOR: os << "XOR"; break;
+            case InstructionType::PUSH: os << "PUSH"; break;
+            case InstructionType::ADC: os << "ADC"; break;
+            case InstructionType::JP: os << "JP"; break;
+            case InstructionType::POP: os << "POP"; break;
+            case InstructionType::RST: os << "RST"; break;
+            case InstructionType::CALL: os << "CALL"; break;
+            case InstructionType::SBC: os << "SBC"; break;
+            case InstructionType::DI: os << "DI"; break;
+            case InstructionType::RET: os << "RET"; break;
+            case InstructionType::CPL: os << "CPL"; break;
+            case InstructionType::RETI: os << "RETI"; break;
+            case InstructionType::CCF: os << "CCF"; break;
+            case InstructionType::EI: os << "EI"; break;
+            case InstructionType::DAA: os << "DAA"; break;
+            case InstructionType::SCF: os << "SCF"; break;
+            case InstructionType::HALT: os << "HALT"; break;
+            case InstructionType::CP: os << "CP"; break;
+            case InstructionType::STOP: os << "STOP"; break;
         }
     return os;
     #undef CASE_TYPE
