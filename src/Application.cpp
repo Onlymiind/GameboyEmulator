@@ -93,6 +93,10 @@ namespace emulator {
                 emulator_.stop();
             }
 
+            if(ImGui::Selectable("Reset")) {
+                emulator_.reset();
+            }
+
             if(ImGui::Selectable("Quit")) {
                 is_running_ = false;
             }
