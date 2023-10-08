@@ -37,7 +37,7 @@ namespace gb::cpu {
 
         void tick();
 
-        Registers getRegisters() const;
+        RegisterFile getRegisters() const { return reg_; }
 
         inline uint16_t getProgramCounter() const { return reg_.PC; }
 
@@ -145,7 +145,7 @@ namespace gb::cpu {
 
 
     private: //REGISTERS
-        Registers reg_;
+        RegisterFile reg_;
 
         bool IME_ = false; // Interrupt master enable
         bool enable_IME_ = false;

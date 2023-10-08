@@ -50,7 +50,7 @@ namespace emulator {
     private:
         struct InstructionData {
             uint16_t PC = 0;
-            gb::cpu::Registers registers;
+            gb::cpu::RegisterFile registers;
             gb::cpu::Instruction instruction;
         };
 

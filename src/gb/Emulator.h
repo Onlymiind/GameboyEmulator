@@ -33,7 +33,7 @@ namespace gb {
     public:
         Emulator();
 
-        cpu::Registers getRegisters() const { return cpu_.getRegisters(); }
+        cpu::RegisterFile getRegisters() const { return cpu_.getRegisters(); }
 
         uint16_t getPC() const { return cpu_.getProgramCounter(); }
 

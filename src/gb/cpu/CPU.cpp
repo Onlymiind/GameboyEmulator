@@ -1,6 +1,7 @@
 #include "gb/cpu/CPU.h"
 #include "gb/AddressBus.h"
 #include "gb/InterruptRegister.h"
+#include "gb/cpu/CPUUtils.h"
 #include "utils/Utils.h"
 #include "gb/cpu/Operation.h"
 #include "gb/cpu/Decoder.h"
@@ -65,10 +66,6 @@ namespace gb::cpu {
         pushStack(reg_.PC);
         reg_.PC = interrupt_vectors_.at(interrupt);
         cycles_to_finish_ = 5;
-    }
-
-    Registers SharpSM83::getRegisters() const {
-        return reg_;
     }
 
     bool SharpSM83::halfCarryOccured8Add(uint8_t lhs, uint8_t rhs) {
@@ -220,10 +217,10 @@ namespace gb::cpu {
     }
 
     void SharpSM83::reset() {
-        reg_.AF = 0x01B0;
-        reg_.BC = 0x0013;
-        reg_.DE = 0x00D8;
-        reg_.HL = 0x014D;
+        reg_.setAF(0x01B0);
+        reg_.BC() = 0x0013;
+        reg_.DE() = 0x00D8;
+        reg_.HL() = 0x014D;
 
         reg_.SP = 0xFFFE;
         reg_.PC = 0x0100;
@@ -256,16 +253,16 @@ namespace gb::cpu {
 
     uint8_t SharpSM83::getByteRegister(decoding::Registers reg) const {
         switch(reg) {
-            case decoding::Registers::A: return reg_.A;
-            case decoding::Registers::B: return reg_.B;
-            case decoding::Registers::C: return reg_.C;
-            case decoding::Registers::D: return reg_.D;
-            case decoding::Registers::E: return reg_.E;
-            case decoding::Registers::H: return reg_.H;
-            case decoding::Registers::L: return reg_.L;
-            case decoding::Registers::HL: return read(reg_.HL);
-            case decoding::Registers::BC: return read(reg_.BC);
-            case decoding::Registers::DE: return read(reg_.DE);
+            case decoding::Registers::A: return reg_.A();
+            case decoding::Registers::B: return reg_.B();
+            case decoding::Registers::C: return reg_.C();
+            case decoding::Registers::D: return reg_.D();
+            case decoding::Registers::E: return reg_.E();
+            case decoding::Registers::H: return reg_.H();
+            case decoding::Registers::L: return reg_.L();
+            case decoding::Registers::HL: return read(reg_.HL());
+            case decoding::Registers::BC: return read(reg_.BC());
+            case decoding::Registers::DE: return read(reg_.DE());
             default:
                 throw std::invalid_argument("Trying to get byte from unknown register");
                 return 0;
@@ -274,11 +271,11 @@ namespace gb::cpu {
 
     uint16_t SharpSM83::getWordRegister(decoding::Registers reg) const {
         switch(reg) {
-            case decoding::Registers::BC: return reg_.BC;
-            case decoding::Registers::DE: return reg_.DE;
-            case decoding::Registers::HL: return reg_.HL;
+            case decoding::Registers::BC: return reg_.BC();
+            case decoding::Registers::DE: return reg_.DE();
+            case decoding::Registers::HL: return reg_.HL();
             case decoding::Registers::SP: return reg_.SP;
-            case decoding::Registers::AF: return reg_.AF & 0xFFF0;
+            case decoding::Registers::AF: return reg_.AF();
             default:
                 throw std::invalid_argument("Trying to get byte from unknown register");
                 return 0;
@@ -287,16 +284,16 @@ namespace gb::cpu {
 
     void SharpSM83::setByteRegister(decoding::Registers reg, uint8_t data) {
         switch(reg) {
-            case decoding::Registers::A: reg_.A = data; return;
-            case decoding::Registers::B: reg_.B = data; return;
-            case decoding::Registers::C: reg_.C = data; return;
-            case decoding::Registers::D: reg_.D = data; return;
-            case decoding::Registers::E: reg_.E = data; return;
-            case decoding::Registers::H: reg_.H = data; return;
-            case decoding::Registers::L: reg_.L = data; return;
-            case decoding::Registers::HL: write(reg_.HL, data); return;
-            case decoding::Registers::BC: write(reg_.BC, data); return;
-            case decoding::Registers::DE: write(reg_.DE, data); return;
+            case decoding::Registers::A: reg_.A() = data; return;
+            case decoding::Registers::B: reg_.B() = data; return;
+            case decoding::Registers::C: reg_.C() = data; return;
+            case decoding::Registers::D: reg_.D() = data; return;
+            case decoding::Registers::E: reg_.E() = data; return;
+            case decoding::Registers::H: reg_.H() = data; return;
+            case decoding::Registers::L: reg_.L() = data; return;
+            case decoding::Registers::HL: write(reg_.HL(), data); return;
+            case decoding::Registers::BC: write(reg_.BC(), data); return;
+            case decoding::Registers::DE: write(reg_.DE(), data); return;
             default:
                 throw std::invalid_argument("Trying to write byte to unknown register");
         }
@@ -304,11 +301,11 @@ namespace gb::cpu {
 
     void SharpSM83::setWordRegister(decoding::Registers reg, uint16_t data) {
         switch(reg) {
-            case decoding::Registers::BC:  reg_.BC = data; return;
-            case decoding::Registers::DE:  reg_.DE = data; return;
-            case decoding::Registers::HL:  reg_.HL = data; return;
+            case decoding::Registers::BC:  reg_.BC() = data; return;
+            case decoding::Registers::DE:  reg_.DE() = data; return;
+            case decoding::Registers::HL:  reg_.HL() = data; return;
             case decoding::Registers::SP:  reg_.SP = data; return;
-            case decoding::Registers::AF: reg_.AF = data & 0xFFF0; return;
+            case decoding::Registers::AF: reg_.setAF(data); return;
             default:
                 throw std::invalid_argument("Trying to write word to unknown register");
         }
@@ -316,10 +313,10 @@ namespace gb::cpu {
 
     bool SharpSM83::checkCondition(decoding::Conditions condition) {
         switch(condition) {
-            case decoding::Conditions::Carry: return reg_.flags.C != 0;
-            case decoding::Conditions::NotCarry: return reg_.flags.C == 0;
-            case decoding::Conditions::Zero: return reg_.flags.Z != 0;
-            case decoding::Conditions::NotZero: return reg_.flags.Z == 0;
+            case decoding::Conditions::Carry: return reg_.getFlag(Flags::CARRY);
+            case decoding::Conditions::NotCarry: return !reg_.getFlag(Flags::CARRY);
+            case decoding::Conditions::Zero: return reg_.getFlag(Flags::ZERO);
+            case decoding::Conditions::NotZero: return !reg_.getFlag(Flags::ZERO);
             default:
                 //Never happens
                 return false;

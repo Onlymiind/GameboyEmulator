@@ -1,6 +1,7 @@
 #pragma once
 #include "utils/Utils.h"
 
+#include <array>
 #include <cstdint>
 
 namespace gb::cpu {
@@ -60,9 +61,57 @@ namespace gb::cpu {
         CARRY = BIT(4),
         HALF_CARRY = BIT(5),
         NEGATIVE = BIT(6),
-        ZERO = BIT(7)
+        ZERO = BIT(7),
+
+        ALL = CARRY | HALF_CARRY | NEGATIVE | ZERO,
+
+        C = CARRY,
+        H = HALF_CARRY,
+        N = NEGATIVE,
+        Z = ZERO,
     };
     #undef BIT
+
+    class RegisterFile {
+        static constexpr size_t flags = 0;
+    public:
+        uint8_t& A() { return registers_[1]; } uint8_t& B() { return registers_[3]; }
+        uint8_t& C() { return registers_[2]; } uint8_t& D() { return registers_[5]; }
+        uint8_t& E() { return registers_[4]; } uint8_t& H() { return registers_[7]; }
+        uint8_t& L() { return registers_[6]; }
+
+        const uint8_t& A() const { return registers_[1]; } const uint8_t& B() const { return registers_[3]; }
+        const uint8_t& C() const { return registers_[2]; } const uint8_t& D() const { return registers_[5]; }
+        const uint8_t& E() const { return registers_[4]; } const uint8_t& H() const { return registers_[7]; }
+        const uint8_t& L() const { return registers_[6]; }
+
+        void  setAF(uint16_t data) { 
+            *(reinterpret_cast<uint16_t*>(&registers_[0])) = data;
+            registers_[flags] &= uint8_t(Flags::ALL);
+        }
+        uint16_t& BC() { return *(reinterpret_cast<uint16_t*>(&registers_[2])); }
+        uint16_t& DE() { return *(reinterpret_cast<uint16_t*>(&registers_[4])); }
+        uint16_t& HL() { return *(reinterpret_cast<uint16_t*>(&registers_[6])); }
+
+        const uint16_t& AF() const { return *(reinterpret_cast<const uint16_t*>(&registers_[0])); }
+        const uint16_t& BC() const { return *(reinterpret_cast<const uint16_t*>(&registers_[2])); }
+        const uint16_t& DE() const { return *(reinterpret_cast<const uint16_t*>(&registers_[4])); }
+        const uint16_t& HL() const { return *(reinterpret_cast<const uint16_t*>(&registers_[6])); }
+
+        void setFlag(Flags flag, bool value) {
+            registers_[flags] &= ~uint8_t(flag);
+            registers_[flags] |= value ? uint8_t(flag) : 0;
+        }
+
+        bool getFlag(Flags flag) const { return (registers_[flags] & uint8_t(flag)) != 0; }
+
+        void clearFlags() { registers_[flags] = 0; }
+
+        uint16_t PC;
+        uint16_t SP;
+    private:
+        std::array<uint8_t, 8> registers_;
+    };
 
     inline bool carried(uint8_t lhs, uint8_t rhs) { return (std::numeric_limits<uint8_t>::max() - rhs) < lhs; }
     inline bool borrowed(uint8_t lhs, uint8_t rhs) { return lhs < rhs; }

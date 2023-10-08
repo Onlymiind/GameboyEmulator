@@ -2,7 +2,7 @@
 #include "utils/Utils.h"
 #include "gb/cpu/CPU.h"
 #include "gb/AddressBus.h"
-#include "gb//memory/BasicComponents.h"
+#include "gb/memory/BasicComponents.h"
 #include "gb/memory/Memory.h"
 #include "gb/Timer.h"
 #include "gb/cpu/Decoder.h"

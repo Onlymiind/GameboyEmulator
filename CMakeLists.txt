@@ -4,7 +4,7 @@ project(GameboyEmulator)
 option(BUILD_TESTS "Build tests" ON)
 option(TESTS_ONLY "Build only tests" OFF)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin/$<CONFIG>/)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 enable_testing()
@@ -17,7 +17,6 @@ set(EMULATOR_LIB
     src/gb/cpu/Decoder.cpp
     src/gb/cpu/Operation.cpp
     src/utils/Utils.h
-    src/Error.h
     src/gb/AddressBus.h
     src/gb/InterruptRegister.h
     src/gb/Timer.h
