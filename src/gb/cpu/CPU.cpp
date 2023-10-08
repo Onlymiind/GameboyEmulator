@@ -36,14 +36,8 @@ namespace gb::cpu {
             if(interrupt && IME_) {
                 handleInterrupt(*interrupt);
             } else {
-                decoding::opcode code = halt_bug_ ? read(reg_.PC) : fetch();
+                decoding::opcode code = halt_bug_ ? bus_.read(reg_.PC) : fetch();
                 cycles_to_finish_ = dispatch(code);
-            }
-
-            if (enable_IME_) { 
-                // Enable jumping to interrupt vectors if it is scheduled by EI
-                IME_ = true;
-                enable_IME_ = false;
             }
         }
         if(!halt_mode_) {
@@ -64,12 +58,8 @@ namespace gb::cpu {
         interrupt_enable_.clearFlag(interrupt);
         interrupt_flags_.clearFlag(interrupt);
         pushStack(reg_.PC);
-        reg_.PC = interrupt_vectors_.at(interrupt);
+        reg_.PC = g_interrupt_vectors.at(interrupt);
         cycles_to_finish_ = 5;
-    }
-
-    void SharpSM83::write(uint16_t address, uint8_t data) {
-        bus_.write(address, data);
     }
 
     uint8_t SharpSM83::dispatch(decoding::opcode code) {
@@ -154,10 +144,6 @@ namespace gb::cpu {
         }
     }
 
-    uint8_t SharpSM83::read(uint16_t address) const {
-        return bus_.read(address);
-    }
-
     void SharpSM83::pushStack(uint16_t value) {
         uint8_t lsb = 0;
         uint8_t msb = 0;
@@ -166,13 +152,13 @@ namespace gb::cpu {
         msb = static_cast<uint8_t>((value & 0xFF00) >> 8);
 
         --reg_.SP;
-        write(reg_.SP, msb);
+        bus_.write(reg_.SP, msb);
         --reg_.SP;
-        write(reg_.SP, lsb);
+        bus_.write(reg_.SP, lsb);
     }
 
     uint8_t SharpSM83::fetch() {
-        uint8_t value = read(reg_.PC);
+        uint8_t value = bus_.read(reg_.PC);
         ++reg_.PC;
         return value;
     }
@@ -190,9 +176,9 @@ namespace gb::cpu {
     uint16_t SharpSM83::popStack() {
         uint8_t lsb = 0;
         uint8_t msb = 0;
-        lsb = read(reg_.SP);
+        lsb = bus_.read(reg_.SP);
         ++reg_.SP;
-        msb = read(reg_.SP);
+        msb = bus_.read(reg_.SP);
         ++reg_.SP;
         uint16_t result = (static_cast<uint16_t>(msb) << 8) | static_cast<uint16_t>(lsb);
         return result;
@@ -219,7 +205,7 @@ namespace gb::cpu {
     uint8_t SharpSM83::getByte(decoding::ArgumentInfo from) {
         switch(from.source) {
             case decoding::ArgumentSource::Immediate: return fetch();
-            case decoding::ArgumentSource::IndirectImmediate: return read(fetchWord());
+            case decoding::ArgumentSource::IndirectImmediate: return bus_.read(fetchWord());
             case decoding::ArgumentSource::Register:
             case decoding::ArgumentSource::Indirect:
                 return getByteRegister(from.reg);
@@ -248,9 +234,9 @@ namespace gb::cpu {
             case decoding::Registers::E: return reg_.E();
             case decoding::Registers::H: return reg_.H();
             case decoding::Registers::L: return reg_.L();
-            case decoding::Registers::HL: return read(reg_.HL());
-            case decoding::Registers::BC: return read(reg_.BC());
-            case decoding::Registers::DE: return read(reg_.DE());
+            case decoding::Registers::HL: return bus_.read(reg_.HL());
+            case decoding::Registers::BC: return bus_.read(reg_.BC());
+            case decoding::Registers::DE: return bus_.read(reg_.DE());
             default:
                 throw std::invalid_argument("Trying to get byte from unknown register");
                 return 0;
@@ -279,9 +265,9 @@ namespace gb::cpu {
             case decoding::Registers::E: reg_.E() = data; return;
             case decoding::Registers::H: reg_.H() = data; return;
             case decoding::Registers::L: reg_.L() = data; return;
-            case decoding::Registers::HL: write(reg_.HL(), data); return;
-            case decoding::Registers::BC: write(reg_.BC(), data); return;
-            case decoding::Registers::DE: write(reg_.DE(), data); return;
+            case decoding::Registers::HL: bus_.write(reg_.HL(), data); return;
+            case decoding::Registers::BC: bus_.write(reg_.BC(), data); return;
+            case decoding::Registers::DE: bus_.write(reg_.DE(), data); return;
             default:
                 throw std::invalid_argument("Trying to write byte to unknown register");
         }

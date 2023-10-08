@@ -14,6 +14,14 @@
 
 namespace gb::cpu {
 
+    inline const std::unordered_map<InterruptFlags, uint16_t> g_interrupt_vectors = {
+        {InterruptFlags::VBlank,   0x0040},
+        {InterruptFlags::LCD_STAT, 0x0048},
+        {InterruptFlags::Timer,    0x0050},
+        {InterruptFlags::Serial,   0x0058},
+        {InterruptFlags::Joypad,   0x0060}
+    };
+
     struct Instruction {
         using Argument = Variant<std::monostate, decoding::Registers, int8_t, uint8_t, uint16_t>;
 
@@ -56,10 +64,6 @@ namespace gb::cpu {
         std::optional<InterruptFlags> getPendingInterrupt() const;
         void handleInterrupt(InterruptFlags interrupt);
 
-        uint8_t read(uint16_t address) const;
-
-        void write(uint16_t address, uint8_t data);
-
         uint8_t fetch();
 
         uint16_t fetchWord();
@@ -67,7 +71,6 @@ namespace gb::cpu {
         int8_t fetchSigned();
 
         void pushStack(uint16_t value);
-
 
         uint16_t popStack();
 
@@ -88,7 +91,7 @@ namespace gb::cpu {
 
 
         //Unprefixed instrictions. Return the amount of machine cycles needed for the instruction
-        uint8_t NOP(); 
+        uint8_t NOP() { return 1; }; 
         uint8_t RLA(); 
         uint8_t RLCA();
         uint8_t RRA(); 
@@ -121,7 +124,7 @@ namespace gb::cpu {
         uint8_t LD(decoding::UnprefixedInstruction instr);
         uint8_t ADD(decoding::UnprefixedInstruction instr);
 
-        uint8_t NONE();
+        uint8_t NONE() { return 0; };
 
         uint8_t loadByte(decoding::ArgumentInfo destination, decoding::ArgumentInfo source);
 
@@ -135,28 +138,16 @@ namespace gb::cpu {
         uint8_t SET (decoding::PrefixedInstruction instr);
 
 
-    private: //REGISTERS
+    private:
+        InterruptRegister& interrupt_enable_;
+        InterruptRegister& interrupt_flags_;
+        const AddressBus& bus_;
+
         RegisterFile reg_;
+        uint8_t cycles_to_finish_;
 
         bool IME_ = false; // Interrupt master enable
         bool enable_IME_ = false;
-
-        InterruptRegister& interrupt_enable_;
-        InterruptRegister& interrupt_flags_;
-
-    private: //STUFF
-        const std::unordered_map<InterruptFlags, uint16_t> interrupt_vectors_ = {
-            {InterruptFlags::VBlank,   0x0040},
-            {InterruptFlags::LCD_STAT, 0x0048},
-            {InterruptFlags::Timer,    0x0050},
-            {InterruptFlags::Serial,   0x0058},
-            {InterruptFlags::Joypad,   0x0060}
-        };
-
-        const AddressBus& bus_;
-
-        uint8_t cycles_to_finish_;
-
         bool halt_mode_ = false;
         bool halt_bug_ = false;
 

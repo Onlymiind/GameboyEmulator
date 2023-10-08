@@ -21,7 +21,7 @@ namespace gb::cpu {
         } else {
             uint16_t address = fetchWord();
             last_instruction_.dst = address;
-            write(address, value);
+            bus_.write(address, value);
         }
 
         uint8_t cycles = 1;
@@ -38,10 +38,6 @@ namespace gb::cpu {
 
         return cycles;
     }
-
-    uint8_t SharpSM83::NONE() { return 0; }
-
-    uint8_t SharpSM83::NOP() { return 1; }
 
     uint8_t SharpSM83::LD(decoding::UnprefixedInstruction instr) {
         switch(*instr.LD_subtype) {
@@ -78,11 +74,11 @@ namespace gb::cpu {
                 if(direction) {
                     set_arg_data(last_instruction_.dst, instr.destination, byte);
                     last_instruction_.src = decoding::Registers::A;
-                    write(address, reg_.A());
+                    bus_.write(address, reg_.A());
                 } else {
                     set_arg_data(last_instruction_.src, instr.source, byte);
                     last_instruction_.dst = decoding::Registers::A;
-                    reg_.A() = read(address);
+                    reg_.A() = bus_.read(address);
                 }
                 return hasImmediate ? 3 : 2;
             }
@@ -102,9 +98,9 @@ namespace gb::cpu {
                 last_instruction_.dst = decoding::Registers::SP;
                 last_instruction_.src = address;
 
-                write(address, reg_.SP & 0x00FF);
+                bus_.write(address, uint8_t(reg_.SP));
                 ++address;
-                write(address, (reg_.SP & 0xFF00) >> 8);
+                bus_.write(address, (reg_.SP & 0xFF00) >> 8);
                 return 5;
             }
             default:
