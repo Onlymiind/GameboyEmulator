@@ -37,8 +37,6 @@ namespace emulator {
         drawMenu();
         ImGui::End();
 
-        ImGui::ShowDemoWindow();
-
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         glfwSwapBuffers(window_);
@@ -111,21 +109,26 @@ namespace emulator {
     }
 
     void Application::run() {
-        double delta = 0;
+        size_t updates_per_frame = size_t(g_cycles_per_second / size_t(refresh_rate_));
+        int frame = 0;
         while (is_running_) {
             double time_start = glfwGetTime();
 
-            size_t iterations = 0;
-            if(!single_step_ && delta != 0) {
-                iterations = size_t(std::round(double(g_cycles_per_second) / delta));
-            }
-
             if(single_step_ && ImGui::IsKeyPressed(ImGuiKey_S, false)) {
                 update();
-            } 
+            } else if(!single_step_) {
+                for(int i = 0; !emulator_.terminated() && i < updates_per_frame; ++i) {
+                    update();
+                }
 
-            for(int i = 0; i < iterations; ++i) {
-                update();
+                ++frame;
+                if(frame == refresh_rate_) {
+                    frame = 0;
+                    size_t leftover_updates = g_cycles_per_second - updates_per_frame * size_t(refresh_rate_);
+                    for(int i = 0; !emulator_.terminated() && i < leftover_updates; ++i) {
+                        update();
+                    }
+                }
             }
 
             draw();
@@ -133,8 +136,6 @@ namespace emulator {
             if(window_ && glfwWindowShouldClose(window_)) {
                 is_running_ = false;
             }
-
-            delta = glfwGetTime() - time_start;
         }
     }
 
@@ -158,6 +159,8 @@ namespace emulator {
 
         ImGui_ImplGlfw_InitForOpenGL(window_, true);
         ImGui_ImplOpenGL3_Init();
+        //TODO: no support for multiple monitors
+        refresh_rate_ = glfwGetVideoMode(glfwGetPrimaryMonitor())->refreshRate;
         gui_init_ = true;
     }
 
@@ -173,6 +176,10 @@ namespace emulator {
     void Application::update() {
         try {
             emulator_.tick();
+            if(emulator_.instructionFinished()) {
+                pushRecent(recent_instructions_, InstructionData{last_PC_, emulator_.getRegisters(), emulator_.getLastInstruction()});
+                last_PC_ = emulator_.getPC();
+            }
         } catch (const std::exception& e) {
             std::cout << "exception occured during emulator update: " << e.what() << std::endl;
         }
@@ -210,6 +217,7 @@ namespace emulator {
         emulator_.reset();
         emulator_.setROM(std::move(data));
         emulator_.start();
+        last_PC_ = emulator_.getPC();
 
         return true;
     }

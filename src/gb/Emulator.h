@@ -55,7 +55,7 @@ namespace gb {
 
         bool instructionFinished() const { return cpu_.isFinished(); }
 
-        cpu::Instruction getCurrentInstruction() const { return cpu_.getCurrentInstruction(); }
+        cpu::Instruction getLastInstruction() const { return cpu_.getLastInstruction(); }
 
     private:
         RAM ram_;

@@ -19,7 +19,7 @@
 
 
 namespace emulator {
-    constexpr size_t g_cycles_per_second = 4'000'000;
+    constexpr double g_cycles_per_second = 4'000'000;
 
     class Application {
     public:
@@ -55,10 +55,13 @@ namespace emulator {
         };
 
         gb::Emulator emulator_;
-        
+
+        uint16_t last_PC_ = 0;
         bool is_running_ = true;
         bool gui_init_ = false;
-        bool single_step_ = true;
+        bool single_step_ = false;
+
+        int refresh_rate_ = 60;
 
 
         std::filesystem::path ROM_directory_;

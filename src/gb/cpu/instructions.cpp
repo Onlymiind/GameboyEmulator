@@ -11,14 +11,14 @@ namespace gb::cpu {
 
     uint8_t SharpSM83::loadByte(decoding::ArgumentInfo destination, decoding::ArgumentInfo source) {
         uint8_t value = getByte(source);
-        set_arg_data(current_instruction_.src, source, value);
+        set_arg_data(last_instruction_.src, source, value);
 
         if(destination.source != decoding::ArgumentSource::IndirectImmediate) {
-            current_instruction_.dst = destination.reg;
+            last_instruction_.dst = destination.reg;
             setByteRegister(destination.reg, value);
         } else {
             uint16_t address = fetchWord();
-            current_instruction_.dst = address;
+            last_instruction_.dst = address;
             write(address, value);
         }
 
@@ -46,12 +46,12 @@ namespace gb::cpu {
             case decoding::LoadSubtype::Typical: {
                 bool isloadWord = (instr.destination.source == decoding::ArgumentSource::Register && instr.destination.type == decoding::ArgumentType::Unsigned16);
                 if(isloadWord) {
-                    current_instruction_.dst = instr.destination.reg;
+                    last_instruction_.dst = instr.destination.reg;
                     uint16_t value = getWord(instr.source);
                     if(instr.source.source == decoding::ArgumentSource::Register) {
-                        current_instruction_.src = instr.source.reg;
+                        last_instruction_.src = instr.source.reg;
                     } else {
-                        current_instruction_.src = value;
+                        last_instruction_.src = value;
                     }
                     setWordRegister(instr.destination.reg, value);
                     return instr.source.source == decoding::ArgumentSource::Immediate ? 3 : 2;
@@ -74,20 +74,20 @@ namespace gb::cpu {
                 uint8_t byte = getByte(direction ? instr.destination : instr.source);
                 uint16_t address = 0xFF00 + uint16_t(byte);
                 if(direction) {
-                    set_arg_data(current_instruction_.dst, instr.destination, byte);
-                    current_instruction_.src = decoding::Registers::A;
+                    set_arg_data(last_instruction_.dst, instr.destination, byte);
+                    last_instruction_.src = decoding::Registers::A;
                     write(address, reg_.A);
                 } else {
-                    set_arg_data(current_instruction_.src, instr.source, byte);
-                    current_instruction_.dst = decoding::Registers::A;
+                    set_arg_data(last_instruction_.src, instr.source, byte);
+                    last_instruction_.dst = decoding::Registers::A;
                     reg_.A = read(address);
                 }
                 return hasImmediate ? 3 : 2;
             }
             case decoding::LoadSubtype::LD_Offset_SP: {
                 int8_t offset = fetchSigned();
-                current_instruction_.dst = decoding::Registers::SP;
-                current_instruction_.src = offset;
+                last_instruction_.dst = decoding::Registers::SP;
+                last_instruction_.src = offset;
                 reg_.flags.H = halfCarryOccured8Add(reg_.SP & 0x00FF, offset);
                 reg_.flags.C = carryOccured(static_cast<uint8_t>(reg_.SP & 0x00FF), reinterpret_cast<uint8_t&>(offset));
                 reg_.flags.Z = 0;
@@ -97,8 +97,8 @@ namespace gb::cpu {
             }
             case decoding::LoadSubtype::LD_SP: {
                 uint16_t address = fetchWord();
-                current_instruction_.dst = decoding::Registers::SP;
-                current_instruction_.src = address;
+                last_instruction_.dst = decoding::Registers::SP;
+                last_instruction_.src = address;
 
                 write(address, reg_.SP & 0x00FF);
                 ++address;
@@ -111,7 +111,7 @@ namespace gb::cpu {
     }
 
     uint8_t SharpSM83::INC(decoding::ArgumentInfo target) {
-        current_instruction_.arg() = target.reg;
+        last_instruction_.arg() = target.reg;
         if(target.type == decoding::ArgumentType::Unsigned16) {
             uint16_t value = getWordRegister(target.reg);
             ++value;
@@ -129,7 +129,7 @@ namespace gb::cpu {
     }
 
     uint8_t SharpSM83::DEC(decoding::ArgumentInfo target) {
-        current_instruction_.arg() = target.reg;
+        last_instruction_.arg() = target.reg;
         if(target.type == decoding::ArgumentType::Unsigned16) {
             uint16_t value = getWordRegister(target.reg);
             --value;
@@ -151,8 +151,8 @@ namespace gb::cpu {
 
         switch(instr.destination.reg) {
             case decoding::Registers::HL: {
-                current_instruction_.dst = decoding::Registers::HL;
-                current_instruction_.src = instr.source.reg;
+                last_instruction_.dst = decoding::Registers::HL;
+                last_instruction_.src = instr.source.reg;
                 uint16_t value = getWordRegister(instr.source.reg);
                 reg_.flags.H = halfCarryOccured16Add(reg_.HL, value);
                 reg_.flags.C = carryOccured(static_cast<uint16_t>(reg_.HL), value);
@@ -160,10 +160,10 @@ namespace gb::cpu {
                 return 2;
             }
             case decoding::Registers::SP: {
-                current_instruction_.dst = decoding::Registers::SP;
+                last_instruction_.dst = decoding::Registers::SP;
                 reg_.flags.Z = 0;
                 int8_t value = fetchSigned();
-                current_instruction_.src = value;
+                last_instruction_.src = value;
                 reg_.flags.H = halfCarryOccured8Add(reg_.SP & 0x00FF, value); //According to specification H flag should be set if overflow from bit 3
                 reg_.flags.C = carryOccured(static_cast<uint8_t>(reg_.SP & 0x00FF), static_cast<uint8_t>(value)); //Carry flag should be set if overflow from bit 7
                 reg_.SP += value;
@@ -171,7 +171,7 @@ namespace gb::cpu {
             }
             case decoding::Registers::A: {
                 uint8_t value = getByte(instr.source);
-                set_arg_data(current_instruction_.arg(), instr.source, value);
+                set_arg_data(last_instruction_.arg(), instr.source, value);
                 reg_.flags.H = halfCarryOccured8Add(reg_.A, value);
                 reg_.flags.C = carryOccured(reg_.A, value);
                 reg_.A += value;
@@ -191,7 +191,7 @@ namespace gb::cpu {
     uint8_t SharpSM83::ADC(decoding::ArgumentInfo argument) {
         reg_.flags.N = 0;
         uint8_t value = getByte(argument);
-        set_arg_data(current_instruction_.arg(), argument, value);
+        set_arg_data(last_instruction_.arg(), argument, value);
         uint8_t regA = reg_.A;
 
         reg_.A += value + reg_.flags.C;
@@ -205,7 +205,7 @@ namespace gb::cpu {
     uint8_t SharpSM83::SUB(decoding::ArgumentInfo argument) {
         reg_.flags.N = 1;
         uint8_t value = getByte(argument);
-        set_arg_data(current_instruction_.arg(), argument, value);
+        set_arg_data(last_instruction_.arg(), argument, value);
 
         reg_.flags.H = halfCarryOccured8Sub(reg_.A, value);
         reg_.flags.C = carryOccured(reg_.A, value, true);
@@ -218,7 +218,7 @@ namespace gb::cpu {
     uint8_t SharpSM83::SBC(decoding::ArgumentInfo argument) {
         reg_.flags.N = 1;
         uint8_t value = getByte(argument);
-        set_arg_data(current_instruction_.arg(), argument, value);
+        set_arg_data(last_instruction_.arg(), argument, value);
 
         uint8_t regA = reg_.A;
 
@@ -232,7 +232,7 @@ namespace gb::cpu {
 
     uint8_t SharpSM83::OR(decoding::ArgumentInfo argument) {
         uint8_t value = getByte(argument);
-        set_arg_data(current_instruction_.arg(), argument, value);
+        set_arg_data(last_instruction_.arg(), argument, value);
 
         reg_.flags.value = 0; //Only Z flag can be non-zero as a result of OR
         
@@ -244,7 +244,7 @@ namespace gb::cpu {
 
     uint8_t SharpSM83::AND(decoding::ArgumentInfo argument) {
         uint8_t value = getByte(argument);
-        set_arg_data(current_instruction_.arg(), argument, value);
+        set_arg_data(last_instruction_.arg(), argument, value);
 
         reg_.flags.value = 0;
         reg_.flags.H = 1;
@@ -256,7 +256,7 @@ namespace gb::cpu {
 
     uint8_t SharpSM83::XOR(decoding::ArgumentInfo argument) {
         uint8_t value = getByte(argument);
-        set_arg_data(current_instruction_.arg(), argument, value);
+        set_arg_data(last_instruction_.arg(), argument, value);
 
         reg_.flags.value = 0; //Only Z flag can be non-zero as a result of XOR
         reg_.A ^= value;
@@ -267,7 +267,7 @@ namespace gb::cpu {
 
     uint8_t SharpSM83::CP(decoding::ArgumentInfo argument) {
         uint8_t value = getByte(argument);
-        set_arg_data(current_instruction_.arg(), argument, value);
+        set_arg_data(last_instruction_.arg(), argument, value);
 
         reg_.flags.N = 1;
         reg_.flags.H = halfCarryOccured8Sub(reg_.A, value);
@@ -279,7 +279,7 @@ namespace gb::cpu {
 
     uint8_t SharpSM83::JP(decoding::UnprefixedInstruction instr) {
         uint16_t address = getWord(instr.source);
-        current_instruction_.arg() = address;
+        last_instruction_.arg() = address;
 
         if(instr.condition.has_value()) {
             if(checkCondition(*instr.condition)) {
@@ -296,7 +296,7 @@ namespace gb::cpu {
 
     uint8_t SharpSM83::JR(std::optional<decoding::Conditions> condition) {
         int8_t relAddress = fetchSigned();
-        current_instruction_.arg() = relAddress;
+        last_instruction_.arg() = relAddress;
 
         if(condition.has_value() && (!checkCondition(*condition))) {
             return 2;
@@ -307,21 +307,21 @@ namespace gb::cpu {
     }
 
     uint8_t SharpSM83::PUSH(decoding::Registers reg) {
-        current_instruction_.arg() = reg;
+        last_instruction_.arg() = reg;
 
         pushStack(getWordRegister(reg));
         return 4;
     }
 
     uint8_t SharpSM83::POP(decoding::Registers reg) {
-        current_instruction_.arg() = reg;
+        last_instruction_.arg() = reg;
 
         setWordRegister(reg, popStack());
         return 3;
     }
 
     uint8_t SharpSM83::RST(uint16_t reset_vector) {
-        current_instruction_.arg() = reset_vector;
+        last_instruction_.arg() = reset_vector;
 
         pushStack(reg_.PC);
         reg_.PC = reset_vector;
@@ -330,7 +330,7 @@ namespace gb::cpu {
 
     uint8_t SharpSM83::CALL(std::optional<decoding::Conditions> condition) {
         uint16_t address = fetchWord();
-        current_instruction_.arg() = address;
+        last_instruction_.arg() = address;
 
         if(condition.has_value() && (!checkCondition(*condition))) {
             return 3;

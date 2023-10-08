@@ -43,7 +43,7 @@ namespace gb::cpu {
 
         inline bool isFinished() const { return cycles_to_finish_ == 0; }
 
-        Instruction getCurrentInstruction() const { return current_instruction_; }
+        Instruction getLastInstruction() const { return last_instruction_; }
 
         void reset();
 
@@ -169,7 +169,7 @@ namespace gb::cpu {
         bool halt_mode_ = false;
         bool halt_bug_ = false;
 
-        Instruction current_instruction_;
+        Instruction last_instruction_;
     };
 
     template<typename T>

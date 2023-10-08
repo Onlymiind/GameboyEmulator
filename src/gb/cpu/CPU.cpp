@@ -26,6 +26,7 @@ namespace gb::cpu {
         }
 
         if (cycles_to_finish_ == 0) {
+            last_instruction_ = Instruction{};
             if (enable_IME_) {
                 // Enable jumping to interrupt vectors if it is scheduled by EI
                 IME_ = true;
@@ -99,10 +100,10 @@ namespace gb::cpu {
 
     uint8_t SharpSM83::dispatchPrefixed(decoding::PrefixedInstruction instr) {
         using type = decoding::InstructionType;
-        current_instruction_.type = instr.type;
-        current_instruction_.arg() = instr.target;
+        last_instruction_.type = instr.type;
+        last_instruction_.arg() = instr.target;
         if(instr.bit) {
-            current_instruction_.bit() = *instr.bit;
+            last_instruction_.bit() = *instr.bit;
         }
 
         switch(instr.type) {
@@ -125,9 +126,9 @@ namespace gb::cpu {
 
     uint8_t SharpSM83::dispatchUnprefixed(decoding::UnprefixedInstruction instr) {
         using type = decoding::InstructionType;
-        current_instruction_.type = instr.type;
-        current_instruction_.load_subtype = instr.LD_subtype;
-        current_instruction_.condition = instr.condition;
+        last_instruction_.type = instr.type;
+        last_instruction_.load_subtype = instr.LD_subtype;
+        last_instruction_.condition = instr.condition;
 
         switch(instr.type) {
             case type::NOP: return NOP();
