@@ -110,7 +110,7 @@ namespace gb::cpu {
         uint16_t PC;
         uint16_t SP;
     private:
-        std::array<uint8_t, 8> registers_;
+        alignas(uint16_t) std::array<uint8_t, 8> registers_;
     };
 
     inline bool carried(uint8_t lhs, uint8_t rhs) { return (std::numeric_limits<uint8_t>::max() - rhs) < lhs; }
