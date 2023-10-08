@@ -71,15 +71,6 @@ namespace gb::cpu {
 
         uint16_t popStack();
 
-        bool halfCarryOccured8Add(uint8_t lhs, uint8_t rhs);
-
-        bool halfCarryOccured8Sub(uint8_t lhs, uint8_t rhs);
-        
-        bool halfCarryOccured16Add(uint16_t lhs, uint16_t rhs);
-
-        template<typename T>
-        bool carryOccured(T lhs, T rhs, bool substract = false) const;
-
         uint8_t getByte(decoding::ArgumentInfo from);
         uint16_t getWord(decoding::ArgumentInfo from);
 
@@ -171,14 +162,4 @@ namespace gb::cpu {
 
         Instruction last_instruction_;
     };
-
-    template<typename T>
-    bool SharpSM83::carryOccured(T lhs, T rhs, bool substract) const {
-        uint32_t a(lhs), b(rhs);
-        if(substract) {
-            return a < b;
-        } else {
-            return (a + b) > std::numeric_limits<T>::max();
-        }
-    }
 }

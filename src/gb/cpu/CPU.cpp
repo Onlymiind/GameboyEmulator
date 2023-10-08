@@ -68,18 +68,6 @@ namespace gb::cpu {
         cycles_to_finish_ = 5;
     }
 
-    bool SharpSM83::halfCarryOccured8Add(uint8_t lhs, uint8_t rhs) {
-        return (((lhs & 0x0F) + (rhs & 0x0F)) & 0x10) != 0;
-    }
-
-    bool SharpSM83::halfCarryOccured8Sub(uint8_t lhs, uint8_t rhs) {
-        return (lhs & 0x0F) < (rhs & 0x0F);
-    }
-
-    bool SharpSM83::halfCarryOccured16Add(uint16_t lhs, uint16_t rhs) {
-        return (((lhs & 0x0FFF) + (rhs & 0x0FFF)) & 0x1000) != 0;
-    }
-
     void SharpSM83::write(uint16_t address, uint8_t data) {
         bus_.write(address, data);
     }
