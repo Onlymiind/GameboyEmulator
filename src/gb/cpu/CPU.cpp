@@ -11,8 +11,8 @@
 
 namespace gb::cpu {
 
-    SharpSM83::SharpSM83(const AddressBus& bus, InterruptRegister& interruptEnable, InterruptRegister& interruptFlags) 
-        : interrupt_enable_(interruptEnable), interrupt_flags_(interruptFlags), bus_(bus), cycles_to_finish_(0)
+    SharpSM83::SharpSM83(AddressBus& bus) 
+        :bus_(bus)
     {
         reset();
     }
@@ -22,7 +22,7 @@ namespace gb::cpu {
         std::optional<InterruptFlags> interrupt = getPendingInterrupt();
 
         //FIXME: possible bug: what if interrupt flag with higher priority is set during HALT "execution"?
-        if(halt_mode_ && interrupt_flags_.getFlags()) {
+        if(halt_mode_ && bus_.getInterruptFlags().getFlags()) {
             halt_mode_ = false;
         }
 
@@ -47,7 +47,7 @@ namespace gb::cpu {
     }
 
     std::optional<InterruptFlags> SharpSM83::getPendingInterrupt() const {
-        uint8_t pending_interrupts = interrupt_enable_.getFlags() & interrupt_flags_.getFlags();
+        uint8_t pending_interrupts = bus_.getInterruptEnable().getFlags() & bus_.getInterruptFlags().getFlags();
         if(pending_interrupts != 0) {
             return static_cast<InterruptFlags>(pending_interrupts & -pending_interrupts);
         } else {
@@ -56,8 +56,8 @@ namespace gb::cpu {
     }
 
     void SharpSM83::handleInterrupt(InterruptFlags interrupt) {
-        interrupt_enable_.clearFlag(interrupt);
-        interrupt_flags_.clearFlag(interrupt);
+        bus_.getInterruptEnable().clearFlag(interrupt);
+        bus_.getInterruptFlags().clearFlag(interrupt);
         pushStack(reg_.PC);
         reg_.PC = g_interrupt_vectors.at(interrupt);
         cycles_to_finish_ = 5;

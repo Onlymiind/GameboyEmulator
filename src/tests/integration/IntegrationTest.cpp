@@ -5,6 +5,7 @@
 #include "catch2/generators/catch_generators.hpp"
 #include "utils/Utils.h"
 
+#include <exception>
 #include <filesystem>
 #include <ostream>
 #include <string>
@@ -64,7 +65,9 @@ TEST_CASE("run cpu test roms") {
     while(!emulator.terminated()) {
         try {
             emulator.tick();
-        } catch(...) {}
+        } catch(const std::exception& e) {
+            INFO(e.what());
+        }
     }
 
     std::string output = out.str();

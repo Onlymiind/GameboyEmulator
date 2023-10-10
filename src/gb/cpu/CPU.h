@@ -41,7 +41,7 @@ namespace gb::cpu {
     
     class SharpSM83 {
     public:
-        SharpSM83(const AddressBus& bus, InterruptRegister& interruptEnable, InterruptRegister& interruptFlags);
+        SharpSM83(AddressBus& bus);
         ~SharpSM83() {}
 
         void tick();
@@ -140,12 +140,10 @@ namespace gb::cpu {
 
 
     private:
-        InterruptRegister& interrupt_enable_;
-        InterruptRegister& interrupt_flags_;
-        const AddressBus& bus_;
+        AddressBus& bus_;
 
         RegisterFile reg_;
-        uint8_t cycles_to_finish_;
+        uint8_t cycles_to_finish_ = 0;
 
         bool IME_ = false; // Interrupt master enable
         bool enable_IME_ = false;

@@ -91,7 +91,6 @@ if(BUILD_TESTS OR TESTS_ONLY)
     add_subdirectory(Catch2)
 
     add_executable(tests
-        src/tests/AddressBusTest.cpp
         src/tests/DecoderTest.cpp
         src/tests/TimerTest.cpp
         src/tests/integration/IntegrationTest.cpp

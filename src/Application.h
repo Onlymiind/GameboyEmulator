@@ -12,6 +12,7 @@
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
 
+#include <X11/Xlib.h>
 #include <deque>
 #include <filesystem>
 #include <queue>

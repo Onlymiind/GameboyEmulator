@@ -23,28 +23,23 @@ namespace gb
             : interrupts_(g_unused_interrupt_bits)
         {}
 
-        inline uint8_t read(uint16_t address) const override
-        {
+        inline uint8_t read(uint16_t address) const override {
             return interrupts_;
         }
 
-        inline void write(uint16_t address, uint8_t data) override
-        {
+        inline void write(uint16_t address, uint8_t data) override {
             interrupts_ = (g_unused_interrupt_bits | (data & 0x1F));
         }
 
-        inline void setFlag(InterruptFlags flag)
-        {
+        inline void setFlag(InterruptFlags flag) {
             interrupts_ |= static_cast<uint8_t>(flag);
         }
 
-        inline void clearFlag(InterruptFlags flag)
-        {
+        inline void clearFlag(InterruptFlags flag) {
             interrupts_ &= ~static_cast<uint8_t>(flag);
         }
 
-        inline uint8_t getFlags()
-        {
+        inline uint8_t getFlags() const {
             return interrupts_ & (~g_unused_interrupt_bits);
         }
 

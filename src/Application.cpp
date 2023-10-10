@@ -1,4 +1,5 @@
 #include "Application.h"
+#include "gb/Emulator.h"
 #include "gb/cpu/CPUUtils.h"
 #include "gb/cpu/Operation.h"
 #include "utils/Utils.h"
@@ -135,7 +136,9 @@ namespace emulator {
         ImGui::EndMenuBar();
     }
 
-    Application::Application() {
+    Application::Application() 
+        : emulator_(false)
+    {
         initGUI();
     }
 
