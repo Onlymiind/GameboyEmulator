@@ -21,12 +21,6 @@ namespace gb::decoding {
         RL, RR, SWAP
     };
 
-    enum class PrefixedType : uint8_t {
-        RLC, RRC, SLA, SRA,
-        SRL, BIT, RES, SET,
-        RL, RR, SWAP
-    };
-
     //Some LD instructions are quite different fron others, this enum is used to mark them
     enum class LoadSubtype : uint8_t {
         Typical = 0, 
@@ -53,8 +47,7 @@ namespace gb::decoding {
         NotZero, Zero, NotCarry, Carry
     };
 
-    struct ArgumentInfo
-    {
+    struct ArgumentInfo {
         ArgumentSource source = ArgumentSource::None;
         ArgumentType type = ArgumentType::None;
         Registers reg = Registers::None;
@@ -116,8 +109,9 @@ namespace gb::decoding {
         uint8_t code;
     };
 
-    std::ostream& operator<<(std::ostream& os, InstructionType type);
-    std::ostream& operator<<(std::ostream& os, PrefixedType type);
+    std::string_view to_string(InstructionType type);
+    std::string_view to_string(Registers reg);
+    std::string_view to_string(Conditions cond);
     //TODO
     // std::ostream& operator<<(std::ostream& os, LoadSubtype subtype);
     // std::ostream& operator<<(std::ostream& os, ArgumentSource source);

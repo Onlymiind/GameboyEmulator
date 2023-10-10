@@ -3,62 +3,50 @@
 #include <iostream>
 
 namespace gb::decoding {
+#define CASE(x) case ENUM_NAME::x: return #x
 
-    std::ostream& operator<<(std::ostream& os, InstructionType type) {
-    #define CASE_TYPE(x) case UnprefixedType::##x: os << #x; break
+    std::string_view to_string(InstructionType type) {
+    #define ENUM_NAME InstructionType
         switch(type) {
-            case InstructionType::None: os << "None"; break;
-            case InstructionType::NOP: os << "NOP"; break;
-            case InstructionType::LD: os << "LD"; break;
-            case InstructionType::INC: os << "INC"; break;
-            case InstructionType::RLA: os << "RLA"; break;
-            case InstructionType::RLCA: os << "RLCA"; break;
-            case InstructionType::ADD: os << "ADD"; break;
-            case InstructionType::JR: os << "JR"; break;
-            case InstructionType::DEC: os << "DEC"; break;
-            case InstructionType::RRA: os << "RRA"; break;
-            case InstructionType::RRCA: os << "RRCA"; break;
-            case InstructionType::SUB: os << "SUB"; break;
-            case InstructionType::OR: os << "OR"; break;
-            case InstructionType::AND: os << "AND"; break;
-            case InstructionType::XOR: os << "XOR"; break;
-            case InstructionType::PUSH: os << "PUSH"; break;
-            case InstructionType::ADC: os << "ADC"; break;
-            case InstructionType::JP: os << "JP"; break;
-            case InstructionType::POP: os << "POP"; break;
-            case InstructionType::RST: os << "RST"; break;
-            case InstructionType::CALL: os << "CALL"; break;
-            case InstructionType::SBC: os << "SBC"; break;
-            case InstructionType::DI: os << "DI"; break;
-            case InstructionType::RET: os << "RET"; break;
-            case InstructionType::CPL: os << "CPL"; break;
-            case InstructionType::RETI: os << "RETI"; break;
-            case InstructionType::CCF: os << "CCF"; break;
-            case InstructionType::EI: os << "EI"; break;
-            case InstructionType::DAA: os << "DAA"; break;
-            case InstructionType::SCF: os << "SCF"; break;
-            case InstructionType::HALT: os << "HALT"; break;
-            case InstructionType::CP: os << "CP"; break;
-            case InstructionType::STOP: os << "STOP"; break;
+            CASE(None); CASE(NOP);  CASE(LD);
+            CASE(INC);  CASE(RLA);  CASE(RLCA);
+            CASE(ADD);  CASE(JR);   CASE(DEC);
+            CASE(RRA);  CASE(RRCA); CASE(SUB);
+            CASE(OR);   CASE(AND);  CASE(XOR);
+            CASE(PUSH); CASE(ADC);  CASE(JP);
+            CASE(POP);  CASE(RST);  CASE(CALL);
+            CASE(SBC);  CASE(DI);   CASE(RET);
+            CASE(CPL);  CASE(RETI); CASE(CCF);
+            CASE(EI);   CASE(DAA);  CASE(SCF);
+            CASE(HALT); CASE(CP);   CASE(STOP);
+            CASE(RLC);  CASE(RRC);  CASE(SLA);
+            CASE(SRA);  CASE(SRL);  CASE(BIT);
+            CASE(RES);  CASE(SET);  CASE(RL);
+            CASE(RR);   CASE(SWAP);
         }
-    return os;
-    #undef CASE_TYPE
+    #undef ENUM_NAME
     }
 
-    std::ostream& operator<<(std::ostream& os, PrefixedType type) {
-        switch(type) {
-            case PrefixedType::RLC: os << "RLC"; break;
-            case PrefixedType::RRC: os << "RRC"; break;
-            case PrefixedType::SLA: os << "SLA"; break;
-            case PrefixedType::SRL: os << "SRL"; break;
-            case PrefixedType::BIT: os << "BIT"; break;
-            case PrefixedType::RES: os << "RES"; break;
-            case PrefixedType::SET: os << "SET"; break;
-            case PrefixedType::RL: os << "RL"; break;
-            case PrefixedType::RR: os << "RR"; break;
-            case PrefixedType::SWAP: os << "SWAP"; break;
+    std::string_view to_string(Registers reg) {
+    #define ENUM_NAME Registers
+        switch(reg) {
+        CASE(A); CASE(B); CASE(C);
+        CASE(D); CASE(E); CASE(H);
+        CASE(L); CASE(AF); CASE(BC);
+        CASE(DE); CASE(SP); CASE(PC);
+        CASE(HL); CASE(None);
         }
-        return os;
+    #undef ENUM_NAME
+    }
+
+    std::string_view to_string(Conditions cond) {
+        using enum Conditions;
+        switch(cond) {
+        case NotZero: return "nz";
+        case Zero: return "z";
+        case NotCarry: return "nc";
+        case Carry: return "c";
+        }
     }
 
     //TODO

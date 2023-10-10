@@ -21,7 +21,16 @@
 namespace emulator {
     constexpr double g_cycles_per_second = 4'000'000;
 
+    struct InstructionData {
+        gb::cpu::RegisterFile registers;
+        gb::cpu::Instruction instruction;
+    };
+
+    void printInstruction(std::ostream& out, const InstructionData& instr);
+    void printRegisters(std::ostream& out, gb::cpu::RegisterFile regs);
+
     class Application {
+        static constexpr size_t recent_cache_size = 10;
     public:
         Application();
         ~Application();
@@ -43,23 +52,17 @@ namespace emulator {
         template<typename Element>
         void pushRecent(std::deque<Element>& cont, const Element& elem) {
             cont.push_back(elem);
-            if(cont.size() > 10) {
+            if(cont.size() > recent_cache_size) {
                 cont.pop_front();
             }
         }
     private:
-        struct InstructionData {
-            uint16_t PC = 0;
-            gb::cpu::RegisterFile registers;
-            gb::cpu::Instruction instruction;
-        };
 
         gb::Emulator emulator_;
 
-        uint16_t last_PC_ = 0;
         bool is_running_ = true;
         bool gui_init_ = false;
-        bool single_step_ = false;
+        bool single_step_ = true;
 
         int refresh_rate_ = 60;
 
@@ -69,6 +72,8 @@ namespace emulator {
         std::vector<std::filesystem::path> roms_;
         std::deque<std::filesystem::path> recent_roms_;
         std::deque<InstructionData> recent_instructions_;
+        std::array<std::string, recent_cache_size> printed_instructions_;
+        std::string printed_regs_;
         const std::string extension_ = ".gb";
 
         GLFWwindow* window_ = nullptr;

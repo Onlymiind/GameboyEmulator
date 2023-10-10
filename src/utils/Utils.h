@@ -13,15 +13,15 @@
 
 inline std::vector<uint8_t> readFile(const std::filesystem::path& path) {
     std::ifstream file(path, std::ios::binary | std::ios::ate);
-	if (!file.is_open()) {
-		return {};
-	}
-	auto size = file.tellg();
-	file.seekg(0);
-	
-	std::vector<uint8_t> contents(static_cast<size_t>(size));
-	file.read(reinterpret_cast<char*>(contents.data()), size);
-	return contents;
+    if (!file.is_open()) {
+        return {};
+    }
+    auto size = file.tellg();
+    file.seekg(0);
+    
+    std::vector<uint8_t> contents(static_cast<size_t>(size));
+    file.read(reinterpret_cast<char*>(contents.data()), size);
+    return contents;
 }
 
 template<typename T, typename std::enable_if<std::is_integral<T>{}, bool>::type = true >
@@ -39,19 +39,25 @@ std::string printToString(std::string_view separator, Args... args) {
 template<typename... Args>
 class Variant : public std::variant<Args...> {
 public:
-	using Base = std::variant<Args...>;
+    using Base = std::variant<Args...>;
 
-	using Base::variant;
-	using Base::operator=;
-	
-	template<typename T>
-	bool is() { return std::holds_alternative<T>(*this); }
+    using Base::variant;
+    using Base::operator=;
+    
+    template<typename T>
+    bool is() const { return std::holds_alternative<T>(*this); }
 
-	template<typename T>
-	T& get() { return std::get<T>(*this); }
+    template<typename T>
+    T& get() { return std::get<T>(*this); }
 
-	template<typename T>
-	T* get_if() { return std::get_if<T>(this); }
+    template<typename T>
+    T* get_if() { return std::get_if<T>(this); }
 
-	bool empty() { return std::holds_alternative<std::monostate>(*this); }
+    template<typename T>
+    const T& get() const { return std::get<T>(*this); }
+
+    template<typename T>
+    const T* get_if() const { return std::get_if<T>(this); }
+
+    bool empty() const { return std::holds_alternative<std::monostate>(*this); }
 };

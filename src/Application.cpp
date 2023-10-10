@@ -1,4 +1,6 @@
 #include "Application.h"
+#include "gb/cpu/CPUUtils.h"
+#include "gb/cpu/Operation.h"
 #include "utils/Utils.h"
 #include "gb/cpu/CPU.h"
 #include "gb/AddressBus.h"
@@ -15,6 +17,9 @@
 
 
 #include <cmath>
+#include <iomanip>
+#include <ios>
+#include <sstream>
 #include <string>
 #include <filesystem>
 #include <exception>
@@ -35,6 +40,26 @@ namespace emulator {
             | ImGuiWindowFlags_MenuBar
         );
         drawMenu();
+
+        ImGui::Columns(2);
+        std::stringstream instr_out;
+        for(size_t i = 0; i < recent_instructions_.size(); ++i) {
+            printInstruction(instr_out, recent_instructions_[i]);
+            instr_out << "###" << i; //For Dear ImGui ids
+            printed_instructions_[i] = std::move(instr_out).str();
+            instr_out.clear();
+            if(ImGui::Selectable(printed_instructions_[i].c_str())) {
+                printRegisters(instr_out, recent_instructions_[i].registers);
+                printed_regs_ = std::move(instr_out).str();
+                instr_out.clear();
+            }
+        }
+
+        ImGui::NextColumn();
+        if(!printed_regs_.empty()) {
+            ImGui::TextUnformatted(printed_regs_.c_str());
+        }
+
         ImGui::End();
 
         ImGui::Render();
@@ -94,6 +119,8 @@ namespace emulator {
             }
 
             if(ImGui::Selectable("Reset")) {
+                recent_instructions_.clear();
+                printed_regs_.clear();
                 emulator_.reset();
             }
 
@@ -120,6 +147,9 @@ namespace emulator {
 
             if(single_step_ && ImGui::IsKeyPressed(ImGuiKey_S, false)) {
                 update();
+                while(!emulator_.instructionFinished()) {
+                    update();
+                }
             } else if(!single_step_) {
                 for(int i = 0; !emulator_.terminated() && i < updates_per_frame; ++i) {
                     update();
@@ -179,10 +209,15 @@ namespace emulator {
 
     void Application::update() {
         try {
+            InstructionData instr_data;
+            bool fetch_data = emulator_.instructionFinished();
+            if(fetch_data) {
+                instr_data.registers = emulator_.getRegisters();
+            }
             emulator_.tick();
-            if(emulator_.instructionFinished()) {
-                pushRecent(recent_instructions_, InstructionData{last_PC_, emulator_.getRegisters(), emulator_.getLastInstruction()});
-                last_PC_ = emulator_.getPC();
+            if(fetch_data) {
+                instr_data.instruction = emulator_.getLastInstruction();
+                pushRecent(recent_instructions_, instr_data);
             }
         } catch (const std::exception& e) {
             std::cout << "exception occured during emulator update: " << e.what() << std::endl;
@@ -221,8 +256,112 @@ namespace emulator {
         emulator_.reset();
         emulator_.setROM(std::move(data));
         emulator_.start();
-        last_PC_ = emulator_.getPC();
 
         return true;
+    }
+
+    void printInstruction(std::ostream& out, const InstructionData& instr_data) {
+        using namespace gb::decoding;
+        auto& instr = instr_data.instruction;
+
+        out << std::hex << instr.pc << ' ' << to_string(instr.type);
+        if(instr.condition) {
+            out << ' ' << to_string(*instr.condition);
+        }
+
+        auto print_arg = [&out](gb::cpu::Instruction::Argument arg) {
+            if(arg.empty()) {
+                return;
+            } else if(arg.is<Registers>()) {
+                out << ' ' << to_string(arg.get<Registers>());
+            } else if(arg.is<int8_t>()) {
+                out << std::setw(0) << std::dec << ' ' << (arg.get<int8_t>() > 0 ? "+" : "") << +arg.get<int8_t>();
+            } else if(arg.is<uint8_t>()) {
+                out << ' ' << std::setw(2) << std::setfill('0') << std::hex << int(arg.get<uint8_t>());
+            } else if(arg.is<uint16_t>()) {
+                out << ' ' << std::setw(4) << std::setfill('0') << std::hex << int(arg.get<uint16_t>());
+            }
+        };
+
+
+        if(instr.load_subtype) {
+            if(*instr.load_subtype == LoadSubtype::LD_Offset_SP) {
+                out << " HL,";
+            } else if(*instr.load_subtype == LoadSubtype::LD_IO) {
+                out << "H";
+            }
+        }
+
+        print_arg(instr.dst);
+
+        if(instr.load_subtype) {
+            switch (*instr.load_subtype) {
+            case LoadSubtype::LD_DEC:
+                if(instr.dst.get<Registers>() == Registers::HL) {
+                    out << "--";
+                }
+                break;
+            case LoadSubtype::LD_INC:
+                if(instr.dst.get<Registers>() == Registers::HL) {
+                    out << "++";
+                }
+                break;
+            }
+        }
+
+        if(!instr.dst.empty()) {
+            out << ',';
+        }
+        print_arg(instr.src);
+
+        if(instr.load_subtype) {
+            switch (*instr.load_subtype) {
+            case LoadSubtype::LD_DEC:
+                if(instr.dst.get<Registers>() == Registers::HL) {
+                    out << "--";
+                }
+                break;
+            case LoadSubtype::LD_INC:
+                if(instr.dst.get<Registers>() == Registers::HL) {
+                    out << "++";
+                }
+                break;
+            }
+        }
+
+    }
+
+    void printRegisters(std::ostream& out, gb::cpu::RegisterFile regs) {
+        using namespace gb::cpu;
+        auto print8 = [&out](uint8_t data) { out << std::setw(2) << std::setfill('0') << std::hex << int(data); };
+        auto print16 = [&out](uint16_t data) { out << std::setw(4) << std::setfill('0') << std::hex << data; };
+        auto print_reg_pair = [&out, &print8, &print16] (char low, uint8_t low_data, char high, uint8_t high_data, uint16_t double_data) {
+            out << low << ": ";
+            print8(low_data);
+            out << ',' << high << ": ";
+            print8(high_data);
+            out << ',' << high << low << ": ";
+            print16(double_data);
+        };
+
+        out << "Flags: \n" << "Carry: " << regs.getFlag(Flags::CARRY) <<
+            ", Half carry: " << regs.getFlag(Flags::HALF_CARRY) << '\n' <<
+            "Negative: " << regs.getFlag(Flags::NEGATIVE) << 
+            ", Zero: " << regs.getFlag(Flags::ZERO) << '\n';
+        
+        out << "A: ";
+        print8(regs.A());
+        out << ", AF: ";
+        print16(regs.AF());
+        out << '\n';
+        print_reg_pair('C', regs.C(), 'B', regs.B(), regs.BC());
+        out << '\n';
+        print_reg_pair('E', regs.E(), 'D', regs.D(), regs.DE());
+        out << '\n';
+        print_reg_pair('L', regs.L(), 'H', regs.H(), regs.HL());
+        out << "\nSP: ";
+        print16(regs.SP);
+        out << ", PC: ";
+        print16(regs.PC);
     }
 }

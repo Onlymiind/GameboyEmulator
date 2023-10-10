@@ -36,6 +36,7 @@ namespace gb::cpu {
             if(interrupt && IME_) {
                 handleInterrupt(*interrupt);
             } else {
+                last_instruction_.pc = reg_.PC;
                 decoding::opcode code = halt_bug_ ? bus_.read(reg_.PC) : fetch();
                 cycles_to_finish_ = dispatch(code);
             }
@@ -94,7 +95,7 @@ namespace gb::cpu {
             case type::RES: return RES(instr);
             case type::SET: return SET(instr);
             default:
-                throw std::invalid_argument(printToString("", "Unknown prefixed instruction: ", instr.type));
+                throw std::invalid_argument(std::string("Unknown prefixed instruction: ") + std::string(decoding::to_string(instr.type)));
                 return 0;
         }
     }
@@ -139,7 +140,7 @@ namespace gb::cpu {
             case type::LD: return LD(instr);
             case type::ADD: return ADD(instr);
             default:
-                throw std::invalid_argument(printToString("", "Unknown unprefixed instruction: ", instr.type));
+                throw std::invalid_argument(std::string("Unknown unprefixed instruction: ") + std::string(decoding::to_string(instr.type)));
                 return 0;
         }
     }
@@ -200,6 +201,8 @@ namespace gb::cpu {
         reg_.PC = 0x0100;
 
         IME_ = false;
+
+        last_instruction_ = Instruction{};
     }
 
     uint8_t SharpSM83::getByte(decoding::ArgumentInfo from) {
@@ -298,7 +301,7 @@ namespace gb::cpu {
     }
 
     void SharpSM83::set_arg_data(Instruction::Argument& arg, decoding::ArgumentInfo info, uint8_t data) {
-        if(info.source == decoding::ArgumentSource::Register) {
+        if(info.source == decoding::ArgumentSource::Register || info.source == decoding::ArgumentSource::Indirect) {
             arg = info.reg;
         } else {
             arg = data;
