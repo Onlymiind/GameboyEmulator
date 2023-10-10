@@ -57,7 +57,7 @@ namespace gb {
         ELIF(g_memory_interrupt_enable, interrupt_enable_)
         ELIF(g_memory_timer, timer_)
         else {
-            throw std::out_of_range(getErrorDescription(address));
+            throw std::out_of_range(getErrorDescription(address, int(data)));
         }
 #undef ELIF
 

@@ -6,28 +6,24 @@
 #include <cstdint>
 #include <array>
 
-namespace gb
-{
-    class Timer : public MemoryObject
-    {
+namespace gb {
+    class Timer {
     public:
         Timer(InterruptRegister& interruptFlags)
             : interrupt_flags_(interruptFlags)
         {}
 
         void update();
-        uint8_t read(uint16_t address) const override;
-        void write(uint16_t address, uint8_t data) override;
+        uint8_t read(uint16_t address) const;
+        void write(uint16_t address, uint8_t data);
 
     private:
 
-        union 
-        {
+        union {
             //TODO: Wrong init
             uint16_t counter_ = 0xABCC;
 
-            struct
-            {
+            struct {
                 uint8_t align;
                 uint8_t DIV_;
             };
@@ -36,8 +32,7 @@ namespace gb
         uint8_t TIMA_ = 0;
         uint8_t TMA_ = 0;
 
-        struct 
-        {
+        struct {
             uint8_t freqency = 0;
             bool enable = false;
         } TAC_;

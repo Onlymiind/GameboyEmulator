@@ -21,15 +21,11 @@ public:
         : out_(out)
     {}
 
-    uint8_t read(uint16_t address) const override {
-        return 0;
-    }
-
     void write(uint16_t address, uint8_t data) override {
         //Used to get output from blargg's test ROMs.
-        if(address == 0) {
+        if(address == 0xFF01) {
             symbol = data;
-        } else if (address == 0x01 && data == 0x81) {
+        } else if (address == 0xFF02 && data == 0x81) {
             out_ << symbol;
         }
     }

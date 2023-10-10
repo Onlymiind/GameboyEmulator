@@ -25,8 +25,7 @@ namespace gb
     constexpr MemoryObjectInfo g_memory_interrupt_flags = {0xFF0F, 0xFF0F};
 
 
-    class AddressBus 
-    {
+    class AddressBus {
     public:
         AddressBus()
         {}

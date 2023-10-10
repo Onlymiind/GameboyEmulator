@@ -16,7 +16,8 @@ namespace emulator {
 
     class MemoryBreakpoint : public gb::MemoryObject {
     public:
-        void read();
+        void read(uint16_t address) const override;
+        void write(uint16_t address, uint8_t data) override;
     private:
         uint8_t flags_;
         std::optional<uint8_t> value_;

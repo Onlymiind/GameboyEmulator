@@ -3,10 +3,8 @@
 
 #include <cstdint>
 
-namespace gb
-{
-    enum class InterruptFlags : uint8_t
-    {
+namespace gb {
+    enum class InterruptFlags : uint8_t {
         VBlank   = 1 << 0,
         LCD_STAT = 1 << 1,
         Timer    = 1 << 2,
@@ -16,18 +14,17 @@ namespace gb
 
     inline const uint8_t g_unused_interrupt_bits = 0b11100000;
 
-    class InterruptRegister : public MemoryObject
-    {
+    class InterruptRegister {
     public:
         InterruptRegister()
             : interrupts_(g_unused_interrupt_bits)
         {}
 
-        inline uint8_t read(uint16_t address) const override {
+        inline uint8_t read(uint16_t address) const {
             return interrupts_;
         }
 
-        inline void write(uint16_t address, uint8_t data) override {
+        inline void write(uint16_t address, uint8_t data) {
             interrupts_ = (g_unused_interrupt_bits | (data & 0x1F));
         }
 

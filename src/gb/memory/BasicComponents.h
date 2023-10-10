@@ -7,7 +7,7 @@
 
 namespace gb {
 
-    class RAM : public MemoryObject {
+    class RAM {
     public:
         RAM(size_t size)
             : memory_(size)
@@ -15,13 +15,13 @@ namespace gb {
 
         ~RAM() = default;
 
-        uint8_t read(uint16_t address) const override { return memory_[address]; }
-        void write(uint16_t address, uint8_t data) override { memory_[address] = data; }
+        uint8_t read(uint16_t address) const { return memory_[address]; }
+        void write(uint16_t address, uint8_t data) { memory_[address] = data; }
     private:
         std::vector<uint8_t> memory_;
     };
 
-    class ROM : public MemoryObject {
+    class ROM {
     public:
         ROM() = default;
         
@@ -32,8 +32,8 @@ namespace gb {
         ~ROM() = default;
 
         void setData(std::vector<uint8_t> rom) { memory_ = std::move(rom); }
-        uint8_t read(uint16_t address) const override { return memory_[address]; }
-        void write(uint16_t address, uint8_t data) override { /*do nothing*/ }
+        uint8_t read(uint16_t address) const { return memory_[address]; }
+        void write(uint16_t address, uint8_t data) { /*do nothing*/ }
     private:
         std::vector<uint8_t> memory_;
     };
