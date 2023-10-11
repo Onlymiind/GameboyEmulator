@@ -7,8 +7,8 @@ namespace gb {
 
     class MemoryObject {
     public:
-        virtual void read(uint16_t address) const {};
-        virtual void write(uint16_t address, uint8_t data) {};
+        virtual void onRead(uint16_t address, uint8_t data) {};
+        virtual void onWrite(uint16_t address, uint8_t data) {};
     };
 
     class MemoryController {
@@ -23,8 +23,8 @@ namespace gb {
 
         ~MemoryController() = default;
 
-        void read(uint16_t address) const { memory_object_->read(address); }
-        void write(uint16_t address, uint8_t data) const { memory_object_->write(address, data); }
+        void onRead(uint16_t address, uint8_t data) const { memory_object_->onRead(address, data); }
+        void onWrite(uint16_t address, uint8_t data) const { memory_object_->onWrite(address, data); }
 
         bool isInRange(uint16_t address) const { return address >= min_address_ && address <= max_address_; }
 

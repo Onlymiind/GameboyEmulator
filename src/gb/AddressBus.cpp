@@ -15,16 +15,10 @@ namespace gb {
     }
 
     uint8_t AddressBus::read(uint16_t address) const {
-        if(!observers_.empty()) {
-            auto obs_it = std::lower_bound(observers_.begin(), observers_.end(), address, less);
-            if(obs_it != observers_.end() && address >= obs_it->getMinAddress()) {
-                obs_it->read(address);
-            }
-        }
-
-#define ELIF(mem_range, object) else if(address >= mem_range.min_address && address <= mem_range.max_address) { return object.read(address - mem_range.min_address); }
+        uint8_t data = 0;
+#define ELIF(mem_range, object) else if(address >= mem_range.min_address && address <= mem_range.max_address) { data =  object.read(address - mem_range.min_address); }
         if(address >= g_memory_rom.min_address && address <= g_memory_rom.max_address) {
-            return rom_.read(address);
+            data =  rom_.read(address);
         }
         ELIF(g_memory_ram, ram_)
         ELIF(g_memory_leftover2, leftover2_)
@@ -36,13 +30,22 @@ namespace gb {
             throw std::out_of_range(getErrorDescription(address));
         }
 #undef ELIF
+
+        if(!observers_.empty()) {
+            auto obs_it = std::lower_bound(observers_.begin(), observers_.end(), address, less);
+            if(obs_it != observers_.end() && address >= obs_it->getMinAddress()) {
+                obs_it->onRead(address, data);
+            }
+        }
+
+        return data;
     }
 
     void AddressBus::write(uint16_t address, uint8_t data) {
         if(!observers_.empty()) {
             auto obs_it = std::lower_bound(observers_.begin(), observers_.end(), address, less);
             if(obs_it != observers_.end() && address >= obs_it->getMinAddress()) {
-                obs_it->write(address, data);
+                obs_it->onWrite(address, data);
             }
         }
 

@@ -21,7 +21,7 @@ public:
         : out_(out)
     {}
 
-    void write(uint16_t address, uint8_t data) override {
+    void onWrite(uint16_t address, uint8_t data) override {
         //Used to get output from blargg's test ROMs.
         if(address == 0xFF01) {
             symbol = data;

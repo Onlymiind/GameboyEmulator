@@ -1,4 +1,5 @@
 #include "Application.h"
+#include "Breakpoint.h"
 #include "gb/Emulator.h"
 #include "gb/cpu/CPUUtils.h"
 #include "gb/cpu/Operation.h"
@@ -18,12 +19,14 @@
 
 
 #include <cmath>
+#include <cstdint>
 #include <iomanip>
 #include <ios>
 #include <sstream>
 #include <string>
 #include <filesystem>
 #include <exception>
+#include <cstdio>
 
 namespace emulator {
     void Application::draw() {
@@ -40,9 +43,9 @@ namespace emulator {
             | ImGuiWindowFlags_NoMove 
             | ImGuiWindowFlags_MenuBar
         );
-        drawMenu();
+        drawMainMenu();
 
-        ImGui::Columns(2);
+        ImGui::Columns(3);
         std::stringstream instr_out;
         for(size_t i = 0; i < recent_instructions_.size(); ++i) {
             printInstruction(instr_out, recent_instructions_[i]);
@@ -60,6 +63,8 @@ namespace emulator {
         if(!printed_regs_.empty()) {
             ImGui::TextUnformatted(printed_regs_.c_str());
         }
+        ImGui::NextColumn();
+        drawBreakpointMenu();
 
         ImGui::End();
 
@@ -69,7 +74,7 @@ namespace emulator {
         glfwPollEvents();
     }
 
-    void Application::drawMenu() {
+    void Application::drawMainMenu() {
         if(!ImGui::BeginMenuBar()) {
             return;
         }
@@ -136,6 +141,30 @@ namespace emulator {
         ImGui::EndMenuBar();
     }
 
+    void Application::drawBreakpointMenu() {
+        uint16_t pc_break = 0;
+        ImGui::Text("Add PC breakpoint:");
+        if(ImGui::InputScalar("###Add PC breakpoint input", ImGuiDataType_U16, &pc_break, 
+            nullptr, nullptr, "%.4x", ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_EnterReturnsTrue)) {
+                addPCBreakpoint(pc_break);
+        }
+        {
+            ImGui::Text("PC breakpoints: ");
+            auto delete_it = pc_breakpoints_.end();
+            for(auto it = pc_breakpoints_.begin(); it != pc_breakpoints_.end(); ++it) {
+                std::string buf(6, '0');
+                sprintf(buf.data(), "0x%.4x", it->getAddress());
+                ImGui::Selectable(buf.c_str());
+                if(ImGui::IsItemHovered() && ImGui::IsKeyPressed(ImGuiKey_Backspace)) {
+                    delete_it = it;
+                }
+            }
+            if(delete_it != pc_breakpoints_.end()) {
+                pc_breakpoints_.erase(delete_it);
+            }
+        }
+    }
+
     Application::Application() 
         : emulator_(false)
     {
@@ -148,6 +177,10 @@ namespace emulator {
         while (is_running_) {
             double time_start = glfwGetTime();
 
+            if(ImGui::IsKeyPressed(ImGuiKey_Space, false)) {
+                single_step_ = !single_step_;
+            }
+
             if(single_step_ && ImGui::IsKeyPressed(ImGuiKey_S, false)) {
                 update();
                 while(!emulator_.instructionFinished()) {
@@ -156,6 +189,9 @@ namespace emulator {
             } else if(!single_step_) {
                 for(int i = 0; !emulator_.terminated() && i < updates_per_frame; ++i) {
                     update();
+                    if(single_step_) {
+                        break;
+                    }
                 }
 
                 ++frame;
@@ -216,6 +252,16 @@ namespace emulator {
             bool fetch_data = emulator_.instructionFinished();
             if(fetch_data) {
                 instr_data.registers = emulator_.getRegisters();
+                for(auto& br : pc_breakpoints_) {
+                    if(br.isHit()) {
+                        single_step_ = true;
+                    }
+                }
+                for(auto& br: memory_breakpoints_) {
+                    if(br.isHit()) {
+                        single_step_ = true;
+                    }
+                }
             }
             emulator_.tick();
             if(fetch_data) {
@@ -232,7 +278,7 @@ namespace emulator {
             ROM_directory_ = newPath;
             roms_.clear();
             for(const auto& item : std::filesystem::directory_iterator(ROM_directory_)) {
-                if(item.is_regular_file() && item.path().extension() == extension_) {
+                if(item.is_regular_file() && item.path().extension() == g_rom_extension) {
                     roms_.push_back(item.path());
                 }
             }
@@ -261,6 +307,22 @@ namespace emulator {
         emulator_.start();
 
         return true;
+    }
+
+    std::list<PCBreakpoint>::iterator Application::addPCBreakpoint(uint16_t address) {
+        pc_breakpoints_.push_front(PCBreakpoint(emulator_, address));
+        return pc_breakpoints_.begin();
+    }
+
+    std::list<MemoryBreakpoint>::iterator Application::addMemoryBreakpoint(uint8_t flags, uint16_t min_address, uint16_t max_address, std::optional<uint8_t> data) {
+        memory_breakpoints_.push_front(MemoryBreakpoint(min_address, max_address, flags, data));
+        return memory_breakpoints_.begin();
+    }
+
+    void Application::resetBreakpoints() {
+        for(auto& br : memory_breakpoints_) {
+            br.reset();
+        }
     }
 
     void printInstruction(std::ostream& out, const InstructionData& instr_data) {
