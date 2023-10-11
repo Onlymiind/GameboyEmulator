@@ -61,9 +61,3 @@ public:
 
     bool empty() const { return std::holds_alternative<std::monostate>(*this); }
 };
-
-template<size_t size>
-class StringBuffer{
-public:
-private:
-};
