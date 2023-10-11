@@ -49,7 +49,7 @@ namespace emulator {
         std::stringstream instr_out;
         for(size_t i = 0; i < recent_instructions_.size(); ++i) {
             printInstruction(instr_out, recent_instructions_[i]);
-            instr_out << "###" << i; //For Dear ImGui ids
+            instr_out << "###" << i; //for dear ImGui ids
             printed_instructions_[i] = std::move(instr_out).str();
             instr_out.clear();
             if(ImGui::Selectable(printed_instructions_[i].c_str())) {
@@ -177,7 +177,7 @@ namespace emulator {
                 single_step_ = !single_step_;
             }
 
-            if(single_step_ && ImGui::IsKeyPressed(ImGuiKey_S, false)) {
+            if(single_step_ && ImGui::IsKeyPressed(ImGuiKey_S)) {
                 update();
                 while(!emulator_.instructionFinished()) {
                     update();
@@ -186,6 +186,10 @@ namespace emulator {
                 for(int i = 0; !emulator_.terminated() && i < updates_per_frame; ++i) {
                     update();
                     if(single_step_) {
+                        //run current instruction until completion
+                        while(!emulator_.instructionFinished()) {
+                            update();
+                        }
                         break;
                     }
                 }
@@ -378,12 +382,12 @@ namespace emulator {
         if(instr.load_subtype) {
             switch (*instr.load_subtype) {
             case LoadSubtype::LD_DEC:
-                if(instr.dst.get<Registers>() == Registers::HL) {
+                if(instr.src.get<Registers>() == Registers::HL) {
                     out << "--";
                 }
                 break;
             case LoadSubtype::LD_INC:
-                if(instr.dst.get<Registers>() == Registers::HL) {
+                if(instr.src.get<Registers>() == Registers::HL) {
                     out << "++";
                 }
                 break;
