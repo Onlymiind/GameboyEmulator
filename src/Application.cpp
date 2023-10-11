@@ -53,16 +53,12 @@ namespace emulator {
             printed_instructions_[i] = std::move(instr_out).str();
             instr_out.clear();
             if(ImGui::Selectable(printed_instructions_[i].c_str())) {
-                printRegisters(instr_out, recent_instructions_[i].registers);
-                printed_regs_ = std::move(instr_out).str();
-                instr_out.clear();
+                printRegisters(recent_instructions_[i].registers);
             }
         }
 
         ImGui::NextColumn();
-        if(!printed_regs_.empty()) {
-            ImGui::TextUnformatted(printed_regs_.c_str());
-        }
+        ImGui::TextUnformatted(printed_regs_);
         ImGui::NextColumn();
         drawBreakpointMenu();
 
@@ -126,7 +122,7 @@ namespace emulator {
 
             if(ImGui::Selectable("Reset")) {
                 recent_instructions_.clear();
-                printed_regs_.clear();
+                printed_regs_[0] = '\0';
                 emulator_.reset();
             }
 
@@ -396,37 +392,15 @@ namespace emulator {
 
     }
 
-    void printRegisters(std::ostream& out, gb::cpu::RegisterFile regs) {
-        using namespace gb::cpu;
-        auto print8 = [&out](uint8_t data) { out << std::setw(2) << std::setfill('0') << std::hex << int(data); };
-        auto print16 = [&out](uint16_t data) { out << std::setw(4) << std::setfill('0') << std::hex << data; };
-        auto print_reg_pair = [&out, &print8, &print16] (char low, uint8_t low_data, char high, uint8_t high_data, uint16_t double_data) {
-            out << low << ": ";
-            print8(low_data);
-            out << ',' << high << ": ";
-            print8(high_data);
-            out << ',' << high << low << ": ";
-            print16(double_data);
-        };
-
-        out << "Flags: \n" << "Carry: " << regs.getFlag(Flags::CARRY) <<
-            ", Half carry: " << regs.getFlag(Flags::HALF_CARRY) << '\n' <<
-            "Negative: " << regs.getFlag(Flags::NEGATIVE) << 
-            ", Zero: " << regs.getFlag(Flags::ZERO) << '\n';
-        
-        out << "A: ";
-        print8(regs.A());
-        out << ", AF: ";
-        print16(regs.AF());
-        out << '\n';
-        print_reg_pair('C', regs.C(), 'B', regs.B(), regs.BC());
-        out << '\n';
-        print_reg_pair('E', regs.E(), 'D', regs.D(), regs.DE());
-        out << '\n';
-        print_reg_pair('L', regs.L(), 'H', regs.H(), regs.HL());
-        out << "\nSP: ";
-        print16(regs.SP);
-        out << ", PC: ";
-        print16(regs.PC);
+    void Application::printRegisters(gb::cpu::RegisterFile regs) {
+        using enum gb::cpu::Flags;
+        sprintf(printed_regs_, g_regs_fmt, 
+            regs.getFlag(CARRY), regs.getFlag(HALF_CARRY),
+            regs.getFlag(NEGATIVE), regs.getFlag(ZERO),
+            regs.A(), regs.AF(), regs.C(), regs.B(), regs.BC(),
+            regs.E(), regs.D(), regs.DE(),
+            regs.H(), regs.L(), regs.HL(),
+            regs.SP, regs.PC
+        );
     }
 }

@@ -36,8 +36,7 @@ R"(Flags:
 Carry: %d, Half carry: %d
 Negative: %d, Zero: %d
 A: 0x%.2x, AF: 0x%.4x
-C: 0x%.2x, B: 0x%.2x, BC: 0x%.4xdeque
-deque
+C: 0x%.2x, B: 0x%.2x, BC: 0x%.4x
 E: 0x%.2x, D: 0x%.2x, DE: 0x%.4x,
 H: 0x%.2x, L: 0x%.2x, HL: 0x%.4x,
 SP: 0x%.4x, PC: 0x%.4x)";
@@ -61,7 +60,6 @@ SP: 0xffff, PC: 0xffff)"
     };
 
     void printInstruction(std::ostream& out, const InstructionData& instr);
-    void printRegisters(std::ostream& out, gb::cpu::RegisterFile regs);
 
     class Application {
         static constexpr size_t recent_cache_size = 10;
@@ -95,6 +93,8 @@ SP: 0xffff, PC: 0xffff)"
         std::list<PCBreakpoint>::iterator addPCBreakpoint(uint16_t address);
         std::list<MemoryBreakpoint>::iterator addMemoryBreakpoint(uint8_t flags, uint16_t min_address, uint16_t max_address, std::optional<uint8_t> data);
         void resetBreakpoints();
+
+        void printRegisters(gb::cpu::RegisterFile regs);
     private:
 
         gb::Emulator emulator_;
@@ -112,7 +112,7 @@ SP: 0xffff, PC: 0xffff)"
         std::deque<std::filesystem::path> recent_roms_;
         std::deque<InstructionData> recent_instructions_;
         std::array<std::string, recent_cache_size> printed_instructions_;
-        std::string printed_regs_;
+        char printed_regs_[g_registers_string_buf_size];
 
         GLFWwindow* window_ = nullptr;
 
