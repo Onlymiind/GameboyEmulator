@@ -23,8 +23,8 @@
 
 namespace emulator {
     inline consteval size_t strlen(const char* str) {
-        if(!*str) {
-            return 1;
+        if(!str || str[0] == '\0') {
+            return 0;
         } else {
             return 1 + strlen(++str);
         }
@@ -52,7 +52,11 @@ H: 0xff, L: 0xff, HL: 0xffff,
 SP: 0xffff, PC: 0xffff)"
     );
 
+    constexpr size_t g_instruction_string_buf_size = strlen("ffff CALL nz, ffff###") + 3; //### and + 3 to accomodate for Dear ImGui ids
+
     constexpr std::string_view g_rom_extension = ".gb";
+
+    constexpr size_t g_recent_cache_size = 10;
 
     struct InstructionData {
         gb::cpu::RegisterFile registers;
@@ -66,10 +70,7 @@ SP: 0xffff, PC: 0xffff)"
         std::optional<uint8_t> value;
     };
 
-    void printInstruction(std::ostream& out, const InstructionData& instr);
-
     class Application {
-        static constexpr size_t recent_cache_size = 10;
     public:
         Application();
         ~Application();
@@ -83,7 +84,7 @@ SP: 0xffff, PC: 0xffff)"
         void initGUI();
         void update();
 
-        bool setROMDirectory(const std::filesystem::path& newPath);
+        bool setROMDirectory();
         bool runROM(const std::filesystem::path path);
 
         void drawMainMenu();
@@ -92,7 +93,7 @@ SP: 0xffff, PC: 0xffff)"
         template<typename Element>
         void pushRecent(std::deque<Element>& cont, const Element& elem) {
             cont.push_back(elem);
-            if(cont.size() > recent_cache_size) {
+            if(cont.size() > g_recent_cache_size) {
                 cont.pop_front();
             }
         }
@@ -102,24 +103,14 @@ SP: 0xffff, PC: 0xffff)"
         void resetBreakpoints();
 
         void printRegisters(gb::cpu::RegisterFile regs);
+        void printInstruction(size_t idx, const InstructionData& instr);
     private:
 
         gb::Emulator emulator_;
 
-        bool is_running_ = true;
-        bool gui_init_ = false;
-        bool single_step_ = true;
-
-        int refresh_rate_ = 60;
-
-
-        std::filesystem::path ROM_directory_;
-        std::string new_romdir_;
         std::vector<std::filesystem::path> roms_;
         std::deque<std::filesystem::path> recent_roms_;
         std::deque<InstructionData> recent_instructions_;
-        std::array<std::string, recent_cache_size> printed_instructions_;
-        char printed_regs_[g_registers_string_buf_size];
 
         GLFWwindow* window_ = nullptr;
 
@@ -127,6 +118,18 @@ SP: 0xffff, PC: 0xffff)"
         std::list<PCBreakpoint> pc_breakpoints_;
         std::list<MemoryBreakpoint> memory_breakpoints_;
 
+        //buffers for GUI
         MemoryBreakpointData memory_breakpoint_data_;
+        std::string new_romdir_;
+
+        //string buffers
+        std::array<StringBuffer<g_instruction_string_buf_size>, g_recent_cache_size> printed_instructions_; //28 characters should be enough for all instructions
+        StringBuffer<g_registers_string_buf_size> printed_regs_;
+
+        bool is_running_ = true;
+        bool gui_init_ = false;
+        bool single_step_ = true;
+
+        int refresh_rate_ = 60;
     };
 }

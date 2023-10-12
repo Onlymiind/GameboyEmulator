@@ -61,3 +61,32 @@ public:
 
     bool empty() const { return std::holds_alternative<std::monostate>(*this); }
 };
+
+template<size_t CAPACITY>
+class StringBuffer {
+public:
+    StringBuffer() {
+        data_[0] = '\0';
+    }
+
+    ~StringBuffer() = default;
+
+    StringBuffer(const StringBuffer<CAPACITY>&) = delete;
+    StringBuffer<CAPACITY>& operator=(const StringBuffer<CAPACITY>&) = delete;
+
+    size_t capacity() { return CAPACITY; }
+    size_t capacityWithNullChar() { return CAPACITY + 1; }
+    char* data() { return data_; }
+
+    char* begin() { return data_; }
+    char* end() { return data_ + CAPACITY + 1; }
+
+    void clear() { data_[0] = '\0'; }
+
+    bool empty() { return data_[0] == '\0'; }
+
+    char& operator[](size_t idx) { return data_[idx]; }
+
+private:
+    char data_[CAPACITY + 1];
+};

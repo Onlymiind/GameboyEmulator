@@ -46,13 +46,9 @@ namespace emulator {
         drawMainMenu();
 
         ImGui::Columns(3);
-        std::stringstream instr_out;
         for(size_t i = 0; i < recent_instructions_.size(); ++i) {
-            printInstruction(instr_out, recent_instructions_[i]);
-            instr_out << "###" << i; //for dear ImGui ids
-            printed_instructions_[i] = std::move(instr_out).str();
-            instr_out.clear();
-            if(ImGui::Selectable(printed_instructions_[i].c_str())) {
+            printInstruction(i, recent_instructions_[i]);
+            if(ImGui::Selectable(printed_instructions_[i].data())) {
                 printRegisters(recent_instructions_[i].registers);
             }
         }
@@ -61,7 +57,7 @@ namespace emulator {
         }
 
         ImGui::NextColumn();
-        ImGui::TextUnformatted(printed_regs_);
+        ImGui::TextUnformatted(printed_regs_.data());
         ImGui::NextColumn();
         drawBreakpointMenu();
 
@@ -81,11 +77,9 @@ namespace emulator {
         if(ImGui::BeginMenu("File")) {
 
             if(ImGui::BeginMenu("Change ROM Directory")) {
-                if(!ROM_directory_.empty()) {
-                    ImGui::TextWrapped("%s", ROM_directory_.c_str());
-                }
+                
                 if(ImGui::InputText("###newdir", &new_romdir_, ImGuiInputTextFlags_EnterReturnsTrue)) {
-                    if(!setROMDirectory(new_romdir_)) {
+                    if(!setROMDirectory()) {
                         std::cout << "failed to change ROM directory\n";
                     }
                     new_romdir_.clear();
@@ -95,6 +89,9 @@ namespace emulator {
             }
 
             if(ImGui::BeginMenu("Available ROMs")) {
+                if(!roms_.empty()) {
+                    ImGui::TextWrapped("%s", roms_[0].parent_path().c_str());
+                }
                 for(const auto& rom : roms_) {
                     if(ImGui::Selectable(rom.filename().c_str())) {
                         if(!runROM(rom)) {
@@ -326,11 +323,11 @@ namespace emulator {
         }
     }
 
-    bool Application::setROMDirectory(const std::filesystem::path& newPath) {
-        if (std::filesystem::exists(newPath) && std::filesystem::is_directory(newPath)) {
-            ROM_directory_ = newPath;
+    bool Application::setROMDirectory() {
+        std::filesystem::path path(new_romdir_);
+        if (std::filesystem::exists(path) && std::filesystem::is_directory(path)) {
             roms_.clear();
-            for(const auto& item : std::filesystem::directory_iterator(ROM_directory_)) {
+            for(const auto& item : std::filesystem::directory_iterator(path)) {
                 if(item.is_regular_file() && item.path().extension() == g_rom_extension) {
                     roms_.push_back(item.path());
                 }
@@ -377,9 +374,12 @@ namespace emulator {
         }
     }
 
-    void printInstruction(std::ostream& out, const InstructionData& instr_data) {
+    void Application::printInstruction(size_t idx, const InstructionData& instr_data) {
         using namespace gb::decoding;
         auto& instr = instr_data.instruction;
+        auto& buf = printed_instructions_[idx];
+        std::stringstream out;
+        out.rdbuf()->pubsetbuf(buf.data(), buf.capacityWithNullChar());
 
         out << std::hex << instr.pc << ' ' << to_string(instr.type);
         if(instr.condition) {
@@ -446,11 +446,13 @@ namespace emulator {
             }
         }
 
+        out << "###" << idx; //for Dear ImGui ids
+
     }
 
     void Application::printRegisters(gb::cpu::RegisterFile regs) {
         using enum gb::cpu::Flags;
-        sprintf(printed_regs_, g_regs_fmt, 
+        sprintf(printed_regs_.data(), g_regs_fmt, 
             regs.getFlag(CARRY), regs.getFlag(HALF_CARRY),
             regs.getFlag(NEGATIVE), regs.getFlag(ZERO),
             regs.A(), regs.AF(), regs.C(), regs.B(), regs.BC(),
