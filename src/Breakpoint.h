@@ -39,12 +39,12 @@ namespace emulator {
         WRITE = 1 << 1
     };
 
-    class MemoryBreakpoint : public Breakpoint, gb::MemoryObject {
+    class MemoryBreakpoint : public Breakpoint, public gb::MemoryObject {
     public:
         MemoryBreakpoint(uint16_t min_address, uint16_t max_address,
             uint8_t flags = uint8_t(MemoryBreakpointFlags::READ) | uint8_t(MemoryBreakpointFlags::WRITE), 
             std::optional<uint8_t> value = {})
-            : flags_(flags), value_(value)
+            : min_address_(min_address), max_address_(max_address), flags_(flags), value_(value)
         {}
 
         void onRead(uint16_t address, uint8_t data) override {

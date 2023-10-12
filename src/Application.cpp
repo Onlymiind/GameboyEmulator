@@ -56,6 +56,9 @@ namespace emulator {
                 printRegisters(recent_instructions_[i].registers);
             }
         }
+        if(single_step_) {
+            ImGui::TextUnformatted("Single stepping");
+        }
 
         ImGui::NextColumn();
         ImGui::TextUnformatted(printed_regs_);
@@ -139,7 +142,7 @@ namespace emulator {
 
     void Application::drawBreakpointMenu() {
         uint16_t pc_break = 0;
-        ImGui::Text("Add PC breakpoint:");
+        ImGui::TextUnformatted("Add PC breakpoint:");
         if(ImGui::InputScalar("###Add PC breakpoint input", ImGuiDataType_U16, &pc_break, 
             nullptr, nullptr, "%.4x", ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_EnterReturnsTrue)) {
                 addPCBreakpoint(pc_break);
@@ -159,6 +162,55 @@ namespace emulator {
                 pc_breakpoints_.erase(delete_it);
             }
         }
+
+        ImGui::TextUnformatted("Add memory breakpoint:");
+        ImGui::InputScalarN("###addresses", ImGuiDataType_U16, memory_breakpoint_data_.addresses, 2,
+            nullptr, nullptr, "%.4x", ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_EnterReturnsTrue);
+        if(memory_breakpoint_data_.addresses[1] < memory_breakpoint_data_.addresses[0]) {
+            memory_breakpoint_data_.addresses[1] = memory_breakpoint_data_.addresses[0];
+        }
+        ImGui::Checkbox("Read", &memory_breakpoint_data_.read);
+        ImGui::Checkbox("Write", &memory_breakpoint_data_.write);
+
+        uint8_t temp_value = 0;
+        if(ImGui::InputScalar("value", ImGuiDataType_U8, &temp_value, 
+            nullptr, nullptr, "%.2x", ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_EnterReturnsTrue)) {
+            memory_breakpoint_data_.value = temp_value;
+        }
+
+        if(ImGui::Button("Add")) {
+            uint8_t flags = 0;
+            if(memory_breakpoint_data_.read) {
+                flags |= uint8_t(MemoryBreakpointFlags::READ);
+            }
+            if(memory_breakpoint_data_.write) {
+                flags |= uint8_t(MemoryBreakpointFlags::WRITE);
+            }
+            addMemoryBreakpoint(flags, memory_breakpoint_data_.addresses[0], memory_breakpoint_data_.addresses[1], memory_breakpoint_data_.value);
+            memory_breakpoint_data_ = MemoryBreakpointData{};
+        }
+        {
+            ImGui::Text("Memory breakpoints: ");
+            auto delete_it = memory_breakpoints_.end();
+            for(auto it = memory_breakpoints_.begin(); it != memory_breakpoints_.end(); ++it) {
+                std::string buf(strlen("Min address: 0xffff\nMax address: 0xffff\nRead: 1, write: 1, value: 0xff"), '\0');
+                int written = sprintf(buf.data(), "Min address: 0x%.4x\nMax address: 0x%.4x\nRead: %d, write: %d",
+                    it->getMaxAddress(), it->getMinAddress(), 
+                    (it->getFlags() & uint8_t(MemoryBreakpointFlags::READ)) != 0,
+                    (it->getFlags() & uint8_t(MemoryBreakpointFlags::WRITE)) != 0);
+                if(it->getValue()) {
+                    sprintf(buf.data() + written, ", value: 0x%.2x", *it->getValue());
+                }
+                ImGui::Selectable(buf.c_str());
+                if(ImGui::IsItemHovered() && ImGui::IsKeyPressed(ImGuiKey_Backspace)) {
+                    delete_it = it;
+                }
+            }
+            if(delete_it != memory_breakpoints_.end()) {
+                memory_breakpoints_.erase(delete_it);
+            }
+        }
+
     }
 
     Application::Application() 
@@ -260,6 +312,7 @@ namespace emulator {
                 for(auto& br: memory_breakpoints_) {
                     if(br.isHit()) {
                         single_step_ = true;
+                        br.reset();
                     }
                 }
             }
@@ -309,14 +362,13 @@ namespace emulator {
         return true;
     }
 
-    std::list<PCBreakpoint>::iterator Application::addPCBreakpoint(uint16_t address) {
+    void Application::addPCBreakpoint(uint16_t address) {
         pc_breakpoints_.push_front(PCBreakpoint(emulator_, address));
-        return pc_breakpoints_.begin();
     }
 
-    std::list<MemoryBreakpoint>::iterator Application::addMemoryBreakpoint(uint8_t flags, uint16_t min_address, uint16_t max_address, std::optional<uint8_t> data) {
+    void Application::addMemoryBreakpoint(uint8_t flags, uint16_t min_address, uint16_t max_address, std::optional<uint8_t> data) {
         memory_breakpoints_.push_front(MemoryBreakpoint(min_address, max_address, flags, data));
-        return memory_breakpoints_.begin();
+        emulator_.addMemoryObserver(gb::MemoryController{min_address, max_address, *memory_breakpoints_.begin()});
     }
 
     void Application::resetBreakpoints() {

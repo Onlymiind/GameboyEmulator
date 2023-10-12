@@ -59,6 +59,13 @@ SP: 0xffff, PC: 0xffff)"
         gb::cpu::Instruction instruction;
     };
 
+    struct MemoryBreakpointData {
+        uint16_t addresses[2] = {0, 0};
+        bool read = true;
+        bool write = true;
+        std::optional<uint8_t> value;
+    };
+
     void printInstruction(std::ostream& out, const InstructionData& instr);
 
     class Application {
@@ -90,8 +97,8 @@ SP: 0xffff, PC: 0xffff)"
             }
         }
 
-        std::list<PCBreakpoint>::iterator addPCBreakpoint(uint16_t address);
-        std::list<MemoryBreakpoint>::iterator addMemoryBreakpoint(uint8_t flags, uint16_t min_address, uint16_t max_address, std::optional<uint8_t> data);
+        void addPCBreakpoint(uint16_t address);
+        void addMemoryBreakpoint(uint8_t flags, uint16_t min_address, uint16_t max_address, std::optional<uint8_t> data);
         void resetBreakpoints();
 
         void printRegisters(gb::cpu::RegisterFile regs);
@@ -119,5 +126,7 @@ SP: 0xffff, PC: 0xffff)"
         //use std::list for pointers to elements must be valid after removal
         std::list<PCBreakpoint> pc_breakpoints_;
         std::list<MemoryBreakpoint> memory_breakpoints_;
+
+        MemoryBreakpointData memory_breakpoint_data_;
     };
 }
