@@ -150,8 +150,8 @@ namespace emulator {
         {
             ImGui::Text("PC breakpoints: ");
             auto delete_it = pc_breakpoints_.end();
+            std::string buf(6, '0');
             for(auto it = pc_breakpoints_.begin(); it != pc_breakpoints_.end(); ++it) {
-                std::string buf(6, '0');
                 sprintf(buf.data(), "0x%.4x", it->getAddress());
                 ImGui::Selectable(buf.c_str());
                 if(ImGui::IsItemHovered() && ImGui::IsKeyPressed(ImGuiKey_Backspace)) {
@@ -192,8 +192,8 @@ namespace emulator {
         {
             ImGui::Text("Memory breakpoints: ");
             auto delete_it = memory_breakpoints_.end();
+            std::string buf(strlen("Min address: 0xffff\nMax address: 0xffff\nRead: 1, write: 1, value: 0xff"), '\0');
             for(auto it = memory_breakpoints_.begin(); it != memory_breakpoints_.end(); ++it) {
-                std::string buf(strlen("Min address: 0xffff\nMax address: 0xffff\nRead: 1, write: 1, value: 0xff"), '\0');
                 int written = sprintf(buf.data(), "Min address: 0x%.4x\nMax address: 0x%.4x\nRead: %d, write: %d",
                     it->getMaxAddress(), it->getMinAddress(), 
                     (it->getFlags() & uint8_t(MemoryBreakpointFlags::READ)) != 0,

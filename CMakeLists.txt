@@ -72,7 +72,8 @@ if(NOT TESTS_ONLY)
         ${IMGUI_LIB}
         ${IMGUI_BACKEND}
         ${GLAD}
-
+        
+        src/Breakpoint.h
         src/Application.h
         src/Application.cpp
         src/Source.cpp
