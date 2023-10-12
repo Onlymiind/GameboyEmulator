@@ -90,3 +90,32 @@ public:
 private:
     char data_[CAPACITY + 1];
 };
+
+template<typename T, size_t CAPACITY>
+class RingBuffer{
+public:
+    RingBuffer() = default;
+    static_assert(CAPACITY >= 0, "capacity must be non-zero");
+    static_assert(std::is_trivially_destructible<T>::value, "T must be trivially destructible");
+
+    template<typename... Args>
+    void push_back(Args&&... args) {
+        data_[current_] = T{std::forward<Args...>(args)...};
+        current_ = (current_ + 1) % CAPACITY;
+        if(!full_ && current_ == 0) {
+            full_ = true;
+        }
+    }
+
+    T* begin() { return data_; }
+    T* end() { return full_ ? data_ + CAPACITY : data_ + current_; }
+
+    void clear() { full_ = false; current_ = 0; }
+    size_t size() const { return full_ ? CAPACITY : current_; }
+
+    T& operator[](size_t idx) { return data_[idx]; }
+private:
+    T data_[CAPACITY];
+    size_t current_ = 0;
+    bool full_ = false;
+};

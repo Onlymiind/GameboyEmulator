@@ -316,7 +316,7 @@ namespace emulator {
             emulator_.tick();
             if(fetch_data) {
                 instr_data.instruction = emulator_.getLastInstruction();
-                pushRecent(recent_instructions_, instr_data);
+                recent_instructions_.push_back(instr_data);
             }
         } catch (const std::exception& e) {
             std::cout << "exception occured during emulator update: " << e.what() << std::endl;

@@ -12,6 +12,7 @@
 
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
+#include "utils/Utils.h"
 
 #include <X11/Xlib.h>
 #include <deque>
@@ -110,7 +111,7 @@ SP: 0xffff, PC: 0xffff)"
 
         std::vector<std::filesystem::path> roms_;
         std::deque<std::filesystem::path> recent_roms_;
-        std::deque<InstructionData> recent_instructions_;
+        RingBuffer<InstructionData, g_recent_cache_size> recent_instructions_;
 
         GLFWwindow* window_ = nullptr;
 

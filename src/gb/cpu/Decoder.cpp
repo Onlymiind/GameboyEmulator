@@ -196,8 +196,9 @@ namespace gb::decoding {
 
         if(result.type == type::None) {
             bool isRandomLD = false;
-            if(g_columns_.count(code.code)) {
-                result.type = g_columns_.at(code.code);
+            auto it = g_columns_.find(code.code);
+            if(it != g_columns_.end()) {
+                result.type = it->second;
             } else {
                 result.type = g_random_instructions_.at(code.code);
                 if(result.type == type::LD) {
