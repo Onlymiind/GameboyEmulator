@@ -33,8 +33,7 @@ namespace emulator {
 
     constexpr double g_cycles_per_second = 4'000'000;
     constexpr const char* g_regs_fmt = 
-R"(Flags:
-Carry: %d, Half carry: %d
+R"(Carry: %d, Half carry: %d
 Negative: %d, Zero: %d
 A: 0x%.2x, AF: 0x%.4x
 C: 0x%.2x, B: 0x%.2x, BC: 0x%.4x
@@ -42,18 +41,7 @@ E: 0x%.2x, D: 0x%.2x, DE: 0x%.4x,
 H: 0x%.2x, L: 0x%.2x, HL: 0x%.4x,
 SP: 0x%.4x, PC: 0x%.4x)";
 
-    constexpr size_t g_registers_string_buf_size = strlen(
-R"(Flags:
-Carry: 1, Half carry: 1
-Negative: 1, Zero: 1
-A: 0xff, AF: 0xffff
-C: 0xff, B: 0xff, BC: 0xffff
-E: 0xff, D: 0xff, DE: 0xffff,
-H: 0xff, L: 0xff, HL: 0xffff,
-SP: 0xffff, PC: 0xffff)"
-    );
-
-    constexpr size_t g_instruction_string_buf_size = strlen("ffff CALL nz, ffff###") + 3; //### and + 3 to accomodate for Dear ImGui ids
+    constexpr size_t g_instruction_string_buf_size = strlen("ffff CALL nz, ffff##111"); //##111 is needed to accomodate for Dear ImGui ids
 
     constexpr std::string_view g_rom_extension = ".gb";
 
@@ -92,7 +80,7 @@ SP: 0xffff, PC: 0xffff)"
         void drawBreakpointMenu();
 
         template<typename Element>
-        void pushRecent(std::deque<Element>& cont, const Element& elem) {
+        void pushRecent(std::list<Element>& cont, const Element& elem) {
             cont.push_back(elem);
             if(cont.size() > g_recent_cache_size) {
                 cont.pop_front();
@@ -103,29 +91,25 @@ SP: 0xffff, PC: 0xffff)"
         void addMemoryBreakpoint(uint8_t flags, uint16_t min_address, uint16_t max_address, std::optional<uint8_t> data);
         void resetBreakpoints();
 
-        void printRegisters(gb::cpu::RegisterFile regs);
-        void printInstruction(size_t idx, const InstructionData& instr);
+        void printInstruction(StringBuffer<g_instruction_string_buf_size>& buf, size_t idx);
     private:
 
         gb::Emulator emulator_;
 
         std::vector<std::filesystem::path> roms_;
-        std::deque<std::filesystem::path> recent_roms_;
+        std::list<std::filesystem::path> recent_roms_;
         RingBuffer<InstructionData, g_recent_cache_size> recent_instructions_;
 
         GLFWwindow* window_ = nullptr;
 
-        //use std::list for pointers to elements must be valid after removal
-        std::list<PCBreakpoint> pc_breakpoints_;
+        std::vector<uint16_t> pc_breakpoints_;
+        //std::list is used since pointers to elements must be valid after removal
         std::list<MemoryBreakpoint> memory_breakpoints_;
 
         //buffers for GUI
         MemoryBreakpointData memory_breakpoint_data_;
         std::string new_romdir_;
-
-        //string buffers
-        std::array<StringBuffer<g_instruction_string_buf_size>, g_recent_cache_size> printed_instructions_; //28 characters should be enough for all instructions
-        StringBuffer<g_registers_string_buf_size> printed_regs_;
+        std::optional<gb::cpu::RegisterFile> registers_to_print_;
 
         bool is_running_ = true;
         bool gui_init_ = false;

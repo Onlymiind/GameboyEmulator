@@ -113,7 +113,13 @@ public:
     void clear() { full_ = false; current_ = 0; }
     size_t size() const { return full_ ? CAPACITY : current_; }
 
-    T& operator[](size_t idx) { return data_[idx]; }
+    T& operator[](size_t idx) {
+        if(full_) {
+            return data_[(current_ + idx) % CAPACITY];
+        } else {
+            return data_[idx];
+        }
+    }
 private:
     T data_[CAPACITY];
     size_t current_ = 0;

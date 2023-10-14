@@ -18,6 +18,7 @@
 #include "backends/imgui_impl_opengl3.h"
 
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <iomanip>
@@ -45,19 +46,33 @@ namespace emulator {
         );
         drawMainMenu();
 
-        ImGui::Columns(3);
+        ImGui::Columns(2);
+        StringBuffer<g_instruction_string_buf_size> buf;
         for(size_t i = 0; i < recent_instructions_.size(); ++i) {
-            printInstruction(i, recent_instructions_[i]);
-            if(ImGui::Selectable(printed_instructions_[i].data())) {
-                printRegisters(recent_instructions_[i].registers);
+            printInstruction(buf, i);
+            if(ImGui::Selectable(buf.data())) {
+                registers_to_print_ = recent_instructions_[i].registers;
             }
         }
+
+        if(registers_to_print_) {
+            ImGui::NewLine();
+            auto& regs = *registers_to_print_;
+            ImGui::Text(g_regs_fmt, 
+                regs.getFlag(gb::cpu::Flags::CARRY), regs.getFlag(gb::cpu::Flags::HALF_CARRY),
+                regs.getFlag(gb::cpu::Flags::NEGATIVE), regs.getFlag(gb::cpu::Flags::ZERO),
+                regs.A(), regs.AF(), regs.C(), regs.B(), regs.BC(),
+                regs.E(), regs.D(), regs.DE(),
+                regs.H(), regs.L(), regs.HL(),
+                regs.SP, regs.PC
+            );
+        }
+
         if(single_step_) {
+            ImGui::NewLine();
             ImGui::TextUnformatted("Single stepping");
         }
 
-        ImGui::NextColumn();
-        ImGui::TextUnformatted(printed_regs_.data());
         ImGui::NextColumn();
         drawBreakpointMenu();
 
@@ -122,7 +137,6 @@ namespace emulator {
 
             if(ImGui::Selectable("Reset")) {
                 recent_instructions_.clear();
-                printed_regs_[0] = '\0';
                 emulator_.reset();
             }
 
@@ -149,7 +163,7 @@ namespace emulator {
             auto delete_it = pc_breakpoints_.end();
             std::string buf(6, '0');
             for(auto it = pc_breakpoints_.begin(); it != pc_breakpoints_.end(); ++it) {
-                sprintf(buf.data(), "0x%.4x", it->getAddress());
+                sprintf(buf.data(), "0x%.4x", *it);
                 ImGui::Selectable(buf.c_str());
                 if(ImGui::IsItemHovered() && ImGui::IsKeyPressed(ImGuiKey_Backspace)) {
                     delete_it = it;
@@ -301,10 +315,8 @@ namespace emulator {
             bool fetch_data = emulator_.instructionFinished();
             if(fetch_data) {
                 instr_data.registers = emulator_.getRegisters();
-                for(auto& br : pc_breakpoints_) {
-                    if(br.isHit()) {
-                        single_step_ = true;
-                    }
+                if(std::binary_search(pc_breakpoints_.begin(), pc_breakpoints_.end(), instr_data.registers.PC)) {
+                    single_step_ = true;
                 }
                 for(auto& br: memory_breakpoints_) {
                     if(br.isHit()) {
@@ -360,7 +372,8 @@ namespace emulator {
     }
 
     void Application::addPCBreakpoint(uint16_t address) {
-        pc_breakpoints_.push_front(PCBreakpoint(emulator_, address));
+        auto it = std::lower_bound(pc_breakpoints_.begin(), pc_breakpoints_.end(), address);
+        pc_breakpoints_.insert(it, address);
     }
 
     void Application::addMemoryBreakpoint(uint8_t flags, uint16_t min_address, uint16_t max_address, std::optional<uint8_t> data) {
@@ -374,10 +387,10 @@ namespace emulator {
         }
     }
 
-    void Application::printInstruction(size_t idx, const InstructionData& instr_data) {
+    void Application::printInstruction(StringBuffer<g_instruction_string_buf_size>& buf, size_t idx) {
         using namespace gb::decoding;
+        auto& instr_data = recent_instructions_[idx];
         auto& instr = instr_data.instruction;
-        auto& buf = printed_instructions_[idx];
         std::stringstream out;
         out.rdbuf()->pubsetbuf(buf.data(), buf.capacityWithNullChar());
 
@@ -446,19 +459,7 @@ namespace emulator {
             }
         }
 
-        out << "###" << idx; //for Dear ImGui ids
+        out << "##" << idx; //for Dear ImGui ids
 
-    }
-
-    void Application::printRegisters(gb::cpu::RegisterFile regs) {
-        using enum gb::cpu::Flags;
-        sprintf(printed_regs_.data(), g_regs_fmt, 
-            regs.getFlag(CARRY), regs.getFlag(HALF_CARRY),
-            regs.getFlag(NEGATIVE), regs.getFlag(ZERO),
-            regs.A(), regs.AF(), regs.C(), regs.B(), regs.BC(),
-            regs.E(), regs.D(), regs.DE(),
-            regs.H(), regs.L(), regs.HL(),
-            regs.SP, regs.PC
-        );
     }
 }

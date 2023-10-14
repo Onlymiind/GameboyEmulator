@@ -18,22 +18,6 @@ namespace emulator {
         virtual bool isHit() = 0;
     };
 
-
-    class PCBreakpoint : public Breakpoint {
-    public:
-        PCBreakpoint(const gb::Emulator& emulator, uint16_t break_address) 
-            : emulator_(&emulator), break_address_(break_address)
-        {}
-
-        bool isHit() override { return emulator_->instructionFinished() && emulator_->getPC() == break_address_; }
-
-        uint16_t getAddress() const { return break_address_; }
-    
-    private:
-        const gb::Emulator* emulator_;
-        uint16_t break_address_ = 0;
-    };
-
     enum class MemoryBreakpointFlags : uint8_t {
         READ = 1,
         WRITE = 1 << 1
