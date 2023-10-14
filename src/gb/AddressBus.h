@@ -35,7 +35,7 @@ namespace gb
         void setRomData(std::vector<uint8_t> data) { rom_.setData(std::move(data)); }
         void update() { timer_.update(); }
 
-        void addObserver(const MemoryController& observer);
+        void addObserver(MemoryObject& observer);
 
         uint8_t read(uint16_t address) const;
         void write(uint16_t address, uint8_t data);
@@ -49,7 +49,7 @@ namespace gb
     private:
         std::string getErrorDescription(uint16_t address, int value = -1) const;
 
-        std::vector<MemoryController> observers_;
+        std::vector<MemoryObject*> observers_;
 
         RAM ram_ = RAM(g_memory_ram.size);
         ROM rom_;

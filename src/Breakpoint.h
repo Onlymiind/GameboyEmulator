@@ -59,8 +59,8 @@ namespace emulator {
 
         void reset() override { is_hit_ = false; }
 
-        uint16_t getMinAddress() const { return min_address_; }
-        uint16_t getMaxAddress() const { return max_address_; }
+        uint16_t minAddress() const override { return min_address_; }
+        uint16_t maxAddress() const override { return max_address_; }
         std::optional<uint8_t> getValue() const { return value_; }
         uint8_t getFlags() const { return flags_; }
 

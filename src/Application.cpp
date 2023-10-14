@@ -206,7 +206,7 @@ namespace emulator {
             std::string buf(strlen("Min address: 0xffff\nMax address: 0xffff\nRead: 1, write: 1, value: 0xff"), '\0');
             for(auto it = memory_breakpoints_.begin(); it != memory_breakpoints_.end(); ++it) {
                 int written = sprintf(buf.data(), "Min address: 0x%.4x\nMax address: 0x%.4x\nRead: %d, write: %d",
-                    it->getMaxAddress(), it->getMinAddress(), 
+                    it->maxAddress(), it->minAddress(), 
                     (it->getFlags() & uint8_t(MemoryBreakpointFlags::READ)) != 0,
                     (it->getFlags() & uint8_t(MemoryBreakpointFlags::WRITE)) != 0);
                 if(it->getValue()) {
@@ -378,7 +378,7 @@ namespace emulator {
 
     void Application::addMemoryBreakpoint(uint8_t flags, uint16_t min_address, uint16_t max_address, std::optional<uint8_t> data) {
         memory_breakpoints_.push_front(MemoryBreakpoint(min_address, max_address, flags, data));
-        emulator_.addMemoryObserver(gb::MemoryController{min_address, max_address, *memory_breakpoints_.begin()});
+        emulator_.addMemoryObserver(*memory_breakpoints_.begin());
     }
 
     void Application::resetBreakpoints() {

@@ -28,7 +28,7 @@ namespace gb {
 
         uint16_t getPC() const { return cpu_.getProgramCounter(); }
 
-        void addMemoryObserver(MemoryController observer) { bus_.addObserver(observer); }
+        void addMemoryObserver(MemoryObject& observer) { bus_.addObserver(observer); }
 
         void tick();
 

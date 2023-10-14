@@ -5,6 +5,7 @@
 #include "catch2/generators/catch_generators.hpp"
 #include "utils/Utils.h"
 
+#include <cstdint>
 #include <exception>
 #include <filesystem>
 #include <ostream>
@@ -29,6 +30,9 @@ public:
             out_ << symbol;
         }
     }
+
+    uint16_t minAddress() const override { return 0xFF01; }
+    uint16_t maxAddress() const override { return 0xFF02; }
 private:
     std::ostream& out_;
     uint8_t symbol = 0;
@@ -56,7 +60,7 @@ TEST_CASE("run cpu test roms") {
     REQUIRE(std::filesystem::exists(rom_name));
     emulator.setROM(readFile(rom_name));
 
-    emulator.addMemoryObserver({0xFF01, 0xFF02, test_out});
+    emulator.addMemoryObserver(test_out);
     emulator.start();
     while(!emulator.terminated()) {
         try {

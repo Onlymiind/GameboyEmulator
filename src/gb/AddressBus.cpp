@@ -10,8 +10,8 @@
 
 namespace gb {
 
-    bool less(MemoryController mem, uint16_t address) {
-        return mem.getMaxAddress() < address;
+    bool less(const MemoryObject* mem, uint16_t address) {
+        return mem->maxAddress() < address;
     }
 
     uint8_t AddressBus::read(uint16_t address) const {
@@ -32,9 +32,9 @@ namespace gb {
 #undef ELIF
 
         if(!observers_.empty()) {
-            auto obs_it = std::lower_bound(observers_.begin(), observers_.end(), address, less);
-            if(obs_it != observers_.end() && address >= obs_it->getMinAddress()) {
-                obs_it->onRead(address, data);
+            auto begin = std::lower_bound(observers_.begin(), observers_.end(), address, less);
+            for(;begin != observers_.end() && (*begin)->isInRange(address); ++begin) {
+                (*begin)->onRead(address, data);
             }
         }
 
@@ -43,9 +43,9 @@ namespace gb {
 
     void AddressBus::write(uint16_t address, uint8_t data) {
         if(!observers_.empty()) {
-            auto obs_it = std::lower_bound(observers_.begin(), observers_.end(), address, less);
-            if(obs_it != observers_.end() && address >= obs_it->getMinAddress()) {
-                obs_it->onWrite(address, data);
+            auto begin = std::lower_bound(observers_.begin(), observers_.end(), address, less);
+            for(;begin != observers_.end() && (*begin)->isInRange(address); ++begin) {
+                (*begin)->onWrite(address, data);
             }
         }
 
@@ -82,8 +82,10 @@ namespace gb {
         return err.str();
     }
 
-    void AddressBus::addObserver(const MemoryController& observer) {
-        auto it = std::lower_bound(observers_.begin(), observers_.end(), observer);
-        observers_.insert(it, observer);
+    void AddressBus::addObserver(MemoryObject& observer) {
+        auto it = std::lower_bound(observers_.begin(), observers_.end(), &observer, [&observer](MemoryObject* lhs, MemoryObject* rhs){
+            return lhs->maxAddress() < rhs->minAddress();
+        });
+        observers_.insert(it, &observer);
     }
 }
