@@ -3,7 +3,8 @@
 
 #include <utility>
 
-namespace gb::decoding {
+//TODO: this is a mess
+namespace gb::cpu {
 
     using type = InstructionType;
     using arg_src = ArgumentSource;
@@ -86,7 +87,7 @@ namespace gb::decoding {
     };
 
     //Some LD instructions are a pain to decode, so it is done with this lookup table
-    static const std::unordered_map<uint8_t, UnprefixedInstruction> g_random_LD_ = {
+    static const std::unordered_map<uint8_t, DecodedInstruction> g_random_LD_ = {
         {0x08, {
                 {}, //Reset vector
                 LoadSubtype::LD_SP, //LD Subtype
@@ -162,16 +163,16 @@ namespace gb::decoding {
     };
 
     void setRegisterInfo(uint8_t registerIndex, ArgumentInfo& registerInfo);
-    void setALUInfo(opcode code, UnprefixedInstruction& instruction, bool hasImmediate);
-    void decodeRandomInstructions(opcode code, UnprefixedInstruction& instruction);
-    void decodeADD(opcode code, UnprefixedInstruction& instruction);
-    void decodeLD(opcode code, UnprefixedInstruction& instruction);
-    void decodeJR(opcode code, UnprefixedInstruction& instruction);
-    void decodeJP(opcode code, UnprefixedInstruction& instruction);
-    void decodeINC_DEC(opcode code, UnprefixedInstruction& instruction);
+    void setALUInfo(opcode code, DecodedInstruction& instruction, bool hasImmediate);
+    void decodeRandomInstructions(opcode code, DecodedInstruction& instruction);
+    void decodeADD(opcode code, DecodedInstruction& instruction);
+    void decodeLD(opcode code, DecodedInstruction& instruction);
+    void decodeJR(opcode code, DecodedInstruction& instruction);
+    void decodeJP(opcode code, DecodedInstruction& instruction);
+    void decodeINC_DEC(opcode code, DecodedInstruction& instruction);
 
-    UnprefixedInstruction decodeUnprefixed(opcode code) {
-        UnprefixedInstruction result;
+    DecodedInstruction decodeUnprefixed(opcode code) {
+        DecodedInstruction result;
 
         switch (code.getX()) {
             case 1:
@@ -215,7 +216,7 @@ namespace gb::decoding {
         return result;
     }
 
-    void decodeRandomInstructions(opcode code, UnprefixedInstruction& instruction) {
+    void decodeRandomInstructions(opcode code, DecodedInstruction& instruction) {
         switch(instruction.type) {
             case type::NOP:
             case type::STOP:
@@ -258,6 +259,8 @@ namespace gb::decoding {
                 if(code.getZ() == 4) {
                     instruction.condition = g_conditions_[code.getY()];
                 }
+                instruction.arg().source = ArgumentSource::Immediate;
+                instruction.arg().type = ArgumentType::Unsigned16;
                 return;
             case type::INC:
             case type::DEC:
@@ -271,7 +274,7 @@ namespace gb::decoding {
         }
     }
 
-    void decodeADD(opcode code, UnprefixedInstruction& instruction) {
+    void decodeADD(opcode code, DecodedInstruction& instruction) {
         switch(code.getZ()) {
             case 0:
                 instruction.destination.source = arg_src::Register;
@@ -291,7 +294,7 @@ namespace gb::decoding {
         }
     }
 
-    void decodeLD(opcode code, UnprefixedInstruction& instruction) {
+    void decodeLD(opcode code, DecodedInstruction& instruction) {
         switch(code.getZ()) {
             case 1:
                 instruction.destination.reg = g_word_registers_SP_[code.getP()];
@@ -340,7 +343,7 @@ namespace gb::decoding {
         }
     }
 
-    void decodeJR(opcode code, UnprefixedInstruction& instruction) {
+    void decodeJR(opcode code, DecodedInstruction& instruction) {
         if(code.getY() != 3) {
             instruction.condition = g_conditions_[code.getY() - 4];
         }
@@ -348,7 +351,7 @@ namespace gb::decoding {
         instruction.source.type = arg_t::Signed8;
     }
 
-    void decodeJP(opcode code, UnprefixedInstruction& instruction) {
+    void decodeJP(opcode code, DecodedInstruction& instruction) {
         switch(code.getZ()) {
             case 1:
                 instruction.source.source = arg_src::Register;
@@ -365,7 +368,7 @@ namespace gb::decoding {
         }
     }
 
-    void decodeINC_DEC(opcode code, UnprefixedInstruction& instruction) {
+    void decodeINC_DEC(opcode code, DecodedInstruction& instruction) {
         switch(code.getZ()) {
             case 3:
                 instruction.source.source = arg_src::Register;
@@ -380,8 +383,8 @@ namespace gb::decoding {
         instruction.destination = instruction.source;
     }
 
-    PrefixedInstruction decodePrefixed(opcode code) {
-        PrefixedInstruction result;
+    DecodedInstruction decodePrefixed(opcode code) {
+        DecodedInstruction result;
 
         switch (code.getX()) {
             case 0: 
@@ -400,7 +403,11 @@ namespace gb::decoding {
                 result.bit = code.getY();
                 break;
         }
-        result.target = g_byte_registers_[code.getZ()];
+
+        auto& arg = result.arg();
+        arg.reg = g_byte_registers_[code.getZ()];
+        arg.type = ArgumentType::Unsigned8;
+        arg.source = arg.reg == Registers::HL ? ArgumentSource::Indirect : ArgumentSource::Register;
 
         return result;
     }
@@ -416,7 +423,7 @@ namespace gb::decoding {
         }
     }
 
-    void setALUInfo(opcode code, UnprefixedInstruction& instruction, bool hasImmediate) {
+    void setALUInfo(opcode code, DecodedInstruction& instruction, bool hasImmediate) {
         instruction.type = g_ALU_[code.getY()];
         instruction.destination.source = arg_src::Register;
         instruction.destination.type = arg_t::Unsigned8;

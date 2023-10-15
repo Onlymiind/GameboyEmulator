@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdexcept>
 #include <type_traits>
 #include <iomanip>
 #include <cstdint>
@@ -123,5 +124,42 @@ public:
 private:
     T data_[CAPACITY];
     size_t current_ = 0;
+    bool full_ = false;
+};
+
+template<typename T, size_t CAPACITY>
+class Queue {
+public:
+    static_assert(CAPACITY >= 0, "capacity must be non-zero");
+    static_assert(std::is_trivially_destructible<T>::value, "T must be trivially destructible");
+
+    Queue() = default;
+
+    bool empty() const { return !full_ && begin_ != end_; }
+
+    T pop_front() {
+        if(empty()) {
+            throw std::runtime_error("attempting to pop_front from empty queue");
+        }
+        T elem = data_[begin_];
+        begin_ = (begin_ + 1) % CAPACITY;
+        full_ = false;
+        return elem;
+    }
+
+    void push_back(T elem) {
+        if(full_) {
+            throw std::runtime_error("attempting to push_back to full queue");
+        }
+        data_[end_] = elem;
+        end_ = (end_ + 1) % CAPACITY;
+        if(end_ == begin_) {
+            full_ = true;
+        }
+    }
+private:
+    T data_[CAPACITY];
+    size_t begin_ = 0;
+    size_t end_ = 0;
     bool full_ = false;
 };

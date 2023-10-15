@@ -9,9 +9,9 @@
 #include <cstdint>
 #include <iomanip>
 
-using namespace gb::decoding;
+using namespace gb::cpu;
 
-constexpr std::array<std::pair<uint8_t, UnprefixedInstruction>, 10> unprefixed_sample =  {{
+constexpr std::array<std::pair<uint8_t, DecodedInstruction>, 10> unprefixed_sample =  {{
     {0x00, {{},{},{},{},{}, InstructionType::NOP}},
     {0x40, {{}, LoadSubtype::Typical, {}, {ArgumentSource::Register, ArgumentType::Unsigned8, Registers::B}, {ArgumentSource::Register, ArgumentType::Unsigned8, Registers::B}, InstructionType::LD}},
     {0x82, {{}, {}, {}, {ArgumentSource::Register, ArgumentType::Unsigned8, Registers::D}, {ArgumentSource::Register, ArgumentType::Unsigned8, Registers::A}, InstructionType::ADD}},
@@ -25,23 +25,37 @@ constexpr std::array<std::pair<uint8_t, UnprefixedInstruction>, 10> unprefixed_s
 }};
 
 TEST_CASE("prefix") {
-    REQUIRE(gb::decoding::isPrefix({0xCB}));
+    REQUIRE(isPrefix({0xCB}));
 }
 
 TEST_CASE("decoding prefixed instructions") {
-    PrefixedInstruction RLC_B = { InstructionType::RLC, Registers::B};
+    DecodedInstruction RLC_B = {
+        .source = {.source = ArgumentSource::Register, .type = ArgumentType::Unsigned8, .reg = Registers::B},
+        .type = InstructionType::RLC,
+    };
     uint8_t RLC_B_code = 0x00;
-    PrefixedInstruction SRA_A = { InstructionType::SRA, Registers::A};
+    DecodedInstruction SRA_A = {
+        .source = {.source = ArgumentSource::Register, .type = ArgumentType::Unsigned8, .reg = Registers::A},
+        .type = InstructionType::SRA,
+    };
     uint8_t SRA_A_code = 0x2F;
-    PrefixedInstruction BIT_6_A = {InstructionType::BIT, Registers::A, 6};
+    DecodedInstruction BIT_6_A = {
+        .source = {.source = ArgumentSource::Register, .type = ArgumentType::Unsigned8, .reg = Registers::A},
+        .type = InstructionType::BIT,
+        .bit = 6
+    };
     uint8_t BIT_6_A_code = 0x77;
-    PrefixedInstruction SET_0_B = {InstructionType::SET, Registers::B, 0};
+    DecodedInstruction SET_0_B = {
+        .source = {.source = ArgumentSource::Register, .type = ArgumentType::Unsigned8, .reg = Registers::B},
+        .type = InstructionType::SET,
+        .bit = 0
+    };
     uint8_t SET_0_B_code = 0xC0;
 
-    REQUIRE(gb::decoding::decodePrefixed(RLC_B_code) == RLC_B);
-    REQUIRE(gb::decoding::decodePrefixed(SRA_A_code) == SRA_A);
-    REQUIRE(gb::decoding::decodePrefixed(BIT_6_A_code) == BIT_6_A);
-    REQUIRE(gb::decoding::decodePrefixed(SET_0_B_code) == SET_0_B);
+    REQUIRE(decodePrefixed(RLC_B_code) == RLC_B);
+    REQUIRE(decodePrefixed(SRA_A_code) == SRA_A);
+    REQUIRE(decodePrefixed(BIT_6_A_code) == BIT_6_A);
+    REQUIRE(decodePrefixed(SET_0_B_code) == SET_0_B);
 }
 
 TEST_CASE("decoding unprefixed instructions") {
@@ -49,7 +63,7 @@ TEST_CASE("decoding unprefixed instructions") {
     for(const auto& [code, instr] : unprefixed_sample) {
         if(instr.type != InstructionType::None) {
             std::cout << "Testing instruction: " << std::hex << "0x" << std::setfill('0') << std::setw(sizeof(uint8_t) * 2) << +code << std::endl;
-            REQUIRE(gb::decoding::decodeUnprefixed(code) == instr);
+            REQUIRE(decodeUnprefixed(code) == instr);
         }
     }
 }

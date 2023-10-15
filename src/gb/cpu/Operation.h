@@ -4,7 +4,7 @@
 #include <optional>
 #include <iostream>
 
-namespace gb::decoding {
+namespace gb::cpu {
 
     enum class InstructionType : uint8_t {
         None = 0,
@@ -57,25 +57,30 @@ namespace gb::decoding {
         }
     };
 
-    struct UnprefixedInstruction {
-        //Used only in RST instruction. In other cases is left uninitialized
+    struct DecodedInstruction {
+        //Used only in RST instruction
         std::optional<uint16_t> reset_vector;
-        //Used only in LD instructions. In other cases is left uninitialized
+        //Used only in LD instructions
         std::optional<LoadSubtype> LD_subtype;
         std::optional<Conditions> condition;
         ArgumentInfo source;
         ArgumentInfo destination;
         InstructionType type = InstructionType::None;
+        //Used only in prefixed instructions
+        std::optional<uint8_t> bit;
 
         //For Debugging
-        inline bool operator==(UnprefixedInstruction other) const {
+        inline bool operator==(DecodedInstruction other) const {
             return type == other.type &&
                 source == other.source &&
                 destination == other.destination &&
                 condition == other.condition &&
                 reset_vector == other.reset_vector &&
-                LD_subtype == other.LD_subtype;
+                LD_subtype == other.LD_subtype &&
+                bit == other.bit;
         }
+
+        ArgumentInfo& arg() { return source; }
     };
 
     struct PrefixedInstruction {

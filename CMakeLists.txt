@@ -11,7 +11,7 @@ enable_testing()
 
 set(EMULATOR_LIB
     src/gb/cpu/CPU.cpp
-    src/gb/cpu/instructions.cpp
+    src/gb/cpu/Instructions.cpp
     src/gb/AddressBus.cpp
     src/gb/Timer.cpp
     src/gb/cpu/Decoder.cpp

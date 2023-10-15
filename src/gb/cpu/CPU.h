@@ -23,11 +23,11 @@ namespace gb::cpu {
     };
 
     struct Instruction {
-        using Argument = Variant<std::monostate, decoding::Registers, int8_t, uint8_t, uint16_t>;
+        using Argument = Variant<std::monostate, Registers, int8_t, uint8_t, uint16_t>;
 
-        decoding::InstructionType type = decoding::InstructionType::None;
-        std::optional<decoding::LoadSubtype> load_subtype;
-        std::optional<decoding::Conditions> condition;
+        InstructionType type = InstructionType::None;
+        std::optional<LoadSubtype> load_subtype;
+        std::optional<Conditions> condition;
 
         Argument src;
         Argument dst;
@@ -38,7 +38,35 @@ namespace gb::cpu {
         Argument& arg2() { return dst; }
         Argument& bit() { return dst; }
     };
+
+    struct MemoryOp {
+        enum class Type : uint8_t {
+            NONE, READ, READ_LOW, READ_HIGH, WRITE
+        };
+
+        uint16_t address = 0;
+        Type type = Type::NONE;
+        Variant<std::monostate, uint8_t, Registers> data;
+    };
     
+    class DataBuffer {
+    public:
+        DataBuffer() = default;
+
+        bool empty() const { return empty_; }
+        void put(uint8_t data) { lsb_ = data; empty_ = false; }
+        void putHigh(uint8_t data) { msb_ = data; empty_ = false; }
+        void putLow(uint8_t data) { lsb_ = data; empty_ = false; }
+
+        uint8_t get() { empty_ = true; return lsb_; }
+        int8_t getSigned() { empty_ = true; return reinterpret_cast<int8_t&>(lsb_); }
+        uint16_t getWord() { empty_ = true; return uint16_t(lsb_) | (uint16_t(msb_) << 8); }
+
+    private:
+        uint8_t lsb_ = 0;
+        uint8_t msb_ = 0;
+        bool empty_ = true;
+    };
     class SharpSM83 {
     public:
         SharpSM83(AddressBus& bus);
@@ -58,9 +86,9 @@ namespace gb::cpu {
 
     private:
 
-        uint8_t dispatch(decoding::opcode code);
-        uint8_t dispatchPrefixed(decoding::PrefixedInstruction instr);
-        uint8_t dispatchUnprefixed(decoding::UnprefixedInstruction instr);
+        uint8_t dispatch(opcode code, bool prefixed);
+        uint8_t dispatchPrefixed(PrefixedInstruction instr);
+        uint8_t dispatchUnprefixed(DecodedInstruction instr);
 
         std::optional<InterruptFlags> getPendingInterrupt() const;
         void handleInterrupt(InterruptFlags interrupt);
@@ -75,21 +103,27 @@ namespace gb::cpu {
 
         uint16_t popStack();
 
-        uint8_t getByte(decoding::ArgumentInfo from);
-        uint16_t getWord(decoding::ArgumentInfo from);
+        uint8_t getByte(ArgumentInfo from);
+        uint16_t getWord(ArgumentInfo from);
 
-        uint8_t getByteRegister(decoding::Registers reg) const;
+        uint8_t getByteRegister(Registers reg) const;
 
-        uint16_t getWordRegister(decoding::Registers reg) const;
+        uint16_t getWordRegister(Registers reg) const;
 
-        void setByteRegister(decoding::Registers reg, uint8_t data);
+        void setByteRegister(Registers reg, uint8_t data);
 
-        void setWordRegister(decoding::Registers reg, uint16_t data);
+        void setWordRegister(Registers reg, uint16_t data);
 
-        bool checkCondition(decoding::Conditions condition);
+        bool checkCondition(Conditions condition);
 
-        void set_arg_data(Instruction::Argument& arg, decoding::ArgumentInfo info, uint8_t data);
+        void setArgData(Instruction::Argument& arg, ArgumentInfo info, uint8_t data);
 
+        void sheduleReadByte(uint16_t address);
+        void sheduleReadWord(uint16_t address);
+        void sheduleWriteByte(uint16_t address, uint8_t data);
+        void sheduleWriteWord(uint16_t address, uint16_t data);
+        void shedulePushStack(uint16_t data);
+        void sheduleMemoryAcceses(DecodedInstruction instr);
 
         //Unprefixed instrictions. Return the amount of machine cycles needed for the instruction
         uint8_t NOP() { return 1; }; 
@@ -106,37 +140,37 @@ namespace gb::cpu {
         uint8_t HALT(); 
         uint8_t SCF(); 
         uint8_t STOP();
-        uint8_t PUSH(decoding::Registers reg);
-        uint8_t POP(decoding::Registers reg); 
+        uint8_t PUSH(Registers reg);
+        uint8_t POP(Registers reg); 
         uint8_t RST(uint16_t reset_vector);
-        uint8_t CALL(std::optional<decoding::Conditions> condition);
-        uint8_t JR(std::optional<decoding::Conditions> condition); 
-        uint8_t RET(std::optional<decoding::Conditions> condition); 
-        uint8_t INC(decoding::ArgumentInfo target);
-        uint8_t DEC(decoding::ArgumentInfo target);
-        uint8_t SUB(decoding::ArgumentInfo argument); 
-        uint8_t OR(decoding::ArgumentInfo argument); 
-        uint8_t AND(decoding::ArgumentInfo argument); 
-        uint8_t XOR(decoding::ArgumentInfo argument); 
-        uint8_t ADC(decoding::ArgumentInfo argument);
-        uint8_t SBC(decoding::ArgumentInfo argument); 
-        uint8_t CP(decoding::ArgumentInfo argument); 
-        uint8_t JP(decoding::UnprefixedInstruction instr); 
-        uint8_t LD(decoding::UnprefixedInstruction instr);
-        uint8_t ADD(decoding::UnprefixedInstruction instr);
+        uint8_t CALL(std::optional<Conditions> condition);
+        uint8_t JR(std::optional<Conditions> condition); 
+        uint8_t RET(std::optional<Conditions> condition); 
+        uint8_t INC(ArgumentInfo target);
+        uint8_t DEC(ArgumentInfo target);
+        uint8_t SUB(ArgumentInfo argument); 
+        uint8_t OR(ArgumentInfo argument); 
+        uint8_t AND(ArgumentInfo argument); 
+        uint8_t XOR(ArgumentInfo argument); 
+        uint8_t ADC(ArgumentInfo argument);
+        uint8_t SBC(ArgumentInfo argument); 
+        uint8_t CP(ArgumentInfo argument); 
+        uint8_t JP(DecodedInstruction instr); 
+        uint8_t LD(DecodedInstruction instr);
+        uint8_t ADD(DecodedInstruction instr);
 
         uint8_t NONE() { return 0; };
 
-        uint8_t loadByte(decoding::ArgumentInfo destination, decoding::ArgumentInfo source);
+        uint8_t loadByte(ArgumentInfo destination, ArgumentInfo source);
 
         //Prefixed instructions. Return the amount of machine cycles needed for the instruction
-        uint8_t RLC (decoding::Registers reg); uint8_t RRC(decoding::Registers reg); 
-        uint8_t RL  (decoding::Registers reg); uint8_t RR (decoding::Registers reg);
-        uint8_t SLA (decoding::Registers reg); uint8_t SRA(decoding::Registers reg);
-        uint8_t SWAP(decoding::Registers reg); uint8_t SRL(decoding::Registers reg);
+        uint8_t RLC (Registers reg); uint8_t RRC(Registers reg); 
+        uint8_t RL  (Registers reg); uint8_t RR (Registers reg);
+        uint8_t SLA (Registers reg); uint8_t SRA(Registers reg);
+        uint8_t SWAP(Registers reg); uint8_t SRL(Registers reg);
 
-        uint8_t BIT (decoding::PrefixedInstruction instr); uint8_t RES(decoding::PrefixedInstruction instr);  
-        uint8_t SET (decoding::PrefixedInstruction instr);
+        uint8_t BIT (Registers reg, uint8_t bit); uint8_t RES(Registers reg, uint8_t bit);  
+        uint8_t SET (Registers reg, uint8_t bit);
 
 
     private:
@@ -150,6 +184,8 @@ namespace gb::cpu {
         bool halt_mode_ = false;
         bool halt_bug_ = false;
 
+        Queue<MemoryOp, 8> memory_op_queue_;
         Instruction last_instruction_;
+        DataBuffer data_buffer_;
     };
 }

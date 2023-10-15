@@ -388,7 +388,7 @@ namespace emulator {
     }
 
     void Application::printInstruction(StringBuffer<g_instruction_string_buf_size>& buf, size_t idx) {
-        using namespace gb::decoding;
+        using namespace gb::cpu;
         auto& instr_data = recent_instructions_[idx];
         auto& instr = instr_data.instruction;
         std::stringstream out;
