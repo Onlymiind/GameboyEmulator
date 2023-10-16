@@ -181,8 +181,8 @@ namespace gb::cpu {
                 } else {
                     result.type = type::LD;
                     result.LD_subtype = LoadSubtype::Typical;
-                    setRegisterInfo(code.getY(), result.destination);
-                    setRegisterInfo(code.getZ(), result.source);
+                    setRegisterInfo(code.getY(), result.dst);
+                    setRegisterInfo(code.getZ(), result.src);
                 }
                 break;
             case 2:
@@ -236,10 +236,10 @@ namespace gb::cpu {
                 instruction.reset_vector = code.getY() * 8;
                 return;
             case type::POP:
-                instruction.destination.reg = g_word_registers_AF_[code.getP()];
+                instruction.dst.reg = g_word_registers_AF_[code.getP()];
                 return;
             case type::PUSH:
-                instruction.source.reg = g_word_registers_AF_[code.getP()];
+                instruction.src.reg = g_word_registers_AF_[code.getP()];
                 return;
             case type::RET:
                 if(code.getZ() == 0) {
@@ -259,7 +259,7 @@ namespace gb::cpu {
                 if(code.getZ() == 4) {
                     instruction.condition = g_conditions_[code.getY()];
                 }
-                instruction.arg().source = ArgumentSource::Immediate;
+                instruction.arg().src = ArgumentSource::Immediate;
                 instruction.arg().type = ArgumentType::Unsigned16;
                 return;
             case type::INC:
@@ -277,19 +277,19 @@ namespace gb::cpu {
     void decodeADD(opcode code, DecodedInstruction& instruction) {
         switch(code.getZ()) {
             case 0:
-                instruction.destination.source = arg_src::Register;
-                instruction.destination.type = arg_t::Unsigned16;
-                instruction.destination.reg = reg::SP;
-                instruction.source.source = arg_src::Immediate;
-                instruction.source.type = arg_t::Signed8;
+                instruction.dst.src = arg_src::Register;
+                instruction.dst.type = arg_t::Unsigned16;
+                instruction.dst.reg = reg::SP;
+                instruction.src.src = arg_src::Immediate;
+                instruction.src.type = arg_t::Signed8;
                 break;
             case 1:
-                instruction.destination.source = arg_src::Register;
-                instruction.destination.type = arg_t::Unsigned16;
-                instruction.destination.reg = reg::HL;
-                instruction.source.source = arg_src::Register;
-                instruction.source.type = arg_t::Unsigned16;
-                instruction.source.reg = g_word_registers_SP_[code.getP()];
+                instruction.dst.src = arg_src::Register;
+                instruction.dst.type = arg_t::Unsigned16;
+                instruction.dst.reg = reg::HL;
+                instruction.src.src = arg_src::Register;
+                instruction.src.type = arg_t::Unsigned16;
+                instruction.src.reg = g_word_registers_SP_[code.getP()];
                 break;
         }
     }
@@ -297,44 +297,44 @@ namespace gb::cpu {
     void decodeLD(opcode code, DecodedInstruction& instruction) {
         switch(code.getZ()) {
             case 1:
-                instruction.destination.reg = g_word_registers_SP_[code.getP()];
-                instruction.destination.source = arg_src::Register;
-                instruction.destination.type = arg_t::Unsigned16;
-                instruction.source.source = arg_src::Immediate;
-                instruction.source.type = arg_t::Unsigned16;
+                instruction.dst.reg = g_word_registers_SP_[code.getP()];
+                instruction.dst.src = arg_src::Register;
+                instruction.dst.type = arg_t::Unsigned16;
+                instruction.src.src = arg_src::Immediate;
+                instruction.src.type = arg_t::Unsigned16;
                 break;
             case 2:
                 switch(code.getP()) {
                     case 0:
-                        instruction.destination.reg = reg::BC;
+                        instruction.dst.reg = reg::BC;
                         break;
                     case 1:
-                        instruction.destination.reg = reg::DE;
+                        instruction.dst.reg = reg::DE;
                         break;
                     case 2:
-                        instruction.destination.reg = reg::HL;
+                        instruction.dst.reg = reg::HL;
                         instruction.LD_subtype = LoadSubtype::LD_INC;
                         break;
                     case 3:
-                        instruction.destination.reg = reg::HL;
+                        instruction.dst.reg = reg::HL;
                         instruction.LD_subtype = LoadSubtype::LD_DEC;
                         break;
                 }
 
-                instruction.source.source = arg_src::Register;
-                instruction.source.type = arg_t::Unsigned8;
-                instruction.source.reg = reg::A;
-                instruction.destination.source = arg_src::Indirect;
-                instruction.destination.type = arg_t::Unsigned8;
+                instruction.src.src = arg_src::Register;
+                instruction.src.type = arg_t::Unsigned8;
+                instruction.src.reg = reg::A;
+                instruction.dst.src = arg_src::Indirect;
+                instruction.dst.type = arg_t::Unsigned8;
                 if(code.getQ()) {
-                    std::swap(instruction.destination, instruction.source);
+                    std::swap(instruction.dst, instruction.src);
                 }
                 break;
             case 6:
-                instruction.source.source = arg_src::Immediate;
-                instruction.source.type = arg_t::Unsigned8;
+                instruction.src.src = arg_src::Immediate;
+                instruction.src.type = arg_t::Unsigned8;
                                 
-                setRegisterInfo(code.getY(), instruction.destination);
+                setRegisterInfo(code.getY(), instruction.dst);
                 break;
         }
 
@@ -347,23 +347,23 @@ namespace gb::cpu {
         if(code.getY() != 3) {
             instruction.condition = g_conditions_[code.getY() - 4];
         }
-        instruction.source.source = arg_src::Immediate;
-        instruction.source.type = arg_t::Signed8;
+        instruction.src.src = arg_src::Immediate;
+        instruction.src.type = arg_t::Signed8;
     }
 
     void decodeJP(opcode code, DecodedInstruction& instruction) {
         switch(code.getZ()) {
             case 1:
-                instruction.source.source = arg_src::Register;
-                instruction.source.type = arg_t::Unsigned16;
-                instruction.source.reg = reg::HL;
+                instruction.src.src = arg_src::Register;
+                instruction.src.type = arg_t::Unsigned16;
+                instruction.src.reg = reg::HL;
                 break;
             case 2:
                 instruction.condition = g_conditions_[code.getY()];
                 [[fallthrough]];
             case 3:
-                instruction.source.source = arg_src::Immediate;
-                instruction.source.type = arg_t::Unsigned16;
+                instruction.src.src = arg_src::Immediate;
+                instruction.src.type = arg_t::Unsigned16;
                 break;
         }
     }
@@ -371,16 +371,16 @@ namespace gb::cpu {
     void decodeINC_DEC(opcode code, DecodedInstruction& instruction) {
         switch(code.getZ()) {
             case 3:
-                instruction.source.source = arg_src::Register;
-                instruction.source.type = arg_t::Unsigned16;
-                instruction.source.reg = g_word_registers_SP_[code.getP()];
+                instruction.src.src = arg_src::Register;
+                instruction.src.type = arg_t::Unsigned16;
+                instruction.src.reg = g_word_registers_SP_[code.getP()];
                 break;
             case 4:
             case 5:
-                setRegisterInfo(code.getY(), instruction.source);
+                setRegisterInfo(code.getY(), instruction.src);
                 break;
         }
-        instruction.destination = instruction.source;
+        instruction.dst = instruction.src;
     }
 
     DecodedInstruction decodePrefixed(opcode code) {
@@ -407,7 +407,7 @@ namespace gb::cpu {
         auto& arg = result.arg();
         arg.reg = g_byte_registers_[code.getZ()];
         arg.type = ArgumentType::Unsigned8;
-        arg.source = arg.reg == Registers::HL ? ArgumentSource::Indirect : ArgumentSource::Register;
+        arg.src = arg.reg == Registers::HL ? ArgumentSource::Indirect : ArgumentSource::Register;
 
         return result;
     }
@@ -417,23 +417,23 @@ namespace gb::cpu {
         registerInfo.type = arg_t::Unsigned8;
 
         if(registerInfo.reg != reg::HL) {
-            registerInfo.source = arg_src::Register;
+            registerInfo.src = arg_src::Register;
         } else {
-            registerInfo.source = arg_src::Indirect;
+            registerInfo.src = arg_src::Indirect;
         }
     }
 
     void setALUInfo(opcode code, DecodedInstruction& instruction, bool hasImmediate) {
         instruction.type = g_ALU_[code.getY()];
-        instruction.destination.source = arg_src::Register;
-        instruction.destination.type = arg_t::Unsigned8;
-        instruction.destination.reg = reg::A;
+        instruction.dst.src = arg_src::Register;
+        instruction.dst.type = arg_t::Unsigned8;
+        instruction.dst.reg = reg::A;
                     
         if(hasImmediate) {
-            instruction.source.source = arg_src::Immediate;
-            instruction.source.type = arg_t::Unsigned8;
+            instruction.src.src = arg_src::Immediate;
+            instruction.src.type = arg_t::Unsigned8;
         } else {
-            setRegisterInfo(code.getZ(), instruction.source);
+            setRegisterInfo(code.getZ(), instruction.src);
         }
     }
 

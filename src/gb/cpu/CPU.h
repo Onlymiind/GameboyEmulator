@@ -78,7 +78,12 @@ namespace gb::cpu {
 
         inline uint16_t getProgramCounter() const { return reg_.PC; }
 
-        inline bool isFinished() const { return cycles_to_finish_ == 0; }
+        inline bool isFinished() const { 
+            return !current_instruction_ && !prefixed_next_ && memory_op_queue_.empty();
+            //(memory_op_queue_.size() == 1 || ( && memory_op_executed_));
+        }
+
+        inline bool isHalted() const { return halt_mode_; }
 
         Instruction getLastInstruction() const { return last_instruction_; }
 
@@ -86,27 +91,12 @@ namespace gb::cpu {
 
     private:
 
-        uint8_t dispatch(opcode code, bool prefixed);
-        uint8_t dispatchPrefixed(PrefixedInstruction instr);
-        uint8_t dispatchUnprefixed(DecodedInstruction instr);
+        uint8_t dispatch();
 
         std::optional<InterruptFlags> getPendingInterrupt() const;
         void handleInterrupt(InterruptFlags interrupt);
 
-        uint8_t fetch();
-
-        uint16_t fetchWord();
-
-        int8_t fetchSigned();
-
-        void pushStack(uint16_t value);
-
-        uint16_t popStack();
-
-        uint8_t getByte(ArgumentInfo from);
-        uint16_t getWord(ArgumentInfo from);
-
-        uint8_t getByteRegister(Registers reg) const;
+        uint8_t getByteRegister(Registers reg);
 
         uint16_t getWordRegister(Registers reg) const;
 
@@ -118,12 +108,20 @@ namespace gb::cpu {
 
         void setArgData(Instruction::Argument& arg, ArgumentInfo info, uint8_t data);
 
+        void sheduleMemoryNoOp();
         void sheduleReadByte(uint16_t address);
         void sheduleReadWord(uint16_t address);
         void sheduleWriteByte(uint16_t address, uint8_t data);
         void sheduleWriteWord(uint16_t address, uint16_t data);
         void shedulePushStack(uint16_t data);
+        void shedulePopStack(Registers reg);
         void sheduleMemoryAcceses(DecodedInstruction instr);
+        void sheduleReadToReg(uint16_t address, Registers reg);
+        void sheduleFetchInstruction();
+        void executeMemoryOp();
+
+        void decode(opcode code);
+        void pushMemoryOp(MemoryOp op);
 
         //Unprefixed instrictions. Return the amount of machine cycles needed for the instruction
         uint8_t NOP() { return 1; }; 
@@ -178,14 +176,19 @@ namespace gb::cpu {
 
         RegisterFile reg_;
         uint8_t cycles_to_finish_ = 0;
+        uint16_t last_pc_ = 0;
 
         bool IME_ = false; // Interrupt master enable
         bool enable_IME_ = false;
         bool halt_mode_ = false;
         bool halt_bug_ = false;
+        bool memory_op_executed_ = false;
+        bool prefixed_next_ = false;
+        bool wait_for_pc_read_ = false;
 
         Queue<MemoryOp, 8> memory_op_queue_;
         Instruction last_instruction_;
         DataBuffer data_buffer_;
+        std::optional<DecodedInstruction> current_instruction_;
     };
 }

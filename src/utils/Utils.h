@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <stdexcept>
 #include <type_traits>
 #include <iomanip>
@@ -135,7 +136,8 @@ public:
 
     Queue() = default;
 
-    bool empty() const { return !full_ && begin_ != end_; }
+    bool empty() const { return size_ == 0; }
+    size_t size() const { return size_; }
 
     T pop_front() {
         if(empty()) {
@@ -143,23 +145,21 @@ public:
         }
         T elem = data_[begin_];
         begin_ = (begin_ + 1) % CAPACITY;
-        full_ = false;
+        --size_;
         return elem;
     }
 
     void push_back(T elem) {
-        if(full_) {
+        if(size_ == CAPACITY) {
             throw std::runtime_error("attempting to push_back to full queue");
         }
         data_[end_] = elem;
         end_ = (end_ + 1) % CAPACITY;
-        if(end_ == begin_) {
-            full_ = true;
-        }
+        ++size_;
     }
 private:
     T data_[CAPACITY];
     size_t begin_ = 0;
     size_t end_ = 0;
-    bool full_ = false;
+    size_t size_ = 0;
 };

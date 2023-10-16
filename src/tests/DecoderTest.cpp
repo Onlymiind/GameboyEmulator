@@ -30,23 +30,23 @@ TEST_CASE("prefix") {
 
 TEST_CASE("decoding prefixed instructions") {
     DecodedInstruction RLC_B = {
-        .source = {.source = ArgumentSource::Register, .type = ArgumentType::Unsigned8, .reg = Registers::B},
+        .src = {.src = ArgumentSource::Register, .type = ArgumentType::Unsigned8, .reg = Registers::B},
         .type = InstructionType::RLC,
     };
     uint8_t RLC_B_code = 0x00;
     DecodedInstruction SRA_A = {
-        .source = {.source = ArgumentSource::Register, .type = ArgumentType::Unsigned8, .reg = Registers::A},
+        .src = {.src = ArgumentSource::Register, .type = ArgumentType::Unsigned8, .reg = Registers::A},
         .type = InstructionType::SRA,
     };
     uint8_t SRA_A_code = 0x2F;
     DecodedInstruction BIT_6_A = {
-        .source = {.source = ArgumentSource::Register, .type = ArgumentType::Unsigned8, .reg = Registers::A},
+        .src = {.src = ArgumentSource::Register, .type = ArgumentType::Unsigned8, .reg = Registers::A},
         .type = InstructionType::BIT,
         .bit = 6
     };
     uint8_t BIT_6_A_code = 0x77;
     DecodedInstruction SET_0_B = {
-        .source = {.source = ArgumentSource::Register, .type = ArgumentType::Unsigned8, .reg = Registers::B},
+        .src = {.src = ArgumentSource::Register, .type = ArgumentType::Unsigned8, .reg = Registers::B},
         .type = InstructionType::SET,
         .bit = 0
     };

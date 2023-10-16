@@ -48,12 +48,12 @@ namespace gb::cpu {
     };
 
     struct ArgumentInfo {
-        ArgumentSource source = ArgumentSource::None;
+        ArgumentSource src = ArgumentSource::None;
         ArgumentType type = ArgumentType::None;
         Registers reg = Registers::None;
 
         inline bool operator==(ArgumentInfo other) const {
-            return source == other.source && type == other.type && reg == other.reg;
+            return src == other.src && type == other.type && reg == other.reg;
         }
     };
 
@@ -63,8 +63,8 @@ namespace gb::cpu {
         //Used only in LD instructions
         std::optional<LoadSubtype> LD_subtype;
         std::optional<Conditions> condition;
-        ArgumentInfo source;
-        ArgumentInfo destination;
+        ArgumentInfo src;
+        ArgumentInfo dst;
         InstructionType type = InstructionType::None;
         //Used only in prefixed instructions
         std::optional<uint8_t> bit;
@@ -72,15 +72,15 @@ namespace gb::cpu {
         //For Debugging
         inline bool operator==(DecodedInstruction other) const {
             return type == other.type &&
-                source == other.source &&
-                destination == other.destination &&
+                src == other.src &&
+                dst == other.dst &&
                 condition == other.condition &&
                 reset_vector == other.reset_vector &&
                 LD_subtype == other.LD_subtype &&
                 bit == other.bit;
         }
 
-        ArgumentInfo& arg() { return source; }
+        ArgumentInfo& arg() { return src; }
     };
 
     struct PrefixedInstruction {

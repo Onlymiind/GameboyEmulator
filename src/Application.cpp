@@ -3,6 +3,7 @@
 #include "gb/Emulator.h"
 #include "gb/cpu/CPUUtils.h"
 #include "gb/cpu/Operation.h"
+#include "imgui_internal.h"
 #include "utils/Utils.h"
 #include "gb/cpu/CPU.h"
 #include "gb/AddressBus.h"
@@ -68,6 +69,17 @@ namespace emulator {
             );
         }
 
+        ImGui::NewLine();
+        uint64_t instr = 0;
+        if(ImGui::InputScalar("##run_instr", ImGuiDataType_U64, &instr, nullptr, nullptr, "%d", ImGuiInputTextFlags_EnterReturnsTrue)) {
+            for(uint64_t i = 0; i < instr; ++i) {
+                update();
+                while(!emulator_.terminated() && !emulator_.instructionFinished()) {
+                    update();
+                }
+            }
+        }
+
         if(single_step_) {
             ImGui::NewLine();
             ImGui::TextUnformatted("Single stepping");
@@ -75,6 +87,9 @@ namespace emulator {
 
         ImGui::NextColumn();
         drawBreakpointMenu();
+        ImGui::EndColumns();
+
+        drawMemoryView();
 
         ImGui::End();
 
@@ -224,6 +239,42 @@ namespace emulator {
 
     }
 
+    void Application::drawMemoryView() {
+        ImGui::TextUnformatted("Memory range to display:");
+        ImGui::InputScalarN("##input mem range", ImGuiDataType_U16,
+            mem_range_, 2, nullptr, nullptr, "%.4x",
+            ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_EnterReturnsTrue);
+        if(mem_range_[0] > mem_range_[1]) {
+            mem_range_[1] = mem_range_[0];
+        }
+
+        uint16_t len = mem_range_[1] - mem_range_[0];
+        uint16_t i = 0;
+        for(; i + 15 < len; i += 16) {
+            uint16_t base = mem_range_[0] + i;
+            ImGui::Text("0x%.4x: %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x",
+                base, emulator_.peekMemory(base), emulator_.peekMemory(base + 1),
+                emulator_.peekMemory(base + 2), emulator_.peekMemory(base + 3),
+                emulator_.peekMemory(base + 4), emulator_.peekMemory(base + 5),
+                emulator_.peekMemory(base + 6), emulator_.peekMemory(base + 7),
+                emulator_.peekMemory(base + 8), emulator_.peekMemory(base + 9),
+                emulator_.peekMemory(base + 10), emulator_.peekMemory(base + 11),
+                emulator_.peekMemory(base + 12), emulator_.peekMemory(base + 13),
+                emulator_.peekMemory(base + 14), emulator_.peekMemory(base + 15)
+            );
+        }
+
+        if((len - i ) > 1) {
+            ImGui::Text("0x%.4x:", mem_range_[0] + i);
+        }
+        for(; i < len; ++i) {
+            ImGui::SameLine();
+            ImGui::Text(" %.2x", emulator_.peekMemory(mem_range_[0] + i));
+        }
+
+
+    }
+
     Application::Application() 
         : emulator_(false)
     {
@@ -315,7 +366,12 @@ namespace emulator {
             bool fetch_data = emulator_.instructionFinished();
             if(fetch_data) {
                 instr_data.registers = emulator_.getRegisters();
-                if(std::binary_search(pc_breakpoints_.begin(), pc_breakpoints_.end(), instr_data.registers.PC)) {
+                instr_data.instruction = emulator_.getLastInstruction();
+                recent_instructions_.push_back(instr_data);
+                // StringBuffer<g_instruction_string_buf_size> buf;
+                // printInstruction(buf, recent_instructions_.size() - 1);
+                // std::cout << buf.data() << std::endl;
+                if(std::binary_search(pc_breakpoints_.begin(), pc_breakpoints_.end(), instr_data.instruction.pc)) {
                     single_step_ = true;
                 }
                 for(auto& br: memory_breakpoints_) {
@@ -326,10 +382,6 @@ namespace emulator {
                 }
             }
             emulator_.tick();
-            if(fetch_data) {
-                instr_data.instruction = emulator_.getLastInstruction();
-                recent_instructions_.push_back(instr_data);
-            }
         } catch (const std::exception& e) {
             std::cout << "exception occured during emulator update: " << e.what() << std::endl;
         }
@@ -364,8 +416,8 @@ namespace emulator {
         pushRecent(recent_roms_, path);
 
 
-        emulator_.reset();
         emulator_.setROM(std::move(data));
+        emulator_.reset();
         emulator_.start();
 
         return true;

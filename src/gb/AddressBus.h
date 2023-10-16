@@ -58,6 +58,8 @@ namespace gb
         InterruptRegister interrupt_enable_;
         InterruptRegister interrupt_flags_;
         Timer timer_{interrupt_flags_};
+
+        uint8_t data_ = 0;
     };
 
 }

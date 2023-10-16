@@ -6,6 +6,7 @@
 #include <sstream>
 #include <exception>
 #include <algorithm>
+#include <iostream>
 
 
 namespace gb {
@@ -63,6 +64,12 @@ namespace gb {
             throw std::out_of_range(getErrorDescription(address, int(data)));
         }
 #undef ELIF
+
+        if(address == 0xFF01) {
+            data_ = data;
+        } else if (address == 0xFF02 && data == 0x81) {
+            std::cout << data_;
+        }
 
     }
 

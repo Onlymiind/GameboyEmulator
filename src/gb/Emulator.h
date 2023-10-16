@@ -46,6 +46,8 @@ namespace gb {
 
         cpu::Instruction getLastInstruction() const { return cpu_.getLastInstruction(); }
 
+        uint8_t peekMemory(uint16_t address) { return bus_.read(address); }
+
     private:
         AddressBus bus_;
         cpu::SharpSM83 cpu_{bus_};
@@ -72,7 +74,7 @@ namespace gb {
         }
 
         if(cpu_.isFinished()) {
-            if(break_on_infinite_loop_ && oldPC == cpu_.getProgramCounter()) {
+            if(break_on_infinite_loop_ && oldPC == cpu_.getProgramCounter() && !cpu_.isHalted()) {
                 is_running_ = false;
                 std::stringstream s;
                 s << "reached infinite loop at address 0x" << std::setfill('0') << std::setw(sizeof(oldPC) * 2) << std::hex << oldPC;

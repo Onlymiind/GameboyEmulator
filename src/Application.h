@@ -78,6 +78,7 @@ SP: 0x%.4x, PC: 0x%.4x)";
 
         void drawMainMenu();
         void drawBreakpointMenu();
+        void drawMemoryView();
 
         template<typename Element>
         void pushRecent(std::list<Element>& cont, const Element& elem) {
@@ -116,5 +117,6 @@ SP: 0x%.4x, PC: 0x%.4x)";
         bool single_step_ = true;
 
         int refresh_rate_ = 60;
+        uint16_t mem_range_[2] = {0, 0};
     };
 }

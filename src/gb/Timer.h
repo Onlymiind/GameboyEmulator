@@ -42,5 +42,10 @@ namespace gb {
         //Frequencies of a timer: 4096 Hz, 262144 Hz, 65536 Hz and 16386 Hz respectively. Frequency is set from bits 0-1 of TAC
         const std::array<uint16_t, 4> frequency_bit_mask_ = { uint16_t(1) << 9, uint16_t(1) << 3, uint16_t(1) << 5, uint16_t(1) << 7 };
         InterruptRegister& interrupt_flags_;
+
     };
+        constexpr uint16_t i0 = 1024 >> 4;
+        constexpr uint16_t i01 = 1 << 9;
+        constexpr uint16_t i1 = 16 >> 4;
+        constexpr uint16_t i11 = 1 << 3;
 }
