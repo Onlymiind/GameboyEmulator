@@ -6,7 +6,6 @@
 #include "gb/InterruptRegister.h"
 #include "gb/cpu/Decoder.h"
 #include "gb/Timer.h"
-#include "gb/memory/Memory.h"
 #include "utils/Utils.h"
 
 #include <cstdint>
@@ -28,7 +27,8 @@ namespace gb {
 
         uint16_t getPC() const { return cpu_.getProgramCounter(); }
 
-        void addMemoryObserver(MemoryObject& observer) { bus_.addObserver(observer); }
+        void setMemoryObserver(MemoryObserver& observer) { bus_.setObserver(observer); }
+        void removeMemoryObserver() { bus_.removeObserver(); }
 
         void tick();
 

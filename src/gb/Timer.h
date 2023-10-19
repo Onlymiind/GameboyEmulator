@@ -1,7 +1,6 @@
 #pragma once
 
 #include "gb/InterruptRegister.h"
-#include "gb/memory/Memory.h"
 
 #include <cstdint>
 #include <array>

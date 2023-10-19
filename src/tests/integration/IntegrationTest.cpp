@@ -15,7 +15,7 @@
 
 std::string run_cmd = "-run ";
 
-class TestOutputReader : public gb::MemoryObject
+class TestOutputReader : public gb::MemoryObserver
 {
 public:
     TestOutputReader(std::ostream& out)
@@ -60,7 +60,7 @@ TEST_CASE("run cpu test roms") {
     REQUIRE(std::filesystem::exists(rom_name));
     emulator.setROM(readFile(rom_name));
 
-    emulator.addMemoryObserver(test_out);
+    emulator.setMemoryObserver(test_out);
     emulator.start();
     while(!emulator.terminated()) {
         try {

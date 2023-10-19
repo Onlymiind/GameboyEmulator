@@ -430,7 +430,7 @@ namespace emulator {
 
     void Application::addMemoryBreakpoint(uint8_t flags, uint16_t min_address, uint16_t max_address, std::optional<uint8_t> data) {
         memory_breakpoints_.push_front(MemoryBreakpoint(min_address, max_address, flags, data));
-        emulator_.addMemoryObserver(*memory_breakpoints_.begin());
+        emulator_.setMemoryObserver(*memory_breakpoints_.begin());
     }
 
     void Application::resetBreakpoints() {

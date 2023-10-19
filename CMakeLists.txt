@@ -21,7 +21,6 @@ set(EMULATOR_LIB
     src/gb/InterruptRegister.h
     src/gb/Timer.h
     src/gb/memory/BasicComponents.h
-    src/gb/memory/Memory.h
     src/gb/cpu/CPU.h
     src/gb/cpu/CPUUtils.h
     src/gb/cpu/Decoder.h

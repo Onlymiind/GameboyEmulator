@@ -23,7 +23,7 @@ namespace emulator {
         WRITE = 1 << 1
     };
 
-    class MemoryBreakpoint : public Breakpoint, public gb::MemoryObject {
+    class MemoryBreakpoint : public Breakpoint, public gb::MemoryObserver {
     public:
         MemoryBreakpoint(uint16_t min_address, uint16_t max_address,
             uint8_t flags = uint8_t(MemoryBreakpointFlags::READ) | uint8_t(MemoryBreakpointFlags::WRITE), 

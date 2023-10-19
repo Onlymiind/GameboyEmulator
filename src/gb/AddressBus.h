@@ -1,5 +1,4 @@
 #pragma once
-#include "gb/memory/Memory.h"
 #include "gb/memory/BasicComponents.h"
 #include "gb/InterruptRegister.h"
 #include "gb/Timer.h"
@@ -11,6 +10,16 @@
 
 namespace gb 
 {
+    class MemoryObserver {
+    public:
+        virtual void onRead(uint16_t address, uint8_t data) {};
+        virtual void onWrite(uint16_t address, uint8_t data) {};
+        virtual uint16_t minAddress() const = 0;
+        virtual uint16_t maxAddress() const = 0;
+
+        bool isInRange(uint16_t address) const { return address >= minAddress() && address <= maxAddress(); }
+    };
+
     struct MemoryObjectInfo {
         uint16_t min_address, max_address = 0;
         uint16_t size = static_cast<uint16_t>(max_address - min_address + 1);
@@ -35,7 +44,8 @@ namespace gb
         void setRomData(std::vector<uint8_t> data) { rom_.setData(std::move(data)); }
         void update() { timer_.update(); }
 
-        void addObserver(MemoryObject& observer);
+        void setObserver(MemoryObserver& observer) { observer_ = &observer; }
+        void removeObserver() { observer_ = nullptr; }
 
         uint8_t read(uint16_t address) const;
         void write(uint16_t address, uint8_t data);
@@ -49,7 +59,7 @@ namespace gb
     private:
         std::string getErrorDescription(uint16_t address, int value = -1) const;
 
-        std::vector<MemoryObject*> observers_;
+        MemoryObserver* observer_ = nullptr;
 
         RAM ram_ = RAM(g_memory_ram.size);
         ROM rom_;
