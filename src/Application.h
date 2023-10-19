@@ -6,7 +6,6 @@
 #include "gb/InterruptRegister.h"
 #include "gb/cpu/Decoder.h"
 #include "gb/Timer.h"
-#include "gb/memory/Memory.h"
 #include "gb/Emulator.h"
 #include "Breakpoint.h"
 

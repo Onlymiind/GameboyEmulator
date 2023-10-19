@@ -1,5 +1,5 @@
+#include "catch2/catch_message.hpp"
 #include "gb/Emulator.h"
-#include "gb/memory/Memory.h"
 
 #include "catch2/catch_test_macros.hpp"
 #include "catch2/generators/catch_generators.hpp"
@@ -62,11 +62,23 @@ TEST_CASE("run cpu test roms") {
 
     emulator.setMemoryObserver(test_out);
     emulator.start();
+    uint16_t old_pc = emulator.getPC();
     while(!emulator.terminated()) {
         try {
             emulator.tick();
+            if(emulator.instructionFinished()) {
+                // tests jump to infinite loop after comletion
+                if(!emulator.isHalted() && emulator.getPC() == old_pc) {
+                    INFO("Test rom completion detected at address:");
+                    INFO(old_pc);
+                    break;
+                }
+                old_pc = emulator.getPC();
+            }
+
         } catch(const std::exception& e) {
             INFO(e.what());
+            break;
         }
     }
 

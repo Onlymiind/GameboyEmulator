@@ -1,5 +1,4 @@
 #pragma once
-#include "gb/memory/Memory.h"
 #include "gb/Emulator.h"
 
 #include <cstdint>

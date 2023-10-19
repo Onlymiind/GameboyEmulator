@@ -8,7 +8,6 @@
 #include "gb/cpu/CPU.h"
 #include "gb/AddressBus.h"
 #include "gb/memory/BasicComponents.h"
-#include "gb/memory/Memory.h"
 #include "gb/Timer.h"
 #include "gb/cpu/Decoder.h"
 
@@ -275,9 +274,7 @@ namespace emulator {
 
     }
 
-    Application::Application() 
-        : emulator_(false)
-    {
+    Application::Application() {
         initGUI();
     }
 

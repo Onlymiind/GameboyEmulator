@@ -19,10 +19,6 @@ namespace gb {
     public:
         Emulator() = default;
 
-        Emulator(bool break_on_infinite_loop)
-            : Emulator()
-        { break_on_infinite_loop_ = break_on_infinite_loop; }
-
         cpu::RegisterFile getRegisters() const { return cpu_.getRegisters(); }
 
         uint16_t getPC() const { return cpu_.getProgramCounter(); }
@@ -43,6 +39,7 @@ namespace gb {
         void stop() { is_running_ = false; }
 
         bool instructionFinished() const { return cpu_.isFinished(); }
+        bool isHalted() const { return cpu_.isHalted(); }
 
         cpu::Instruction getLastInstruction() const { return cpu_.getLastInstruction(); }
 
@@ -53,7 +50,6 @@ namespace gb {
         cpu::SharpSM83 cpu_{bus_};
 
         bool is_running_ = false;
-        bool break_on_infinite_loop_ = true;
     };
 
     inline void Emulator::tick() {
@@ -71,17 +67,6 @@ namespace gb {
         catch(...) {
             is_running_ = false;
             throw;
-        }
-
-        if(cpu_.isFinished()) {
-            if(break_on_infinite_loop_ && oldPC == cpu_.getProgramCounter() && !cpu_.isHalted()) {
-                is_running_ = false;
-                std::stringstream s;
-                s << "reached infinite loop at address 0x" << std::setfill('0') << std::setw(sizeof(oldPC) * 2) << std::hex << oldPC;
-                throw std::runtime_error(s.str());
-            }
-
-            oldPC = cpu_.getProgramCounter();
         }
     }
 }
