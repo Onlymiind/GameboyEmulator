@@ -1,8 +1,10 @@
 #pragma once
+#include "gb/cpu/Operation.h"
 #include "utils/Utils.h"
 
 #include <array>
 #include <cstdint>
+#include <stdexcept>
 
 namespace gb::cpu {
 
@@ -34,6 +36,13 @@ namespace gb::cpu {
         const uint8_t& C() const { return registers_[2]; } const uint8_t& D() const { return registers_[5]; }
         const uint8_t& E() const { return registers_[4]; } const uint8_t& H() const { return registers_[7]; }
         const uint8_t& L() const { return registers_[6]; }
+
+        uint8_t& getByteRegister(Registers reg) { 
+            if(reg > Registers::H || reg < Registers::A) {
+                throw std::invalid_argument("invalid register passed to RegisterFile::getByteRegister");
+            }
+            return registers_[uint8_t(reg)];
+        }
 
         void  setAF(uint16_t data) { 
             *(reinterpret_cast<uint16_t*>(&registers_[0])) = data;

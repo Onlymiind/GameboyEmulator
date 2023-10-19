@@ -39,7 +39,7 @@ namespace gb::cpu {
 
     enum class Registers : uint8_t {
         None = 0,
-        A, B, C, D, E, H, L,
+        A, C, B, E, D, L, H,
         AF, BC, DE, HL, PC, SP
     };
 

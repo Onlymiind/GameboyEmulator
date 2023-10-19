@@ -62,6 +62,10 @@ namespace gb::cpu {
         int8_t getSigned() { empty_ = true; return reinterpret_cast<int8_t&>(lsb_); }
         uint16_t getWord() { empty_ = true; return uint16_t(lsb_) | (uint16_t(msb_) << 8); }
 
+        uint8_t* highPtr() { return &msb_; }
+        uint8_t* lowPtr() { return &lsb_; }
+        uint8_t* ptr() { return &lsb_; }
+
     private:
         uint8_t lsb_ = 0;
         uint8_t msb_ = 0;
