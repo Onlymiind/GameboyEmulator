@@ -3,7 +3,6 @@
 #include "gb/Emulator.h"
 #include "gb/cpu/CPUUtils.h"
 #include "gb/cpu/Operation.h"
-#include "imgui_internal.h"
 #include "utils/Utils.h"
 #include "gb/cpu/CPU.h"
 #include "gb/AddressBus.h"
@@ -46,7 +45,8 @@ namespace emulator {
         );
         drawMainMenu();
 
-        ImGui::Columns(2);
+        ImGui::BeginTable("##table", 2);
+        ImGui::TableNextColumn();
         StringBuffer<g_instruction_string_buf_size> buf;
         for(size_t i = 0; i < recent_instructions_.size(); ++i) {
             printInstruction(buf, i);
@@ -84,9 +84,9 @@ namespace emulator {
             ImGui::TextUnformatted("Single stepping");
         }
 
-        ImGui::NextColumn();
+        ImGui::TableNextColumn();
         drawBreakpointMenu();
-        ImGui::EndColumns();
+        ImGui::EndTable();
 
         drawMemoryView();
 
@@ -239,6 +239,8 @@ namespace emulator {
     }
 
     void Application::drawMemoryView() {
+        constexpr std::string_view row_fmt = "0x%.4x: %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x";
+
         ImGui::TextUnformatted("Memory range to display:");
         ImGui::InputScalarN("##input mem range", ImGuiDataType_U16,
             mem_range_, 2, nullptr, nullptr, "%.4x",
@@ -251,7 +253,7 @@ namespace emulator {
         uint16_t i = 0;
         for(; i + 15 < len; i += 16) {
             uint16_t base = mem_range_[0] + i;
-            ImGui::Text("0x%.4x: %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x",
+            ImGui::Text(row_fmt.data(),
                 base, emulator_.peekMemory(base), emulator_.peekMemory(base + 1),
                 emulator_.peekMemory(base + 2), emulator_.peekMemory(base + 3),
                 emulator_.peekMemory(base + 4), emulator_.peekMemory(base + 5),
@@ -263,15 +265,16 @@ namespace emulator {
             );
         }
 
-        if((len - i ) > 1) {
-            ImGui::Text("0x%.4x:", mem_range_[0] + i);
+        if(i < len) {
+            //account for null char!!
+            size_t last_row_len = strlen("0xffff:") + (len - i) * strlen(" ff") + 1;
+            std::string buf(last_row_len, '\0');
+            int written = sprintf(buf.data(), "0x%.4x:", mem_range_[0] + i);
+            for(; i < len; ++i) {
+                written += sprintf(buf.data() + written, " %.2x", emulator_.peekMemory(mem_range_[0] + i));
+            }
+            ImGui::TextUnformatted(buf.data());
         }
-        for(; i < len; ++i) {
-            ImGui::SameLine();
-            ImGui::Text(" %.2x", emulator_.peekMemory(mem_range_[0] + i));
-        }
-
-
     }
 
     Application::Application() {
