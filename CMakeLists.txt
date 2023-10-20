@@ -73,6 +73,7 @@ if(NOT TESTS_ONLY)
         ${GLAD}
         
         src/Breakpoint.h
+        src/Breakpoint.cpp
         src/Application.h
         src/Application.cpp
         src/Source.cpp

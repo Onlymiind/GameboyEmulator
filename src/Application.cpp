@@ -212,7 +212,7 @@ namespace emulator {
                 flags |= uint8_t(MemoryBreakpointFlags::WRITE);
             }
             addMemoryBreakpoint(flags, memory_breakpoint_data_.addresses[0], memory_breakpoint_data_.addresses[1], memory_breakpoint_data_.value);
-            memory_breakpoint_data_ = MemoryBreakpointData{};
+            memory_breakpoint_data_ = MemoryBreakpointData_{};
         }
         {
             ImGui::Text("Memory breakpoints: ");

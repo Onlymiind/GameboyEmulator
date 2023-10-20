@@ -1,8 +1,11 @@
 #pragma once
+#include "gb/AddressBus.h"
 #include "gb/Emulator.h"
 
 #include <cstdint>
+#include <functional>
 #include <optional>
+#include <memory>
 
 namespace emulator {
 
@@ -69,5 +72,106 @@ namespace emulator {
         uint8_t flags_;
         std::optional<uint8_t> value_;
         bool is_hit_ = false;
+    };
+
+    
+
+    struct MemoryBreakpointData {
+        uint16_t min_address = 0;
+        uint16_t max_address = 0;
+
+        bool break_on_read = true;
+        bool break_on_write = true;
+
+        std::optional<uint8_t> value;
+
+        bool empty() const { return min_address == max_address; }
+        bool isInRange(uint16_t address) const { return address >= min_address && address <= max_address; }
+        bool overlaps(MemoryBreakpointData other) const {
+            if(empty()) {
+                return false;
+            }
+
+            return other.isInRange(min_address) || other.isInRange(max_address - 1);
+        }
+
+        bool operator<(MemoryBreakpointData other) { 
+            return min_address != other.min_address ? 
+                min_address < other.min_address : 
+                max_address < other.max_address;
+        }
+    };
+
+    class MemoryBreakpointTree {
+        struct Node {
+            MemoryBreakpointData data;
+            bool is_black = false;
+            uint16_t max_address = 0;
+
+            Node* parent = nullptr;
+            std::unique_ptr<Node> left;
+            std::unique_ptr<Node> right;
+        };
+    public:
+        class Iterator {
+        public:
+            const MemoryBreakpointData& operator*() const { return ptr_->data; }
+            const MemoryBreakpointData* operator->() const { return &ptr_->data; }
+
+            Iterator& operator++();
+
+            bool operator==(Iterator other) { return ptr_ == other.ptr_; }
+        private:
+            const Node* ptr_ = nullptr;
+        };
+
+        void insert(MemoryBreakpointData data);
+        void erase(Iterator it);
+
+        bool isBreakpointTriggered(uint16_t address, uint8_t data, bool is_read) { 
+            return find(root_.get(), address, data, is_read); 
+        }
+
+        Iterator begin() const;
+        Iterator end() const;
+
+        size_t size() const;
+    private:
+        void rotate(Node* node, bool rotate_right);
+
+        static bool find(Node* node, uint16_t address, uint8_t data, bool is_read);
+        static bool isBlack(Node* node) { return !node || node->is_black; }
+        static Node* getParent(Node* node) { return node ? node->parent : nullptr; } 
+
+        std::unique_ptr<Node> root_;
+        size_t size_ = 0;
+    };
+
+    class MemoryBreakpoints : public gb::MemoryObserver {
+    public:
+        MemoryBreakpoints(std::function<void()>&& callback)
+            : callback_(std::move(callback))
+        {}
+
+        void addBreakpoint(MemoryBreakpointData data) { breakpoints_.insert(data); }
+
+        void removeBreakpoint(MemoryBreakpointTree::Iterator it) { breakpoints_.erase(it); }
+
+        const MemoryBreakpointTree& getBreakpoints() const { return breakpoints_; }
+
+        void onRead(uint16_t address, uint8_t data) override {
+            if(breakpoints_.isBreakpointTriggered(address, data, true)) {
+                callback_();
+            }
+        }
+        void onWrite(uint16_t address, uint8_t data) override {
+            if(breakpoints_.isBreakpointTriggered(address, data, false)) {
+                callback_();
+            }
+        }
+    
+    private :
+        std::function<void()> callback_;
+        MemoryBreakpointTree breakpoints_;
     };
 }

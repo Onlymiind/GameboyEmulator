@@ -51,7 +51,7 @@ SP: 0x%.4x, PC: 0x%.4x)";
         gb::cpu::Instruction instruction;
     };
 
-    struct MemoryBreakpointData {
+    struct MemoryBreakpointData_ {
         uint16_t addresses[2] = {0, 0};
         bool read = true;
         bool write = true;
@@ -107,7 +107,7 @@ SP: 0x%.4x, PC: 0x%.4x)";
         std::list<MemoryBreakpoint> memory_breakpoints_;
 
         //buffers for GUI
-        MemoryBreakpointData memory_breakpoint_data_;
+        MemoryBreakpointData_ memory_breakpoint_data_;
         std::string new_romdir_;
         std::optional<gb::cpu::RegisterFile> registers_to_print_;
 
