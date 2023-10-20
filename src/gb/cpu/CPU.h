@@ -59,7 +59,7 @@ namespace gb::cpu {
         void putLow(uint8_t data) { lsb_ = data; empty_ = false; }
 
         uint8_t get() { empty_ = true; return lsb_; }
-        int8_t getSigned() { empty_ = true; return reinterpret_cast<int8_t&>(lsb_); }
+        int8_t getSigned() { empty_ = true; return std::bit_cast<int8_t>(lsb_); }
         uint16_t getWord() { empty_ = true; return uint16_t(lsb_) | (uint16_t(msb_) << 8); }
 
         uint8_t* highPtr() { return &msb_; }

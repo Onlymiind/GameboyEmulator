@@ -45,17 +45,17 @@ namespace gb::cpu {
         }
 
         void  setAF(uint16_t data) { 
-            *(reinterpret_cast<uint16_t*>(&registers_[0])) = data;
+            *(std::bit_cast<uint16_t*>(&registers_[0])) = data;
             registers_[flags] &= uint8_t(Flags::ALL);
         }
-        uint16_t& BC() { return *(reinterpret_cast<uint16_t*>(&registers_[2])); }
-        uint16_t& DE() { return *(reinterpret_cast<uint16_t*>(&registers_[4])); }
-        uint16_t& HL() { return *(reinterpret_cast<uint16_t*>(&registers_[6])); }
+        uint16_t& BC() { return *(std::bit_cast<uint16_t*>(&registers_[2])); }
+        uint16_t& DE() { return *(std::bit_cast<uint16_t*>(&registers_[4])); }
+        uint16_t& HL() { return *(std::bit_cast<uint16_t*>(&registers_[6])); }
 
-        const uint16_t& AF() const { return *(reinterpret_cast<const uint16_t*>(&registers_[0])); }
-        const uint16_t& BC() const { return *(reinterpret_cast<const uint16_t*>(&registers_[2])); }
-        const uint16_t& DE() const { return *(reinterpret_cast<const uint16_t*>(&registers_[4])); }
-        const uint16_t& HL() const { return *(reinterpret_cast<const uint16_t*>(&registers_[6])); }
+        const uint16_t& AF() const { return *(std::bit_cast<const uint16_t*>(&registers_[0])); }
+        const uint16_t& BC() const { return *(std::bit_cast<const uint16_t*>(&registers_[2])); }
+        const uint16_t& DE() const { return *(std::bit_cast<const uint16_t*>(&registers_[4])); }
+        const uint16_t& HL() const { return *(std::bit_cast<const uint16_t*>(&registers_[6])); }
 
         void setFlag(Flags flag, bool value) {
             registers_[flags] &= ~uint8_t(flag);
