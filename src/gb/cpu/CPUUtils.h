@@ -5,6 +5,7 @@
 #include <array>
 #include <cstdint>
 #include <stdexcept>
+#include <bit>
 
 namespace gb::cpu {
 
