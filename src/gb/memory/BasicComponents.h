@@ -6,20 +6,6 @@
 
 namespace gb {
 
-    class RAM {
-    public:
-        RAM(size_t size)
-            : memory_(size)
-        {}
-
-        ~RAM() = default;
-
-        uint8_t read(uint16_t address) const { return memory_[address]; }
-        void write(uint16_t address, uint8_t data) { memory_[address] = data; }
-    private:
-        std::vector<uint8_t> memory_;
-    };
-
     //TODO: cartridge RAM, mapper chips
     class Cartridge {
     public:
@@ -41,5 +27,12 @@ namespace gb {
     };
 
     template<size_t SIZE>
-    using StaticRAM = std::array<uint8_t, SIZE>;
+    using RAM = std::array<uint8_t, SIZE>;
+
+    struct MemoryObjectInfo {
+        uint16_t min_address, max_address = 0;
+        uint16_t size = static_cast<uint16_t>(max_address - min_address + 1);
+
+        constexpr bool isInRange(uint16_t address) const { return address >= min_address && address <= max_address; }
+    };
 }

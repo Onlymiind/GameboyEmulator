@@ -25,6 +25,8 @@ set(EMULATOR_LIB
     src/gb/cpu/CPUUtils.h
     src/gb/cpu/Decoder.h
     src/gb/cpu/Operation.h
+    src/gb/ppu/PPU.h
+    src/gb/ppu/PPU.cpp
 )
 
 add_library(emulator_lib

@@ -20,13 +20,6 @@ namespace gb
         bool isInRange(uint16_t address) const { return address >= minAddress() && address <= maxAddress(); }
     };
 
-    struct MemoryObjectInfo {
-        uint16_t min_address, max_address = 0;
-        uint16_t size = static_cast<uint16_t>(max_address - min_address + 1);
-
-        constexpr bool isInRange(uint16_t address) const { return address >= min_address && address <= max_address; }
-    };
-
     constexpr MemoryObjectInfo g_memory_rom = {.min_address = 0x0000,  .max_address = 0x7FFF};
     constexpr MemoryObjectInfo g_memory_vram = {.min_address = 0x8000, .max_address = 0x9fff};
     constexpr MemoryObjectInfo g_memory_cartridge_ram = {.min_address = 0xa000, .max_address = 0xbfff};
@@ -68,15 +61,15 @@ namespace gb
 
         MemoryObserver* observer_ = nullptr;
 
-        StaticRAM<g_memory_vram.size> vram_;
-        StaticRAM<g_memory_wram.size> wram_;
-        StaticRAM<g_memory_oam.size> oam_;
+        RAM<g_memory_vram.size> vram_;
+        RAM<g_memory_wram.size> wram_;
+        RAM<g_memory_oam.size> oam_;
         
-        StaticRAM<g_memory_io_unused.size> unused_io_;
-        StaticRAM<g_memory_io_unused2.size> unused_io2_;
-        StaticRAM<g_memory_io_unused3.size> unused_io3_;
+        RAM<g_memory_io_unused.size> unused_io_;
+        RAM<g_memory_io_unused2.size> unused_io2_;
+        RAM<g_memory_io_unused3.size> unused_io3_;
 
-        StaticRAM<g_memory_hram.size> hram_;
+        RAM<g_memory_hram.size> hram_;
         Cartridge cartridge_;
         InterruptRegister interrupt_enable_;
         InterruptRegister interrupt_flags_;
