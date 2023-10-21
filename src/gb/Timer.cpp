@@ -20,13 +20,13 @@ namespace gb {
 
     uint8_t Timer::read(uint16_t address) const {
         switch (address) {
-        case 0x00:
+        case g_timer_div_address:
             return DIV_;
-        case 0x01:
+        case g_timer_tima_address:
             return TIMA_;
-        case 0x02:
+        case g_timer_tma_address:
             return TMA_;
-        case 0x03:
+        case g_timer_tac_address:
             return (uint8_t(TAC_.enable) << 2) | TAC_.freqency;
         default:
             throw std::invalid_argument("Attempting to read data from timer at invalid adress: " + std::to_string(address));
@@ -38,16 +38,16 @@ namespace gb {
     {
         switch (address)
         {
-        case 0x00:
+        case g_timer_div_address:
             counter_ = 0;
             break;
-        case 0x01:
+        case g_timer_tima_address:
             TIMA_ = data;
             break;
-        case 0x02:
+        case g_timer_tma_address:
             TMA_ = data;
             break;
-        case 0x03:
+        case g_timer_tac_address:
             TAC_.enable = (data & 0b00000100) != 0;
             TAC_.freqency = data & 0b00000011;
             break;

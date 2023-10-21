@@ -13,30 +13,30 @@ TEST_CASE("reading and writing")
     gb::InterruptRegister reg;
     gb::Timer timer(reg);
 
-    REQUIRE(timer.read(0x00) == 0xAB);
-    REQUIRE(timer.read(0x01) == 0);
-    REQUIRE(timer.read(0x02) == 0);
-    REQUIRE(timer.read(0x03) == 0);
+    REQUIRE(timer.read(gb::g_timer_div_address) == 0xAB);
+    REQUIRE(timer.read(gb::g_timer_tima_address) == 0);
+    REQUIRE(timer.read(gb::g_timer_tma_address) == 0);
+    REQUIRE(timer.read(gb::g_timer_tac_address) == 0);
 
-    timer.write(0x00, 0x10);
-    REQUIRE(timer.read(0x00) == 0);
+    timer.write(gb::g_timer_div_address, 0x10);
+    REQUIRE(timer.read(gb::g_timer_div_address) == 0);
 
-    timer.write(0x01, 0x11);
-    REQUIRE(timer.read(0x01) == 0x11);
+    timer.write(gb::g_timer_tima_address, 0x11);
+    REQUIRE(timer.read(gb::g_timer_tima_address) == 0x11);
 
-    timer.write(0x02, 0x12);
-    assert(timer.read(0x02) == 0x12);
+    timer.write(gb::g_timer_tma_address, 0x12);
+    assert(timer.read(gb::g_timer_tma_address) == 0x12);
 
-    timer.write(0x03, 0b11100101);
-    REQUIRE(timer.read(0x03) == 0b00000101);
+    timer.write(gb::g_timer_tac_address, 0b11100101);
+    REQUIRE(timer.read(gb::g_timer_tac_address) == 0b00000101);
 }
 
 TEST_CASE("interrupt")
 {
     gb::InterruptRegister reg;
     gb::Timer timer(reg);
-    timer.write(0x00, 0);
-    timer.write(0x03, 4);
+    timer.write(gb::g_timer_div_address, 0);
+    timer.write(gb::g_timer_tac_address, 4);
 
 
 
@@ -59,8 +59,8 @@ TEST_CASE("frequencies")
         gb::Timer timer(reg);
 
         //Enable timer, set frequency to the first one
-        timer.write(0x00, 0);
-        timer.write(0x03, 4);
+        timer.write(gb::g_timer_div_address, 0);
+        timer.write(gb::g_timer_tac_address, 4);
 
         for(int i = 1024 * 256 - 1; i > 0; --i)
         {
@@ -76,8 +76,8 @@ TEST_CASE("frequencies")
         gb::Timer timer(reg);
 
         //Enable timer, set second frequency
-        timer.write(0x00, 0);
-        timer.write(0x03, 5);
+        timer.write(gb::g_timer_div_address, 0);
+        timer.write(gb::g_timer_tac_address, 5);
 
         for(int i = 16 * 256 - 1; i > 0; --i)
         {
@@ -93,8 +93,8 @@ TEST_CASE("frequencies")
         gb::Timer timer(reg);
 
         //Enable timer, set third frequency
-        timer.write(0x00, 0);
-        timer.write(0x03, 6);
+        timer.write(gb::g_timer_div_address, 0);
+        timer.write(gb::g_timer_tac_address, 6);
 
         for(int i = 64 * 256 - 1; i > 0; --i)
         {
@@ -110,8 +110,8 @@ TEST_CASE("frequencies")
         gb::Timer timer(reg);
 
         //Enable timer, set last frequency
-        timer.write(0x00, 0);
-        timer.write(0x03, 7);
+        timer.write(gb::g_timer_div_address, 0);
+        timer.write(gb::g_timer_tac_address, 7);
 
         for(int i = 256 * 256 - 1; i > 0; --i)
         {

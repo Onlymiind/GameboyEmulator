@@ -6,6 +6,12 @@
 #include <array>
 
 namespace gb {
+
+    constexpr uint16_t g_timer_div_address = 0xFF04;
+    constexpr uint16_t g_timer_tima_address = 0xFF05;
+    constexpr uint16_t g_timer_tma_address = 0xFF06;
+    constexpr uint16_t g_timer_tac_address = 0xFF07;
+
     class Timer {
     public:
         Timer(InterruptRegister& interruptFlags)

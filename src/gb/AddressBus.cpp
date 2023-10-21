@@ -1,6 +1,8 @@
 #include "gb/AddressBus.h"
+#include "gb/InterruptRegister.h"
 #include "utils/Utils.h"
 
+#include <stdexcept>
 #include <string>
 #include <sstream>
 #include <exception>
@@ -16,17 +18,39 @@ namespace gb {
 
     uint8_t AddressBus::read(uint16_t address) const {
         uint8_t data = 0;
-#define ELIF(mem_range, object) else if(address >= mem_range.min_address && address <= mem_range.max_address) { data =  object.read(address - mem_range.min_address); }
-        if(address >= g_memory_rom.min_address && address <= g_memory_rom.max_address) {
-            data =  rom_.read(address);
+        if(g_memory_rom.isInRange(address) && cartridge_.hasROM()) {
+            data = cartridge_.read(address);
+        } else if(g_memory_vram.isInRange(address)) {
+            data = vram_[address - g_memory_vram.min_address];
+        } else if(g_memory_cartridge_ram.isInRange(address) && cartridge_.hasRAM()) {
+            data = cartridge_.read(address);
+        } else if(g_memory_wram.isInRange(address)) {
+            data = wram_[address - g_memory_wram.min_address];
+        } else if(g_memory_mirror.isInRange(address)) {
+            //only lower 13 bits of the address are used
+            data = wram_[address & 0x1fff];
+        } else if(g_memory_oam.isInRange(address)) {
+            data = oam_[address - g_memory_oam.min_address];
+        } else if(g_memory_forbidden.isInRange(address)) {
+            //TODO: value depends on PPU behaviour
+            data = 0xff;
+        } else if(g_memory_io_unused.isInRange(address)) {
+            data = unused_io_[address - g_memory_io_unused.min_address];
+        } else if(g_memory_io_unused2.isInRange(address)) {
+            data = unused_io2_[address - g_memory_io_unused2.min_address];
+        } else if(g_memory_timer.isInRange(address)) {
+            data = timer_.read(address);
+        } else if(g_memory_io_unused3.isInRange(address)) {
+            data = unused_io3_[address - g_memory_io_unused3.min_address];
+        } else if(g_memory_hram.isInRange(address)) {
+            data = hram_[address - g_memory_hram.min_address];
+        } else if(address == g_interrupt_enable_address) {
+            data = interrupt_enable_.read();
+        } else if(address == g_interrupt_flags_address) {
+            data = interrupt_flags_.read();
+        } else {
+            throw std::invalid_argument("trying to access invalid memory");
         }
-        ELIF(g_memory_ram, ram_)
-        ELIF(g_memory_leftover2, leftover2_)
-        ELIF(g_memory_leftover, leftover_)
-        ELIF(g_memory_interrupt_flags, interrupt_flags_)
-        ELIF(g_memory_interrupt_enable, interrupt_enable_)
-        ELIF(g_memory_timer, timer_)
-#undef ELIF
 
         if(observer_) {
             observer_->onRead(address, data);
@@ -36,17 +60,38 @@ namespace gb {
     }
 
     void AddressBus::write(uint16_t address, uint8_t data) {
-#define ELIF(mem_range, object) else if(address >= mem_range.min_address && address <= mem_range.max_address) { object.write(address - mem_range.min_address, data); }
-        if(address >= g_memory_rom.min_address && address <= g_memory_rom.max_address) {
-            rom_.write(address, data);
+        if(g_memory_rom.isInRange(address) && cartridge_.hasROM()) {
+            cartridge_.write(address, data);
+        } else if(g_memory_vram.isInRange(address)) {
+            vram_[address - g_memory_vram.min_address] = data;
+        } else if(g_memory_cartridge_ram.isInRange(address) && cartridge_.hasRAM()) {
+            cartridge_.write(address, data);
+        } else if(g_memory_wram.isInRange(address)) {
+            wram_[address - g_memory_wram.min_address] = data;
+        } else if(g_memory_mirror.isInRange(address)) {
+            //only lower 13 bits of the address are used
+            wram_[address & 0x1fff] = data;
+        } else if(g_memory_oam.isInRange(address)) {
+            oam_[address - g_memory_oam.min_address] = data;
+        } else if(g_memory_io_unused.isInRange(address)) {
+            unused_io_[address - g_memory_io_unused.min_address] = data;
+        } else if(g_memory_io_unused2.isInRange(address)) {
+            unused_io2_[address - g_memory_io_unused2.min_address] = data;
+        } else if(g_memory_timer.isInRange(address)) {
+            timer_.write(address, data);
+        } else if(g_memory_io_unused3.isInRange(address)) {
+            unused_io3_[address - g_memory_io_unused3.min_address] = data;
+        } else if(g_memory_hram.isInRange(address)) {
+            hram_[address - g_memory_hram.min_address] = data;
+        } else if(address == g_interrupt_enable_address) {
+            interrupt_enable_.write(data);
+        } else if(address == g_interrupt_flags_address) {
+            interrupt_flags_.write(data);
+        } else if(g_memory_forbidden.isInRange(address)) {
+            //ignore
+        } else {
+            throw std::invalid_argument("trying to access invalid memory");
         }
-        ELIF(g_memory_ram, ram_)
-        ELIF(g_memory_leftover2, leftover2_)
-        ELIF(g_memory_leftover, leftover_)
-        ELIF(g_memory_interrupt_flags, interrupt_flags_)
-        ELIF(g_memory_interrupt_enable, interrupt_enable_)
-        ELIF(g_memory_timer, timer_)
-#undef ELIF
 
         if(observer_) {
             observer_->onWrite(address, data);

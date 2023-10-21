@@ -23,15 +23,22 @@ namespace gb
     struct MemoryObjectInfo {
         uint16_t min_address, max_address = 0;
         uint16_t size = static_cast<uint16_t>(max_address - min_address + 1);
+
+        constexpr bool isInRange(uint16_t address) const { return address >= min_address && address <= max_address; }
     };
 
-    constexpr MemoryObjectInfo g_memory_rom = {0x0000, 0x7FFF};
-    constexpr MemoryObjectInfo g_memory_ram = {0x8000, 0xFF03};
-    constexpr MemoryObjectInfo g_memory_timer = {0xFF04, 0xFF07};
-    constexpr MemoryObjectInfo g_memory_leftover2 = {0xFF08, 0xFF0E};
-    constexpr MemoryObjectInfo g_memory_interrupt_enable = {0xFFFF, 0xFFFF};
-    constexpr MemoryObjectInfo g_memory_leftover = {0xFF10, 0xFFFE};
-    constexpr MemoryObjectInfo g_memory_interrupt_flags = {0xFF0F, 0xFF0F};
+    constexpr MemoryObjectInfo g_memory_rom = {.min_address = 0x0000,  .max_address = 0x7FFF};
+    constexpr MemoryObjectInfo g_memory_vram = {.min_address = 0x8000, .max_address = 0x9fff};
+    constexpr MemoryObjectInfo g_memory_cartridge_ram = {.min_address = 0xa000, .max_address = 0xbfff};
+    constexpr MemoryObjectInfo g_memory_wram = {.min_address = 0xc000, .max_address = 0xdfff};
+    constexpr MemoryObjectInfo g_memory_mirror = {.min_address = 0xe000, .max_address = 0xfdff};
+    constexpr MemoryObjectInfo g_memory_oam = {.min_address = 0xe000, .max_address = 0xfe9f};
+    constexpr MemoryObjectInfo g_memory_forbidden = {.min_address = 0xfea0, .max_address = 0xfeff};
+    constexpr MemoryObjectInfo g_memory_io_unused = {.min_address = 0xff00, .max_address = 0xff03};
+    constexpr MemoryObjectInfo g_memory_timer = {.min_address = 0xFF04,  .max_address = 0xFF07};
+    constexpr MemoryObjectInfo g_memory_io_unused2 = {.min_address = 0xff08, .max_address = 0xff0e};
+    constexpr MemoryObjectInfo g_memory_io_unused3 = {.min_address = 0xff10, .max_address = 0xff7f};
+    constexpr MemoryObjectInfo g_memory_hram = {.min_address = 0xff80, .max_address = 0xfffe};
 
 
     class AddressBus {
@@ -41,7 +48,7 @@ namespace gb
 
         ~AddressBus() = default;
 
-        void setRomData(std::vector<uint8_t> data) { rom_.setData(std::move(data)); }
+        void setRomData(std::vector<uint8_t> data) { cartridge_.setROM(std::move(data)); }
         void update() { timer_.update(); }
 
         void setObserver(MemoryObserver& observer) { observer_ = &observer; }
@@ -61,10 +68,16 @@ namespace gb
 
         MemoryObserver* observer_ = nullptr;
 
-        RAM ram_ = RAM(g_memory_ram.size);
-        ROM rom_;
-        RAM leftover_ = RAM(g_memory_leftover.size);
-        RAM leftover2_ = RAM(g_memory_leftover2.size);
+        StaticRAM<g_memory_vram.size> vram_;
+        StaticRAM<g_memory_wram.size> wram_;
+        StaticRAM<g_memory_oam.size> oam_;
+        
+        StaticRAM<g_memory_io_unused.size> unused_io_;
+        StaticRAM<g_memory_io_unused2.size> unused_io2_;
+        StaticRAM<g_memory_io_unused3.size> unused_io3_;
+
+        StaticRAM<g_memory_hram.size> hram_;
+        Cartridge cartridge_;
         InterruptRegister interrupt_enable_;
         InterruptRegister interrupt_flags_;
         Timer timer_{interrupt_flags_};

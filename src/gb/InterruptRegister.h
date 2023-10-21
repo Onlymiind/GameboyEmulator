@@ -10,7 +10,9 @@ namespace gb {
         Joypad   = 1 << 4,
     };
 
-    inline const uint8_t g_unused_interrupt_bits = 0b11100000;
+    constexpr uint8_t g_unused_interrupt_bits = 0b11100000;
+    constexpr uint16_t g_interrupt_enable_address =0xFFFF;
+    constexpr uint16_t g_interrupt_flags_address = 0xFF0F;
 
     class InterruptRegister {
     public:
@@ -24,6 +26,14 @@ namespace gb {
 
         inline void write(uint16_t address, uint8_t data) {
             interrupts_ = (g_unused_interrupt_bits | (data & 0x1F));
+        }
+
+        uint8_t read() const {
+            return interrupts_;
+        }
+
+        void write(uint8_t data) {
+            interrupts_ = g_unused_interrupt_bits | data;
         }
 
         inline void setFlag(InterruptFlags flag) {

@@ -1,4 +1,5 @@
 #pragma once
+#include <array>
 #include <cstdint>
 #include <cstddef>
 #include <vector>
@@ -19,20 +20,26 @@ namespace gb {
         std::vector<uint8_t> memory_;
     };
 
-    class ROM {
+    //TODO: cartridge RAM, mapper chips
+    class Cartridge {
     public:
-        ROM() = default;
-        
-        ROM(std::vector<uint8_t> rom) 
-            : memory_(std::move(rom))
+        Cartridge() = default;
+        Cartridge(std::vector<uint8_t> rom)
+            : rom_(std::move(rom))
         {}
 
-        ~ROM() = default;
-
-        void setData(std::vector<uint8_t> rom) { memory_ = std::move(rom); }
-        uint8_t read(uint16_t address) const { return memory_[address]; }
+        void setROM(std::vector<uint8_t> rom) { rom_ = std::move(rom); }
+        uint8_t read(uint16_t address) const { return rom_[address]; }
         void write(uint16_t address, uint8_t data) { /*do nothing*/ }
+
+        bool hasRAM() const { return !ram_.empty(); }
+        bool hasROM() const { return !rom_.empty(); }
+
     private:
-        std::vector<uint8_t> memory_;
+        std::vector<uint8_t> rom_;
+        std::vector<uint8_t> ram_;
     };
+
+    template<size_t SIZE>
+    using StaticRAM = std::array<uint8_t, SIZE>;
 }

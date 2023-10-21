@@ -84,8 +84,9 @@ namespace emulator {
             ImGui::TextUnformatted("Single stepping");
         }
 
-        ImGui::TableNextColumn();
-        drawBreakpointMenu();
+        //FIXME: memory breakpoints are currently broken, check Breakpoint.h for in-progress fix
+        // ImGui::TableNextColumn();
+        // drawBreakpointMenu();
         ImGui::EndTable();
 
         drawMemoryView();
