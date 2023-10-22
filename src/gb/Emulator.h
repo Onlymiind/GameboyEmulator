@@ -56,13 +56,13 @@ namespace gb {
         if(!is_running_) {
             return;
         }
-        static uint16_t oldPC = cpu_.getProgramCounter();
 
         try {
             cpu_.tick();
             for(int i = 0; i < 4; ++i) {
                 bus_.update();
             }
+            is_running_ = !cpu_.isStopped();
         }
         catch(...) {
             is_running_ = false;

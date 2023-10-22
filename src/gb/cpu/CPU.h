@@ -81,14 +81,16 @@ namespace gb::cpu {
 
         RegisterFile getRegisters() const { return reg_; }
 
-        inline uint16_t getProgramCounter() const { return reg_.PC; }
+        uint16_t getProgramCounter() const { return reg_.PC; }
 
-        inline bool isFinished() const { 
+        bool isFinished() const { 
             return !current_instruction_ && !prefixed_next_ && memory_op_queue_.empty();
             //(memory_op_queue_.size() == 1 || ( && memory_op_executed_));
         }
 
-        inline bool isHalted() const { return halt_mode_; }
+        bool isHalted() const { return halt_mode_; }
+
+        bool isStopped() const { return stopped_; }
 
         Instruction getLastInstruction() const { return last_instruction_; }
 
@@ -190,6 +192,7 @@ namespace gb::cpu {
         bool memory_op_executed_ = false;
         bool prefixed_next_ = false;
         bool wait_for_pc_read_ = false;
+        bool stopped_ = false;
 
         Queue<MemoryOp, 8> memory_op_queue_;
         Instruction last_instruction_;

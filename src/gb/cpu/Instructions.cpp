@@ -442,9 +442,8 @@ namespace gb::cpu {
     }
 
     uint8_t SharpSM83::STOP() {
-        //TODO: this should turn LCD off
         //TODO: check for corrupted STOP
-        halt_mode_ = true;
+        stopped_ = true;
         return 1;
     }
 

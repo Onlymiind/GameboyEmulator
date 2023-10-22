@@ -23,12 +23,14 @@ namespace gb::cpu {
 
         reg_.SP = 0xFFFE;
         reg_.PC = 0x0100;
-
-        IME_ = false;
     }
 
 
     void SharpSM83::tick() {
+        if(stopped_) {
+            return;
+        }
+        
         memory_op_executed_ = false;
 
         if(halt_mode_ && bus_.getInterruptFlags().getFlags()) {
@@ -177,6 +179,7 @@ namespace gb::cpu {
 
         IME_ = false;
         last_instruction_ = Instruction{};
+        stopped_ = false;
         sheduleFetchInstruction();
     }
 
