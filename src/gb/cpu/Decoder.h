@@ -1,9 +1,9 @@
 #pragma once
 #include "gb/cpu/Operation.h"
 
-#include <cstdint>
-#include <cstddef>
 #include <array>
+#include <cstddef>
+#include <cstdint>
 #include <unordered_map>
 
 /*
@@ -16,5 +16,4 @@ namespace gb::cpu {
     DecodedInstruction decodePrefixed(opcode code);
 
     inline bool isPrefix(opcode code) { return code.code == 0xCB; }
-}
-
+} // namespace gb::cpu

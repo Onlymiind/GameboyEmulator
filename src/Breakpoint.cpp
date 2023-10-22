@@ -2,6 +2,4 @@
 #include <algorithm>
 #include <cstdint>
 
-namespace emulator {
-    
-}
+namespace emulator {}

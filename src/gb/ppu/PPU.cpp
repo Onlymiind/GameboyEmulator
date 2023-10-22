@@ -4,9 +4,9 @@
 namespace gb {
 
     uint8_t PPU::read(uint16_t address) const {
-        if(g_memory_vram.isInRange(address)) {
+        if (g_memory_vram.isInRange(address)) {
             return vram_[address - g_memory_vram.min_address];
-        } else if(g_memory_oam.isInRange(address)) {
+        } else if (g_memory_oam.isInRange(address)) {
             return oam_[address - g_memory_oam.min_address];
         }
 
@@ -14,7 +14,8 @@ namespace gb {
         case g_lcd_control_address:
             return lcd_control_;
         case g_lcd_status:
-            return status_ | (uint8_t(current_y_ == y_compare_) << 2) | uint8_t(mode_);
+            return status_ | (uint8_t(current_y_ == y_compare_) << 2) |
+                   uint8_t(mode_);
         case g_scroll_x_address:
             return scroll_x_;
         case g_scroll_y_address:
@@ -42,9 +43,9 @@ namespace gb {
     }
 
     void PPU::write(uint16_t address, uint8_t data) {
-        if(g_memory_vram.isInRange(address)) {
+        if (g_memory_vram.isInRange(address)) {
             vram_[address - g_memory_vram.min_address] = data;
-        } else if(g_memory_oam.isInRange(address)) {
+        } else if (g_memory_oam.isInRange(address)) {
             oam_[address - g_memory_oam.min_address] = data;
         }
 
@@ -68,7 +69,7 @@ namespace gb {
         case g_dma_src_address:
             dma_src_ = data;
             dma_running_ = true;
-            //TODO: set DMA start address, implement DMA
+            // TODO: set DMA start address, implement DMA
             break;
         case g_background_palette_address:
             bg_palette_ = data;
@@ -88,6 +89,5 @@ namespace gb {
         default:
             throw std::invalid_argument("unreachable");
         }
-
     }
-}
+} // namespace gb

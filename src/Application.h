@@ -1,29 +1,29 @@
 #pragma once
-#include "gb/cpu/CPUUtils.h"
-#include "gb/memory/BasicComponents.h"
-#include "gb/AddressBus.h"
-#include "gb/cpu/CPU.h"
-#include "gb/InterruptRegister.h"
-#include "gb/cpu/Decoder.h"
-#include "gb/Timer.h"
-#include "gb/Emulator.h"
 #include "Breakpoint.h"
-
-#include "glad/glad.h"
-#include "GLFW/glfw3.h"
+#include "gb/AddressBus.h"
+#include "gb/Emulator.h"
+#include "gb/InterruptRegister.h"
+#include "gb/Timer.h"
+#include "gb/cpu/CPU.h"
+#include "gb/cpu/CPUUtils.h"
+#include "gb/cpu/Decoder.h"
+#include "gb/memory/BasicComponents.h"
 #include "utils/Utils.h"
 
-#include <X11/Xlib.h>
+// clang-format off
+#include "glad/glad.h"
+#include "GLFW/glfw3.h"
+// clang-format on
+
 #include <deque>
 #include <filesystem>
+#include <list>
 #include <queue>
 #include <string_view>
-#include <list>
-
 
 namespace emulator {
-    inline consteval size_t strlen(const char* str) {
-        if(!str || str[0] == '\0') {
+    inline consteval size_t strlen(const char *str) {
+        if (!str || str[0] == '\0') {
             return 0;
         } else {
             return 1 + strlen(++str);
@@ -31,8 +31,8 @@ namespace emulator {
     }
 
     constexpr double g_cycles_per_second = 4'000'000;
-    constexpr const char* g_regs_fmt = 
-R"(Carry: %d, Half carry: %d
+    constexpr const char *g_regs_fmt =
+        R"(Carry: %d, Half carry: %d
 Negative: %d, Zero: %d
 A: 0x%.2x, AF: 0x%.4x
 C: 0x%.2x, B: 0x%.2x, BC: 0x%.4x
@@ -40,7 +40,9 @@ E: 0x%.2x, D: 0x%.2x, DE: 0x%.4x,
 H: 0x%.2x, L: 0x%.2x, HL: 0x%.4x,
 SP: 0x%.4x, PC: 0x%.4x)";
 
-    constexpr size_t g_instruction_string_buf_size = strlen("ffff CALL nz, ffff##111"); //##111 is needed to accomodate for Dear ImGui ids
+    constexpr size_t g_instruction_string_buf_size =
+        strlen("ffff CALL nz, ffff##111"); // ##111 is needed to accomodate for
+                                           // Dear ImGui ids
 
     constexpr std::string_view g_rom_extension = ".gb";
 
@@ -59,7 +61,7 @@ SP: 0x%.4x, PC: 0x%.4x)";
     };
 
     class Application {
-    public:
+      public:
         Application();
         ~Application();
 
@@ -67,8 +69,7 @@ SP: 0x%.4x, PC: 0x%.4x)";
 
         void draw();
 
-    private:
-
+      private:
         void initGUI();
         void update();
 
@@ -79,34 +80,38 @@ SP: 0x%.4x, PC: 0x%.4x)";
         void drawBreakpointMenu();
         void drawMemoryView();
 
-        template<typename Element>
-        void pushRecent(std::list<Element>& cont, const Element& elem) {
+        template <typename Element>
+        void pushRecent(std::list<Element> &cont, const Element &elem) {
             cont.push_back(elem);
-            if(cont.size() > g_recent_cache_size) {
+            if (cont.size() > g_recent_cache_size) {
                 cont.pop_front();
             }
         }
 
         void addPCBreakpoint(uint16_t address);
-        void addMemoryBreakpoint(uint8_t flags, uint16_t min_address, uint16_t max_address, std::optional<uint8_t> data);
+        void addMemoryBreakpoint(uint8_t flags, uint16_t min_address,
+                                 uint16_t max_address,
+                                 std::optional<uint8_t> data);
         void resetBreakpoints();
 
-        void printInstruction(StringBuffer<g_instruction_string_buf_size>& buf, size_t idx);
-    private:
+        void printInstruction(StringBuffer<g_instruction_string_buf_size> &buf,
+                              size_t idx);
 
+      private:
         gb::Emulator emulator_;
 
         std::vector<std::filesystem::path> roms_;
         std::list<std::filesystem::path> recent_roms_;
         RingBuffer<InstructionData, g_recent_cache_size> recent_instructions_;
 
-        GLFWwindow* window_ = nullptr;
+        GLFWwindow *window_ = nullptr;
 
         std::vector<uint16_t> pc_breakpoints_;
-        //std::list is used since pointers to elements must be valid after removal
+        // std::list is used since pointers to elements must be valid after
+        // removal
         std::list<MemoryBreakpoint> memory_breakpoints_;
 
-        //buffers for GUI
+        // buffers for GUI
         MemoryBreakpointData_ memory_breakpoint_data_;
         std::string new_romdir_;
         std::optional<gb::cpu::RegisterFile> registers_to_print_;
@@ -118,4 +123,4 @@ SP: 0x%.4x, PC: 0x%.4x)";
         int refresh_rate_ = 60;
         uint16_t mem_range_[2] = {0, 0};
     };
-}
+} // namespace emulator

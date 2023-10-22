@@ -2,8 +2,8 @@
 
 #include "gb/InterruptRegister.h"
 
-#include <cstdint>
 #include <array>
+#include <cstdint>
 
 namespace gb {
 
@@ -13,19 +13,17 @@ namespace gb {
     constexpr uint16_t g_timer_tac_address = 0xFF07;
 
     class Timer {
-    public:
-        Timer(InterruptRegister& interruptFlags)
-            : interrupt_flags_(interruptFlags)
-        {}
+      public:
+        Timer(InterruptRegister &interruptFlags)
+            : interrupt_flags_(interruptFlags) {}
 
         void update();
         uint8_t read(uint16_t address) const;
         void write(uint16_t address, uint8_t data);
 
-    private:
-
+      private:
         union {
-            //TODO: Wrong init
+            // TODO: Wrong init
             uint16_t counter_ = 0xABCC;
 
             struct {
@@ -44,13 +42,15 @@ namespace gb {
 
         bool frequency_bit_was_set_ = false;
 
-        //Frequencies of a timer: 4096 Hz, 262144 Hz, 65536 Hz and 16386 Hz respectively. Frequency is set from bits 0-1 of TAC
-        const std::array<uint16_t, 4> frequency_bit_mask_ = { uint16_t(1) << 9, uint16_t(1) << 3, uint16_t(1) << 5, uint16_t(1) << 7 };
-        InterruptRegister& interrupt_flags_;
-
+        // Frequencies of a timer: 4096 Hz, 262144 Hz, 65536 Hz and 16386 Hz
+        // respectively. Frequency is set from bits 0-1 of TAC
+        const std::array<uint16_t, 4> frequency_bit_mask_ = {
+            uint16_t(1) << 9, uint16_t(1) << 3, uint16_t(1) << 5,
+            uint16_t(1) << 7};
+        InterruptRegister &interrupt_flags_;
     };
-        constexpr uint16_t i0 = 1024 >> 4;
-        constexpr uint16_t i01 = 1 << 9;
-        constexpr uint16_t i1 = 16 >> 4;
-        constexpr uint16_t i11 = 1 << 3;
-}
+    constexpr uint16_t i0 = 1024 >> 4;
+    constexpr uint16_t i01 = 1 << 9;
+    constexpr uint16_t i1 = 16 >> 4;
+    constexpr uint16_t i11 = 1 << 3;
+} // namespace gb

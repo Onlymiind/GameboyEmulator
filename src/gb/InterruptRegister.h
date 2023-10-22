@@ -3,34 +3,28 @@
 
 namespace gb {
     enum class InterruptFlags : uint8_t {
-        VBlank   = 1 << 0,
+        VBlank = 1 << 0,
         LCD_STAT = 1 << 1,
-        Timer    = 1 << 2,
-        Serial   = 1 << 3,
-        Joypad   = 1 << 4,
+        Timer = 1 << 2,
+        Serial = 1 << 3,
+        Joypad = 1 << 4,
     };
 
     constexpr uint8_t g_unused_interrupt_bits = 0b11100000;
-    constexpr uint16_t g_interrupt_enable_address =0xFFFF;
+    constexpr uint16_t g_interrupt_enable_address = 0xFFFF;
     constexpr uint16_t g_interrupt_flags_address = 0xFF0F;
 
     class InterruptRegister {
-    public:
-        InterruptRegister()
-            : interrupts_(g_unused_interrupt_bits)
-        {}
+      public:
+        InterruptRegister() : interrupts_(g_unused_interrupt_bits) {}
 
-        inline uint8_t read(uint16_t address) const {
-            return interrupts_;
-        }
+        inline uint8_t read(uint16_t address) const { return interrupts_; }
 
         inline void write(uint16_t address, uint8_t data) {
             interrupts_ = (g_unused_interrupt_bits | (data & 0x1F));
         }
 
-        uint8_t read() const {
-            return interrupts_;
-        }
+        uint8_t read() const { return interrupts_; }
 
         void write(uint8_t data) {
             interrupts_ = g_unused_interrupt_bits | data;
@@ -48,7 +42,7 @@ namespace gb {
             return interrupts_ & (~g_unused_interrupt_bits);
         }
 
-    private:
+      private:
         uint8_t interrupts_;
     };
-}
+} // namespace gb

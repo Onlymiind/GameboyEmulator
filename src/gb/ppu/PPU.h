@@ -4,8 +4,10 @@
 
 namespace gb {
 
-    constexpr MemoryObjectInfo g_memory_vram = {.min_address = 0x8000, .max_address = 0x9fff};
-    constexpr MemoryObjectInfo g_memory_oam = {.min_address = 0xe000, .max_address = 0xfe9f};
+    constexpr MemoryObjectInfo g_memory_vram = {.min_address = 0x8000,
+                                                .max_address = 0x9fff};
+    constexpr MemoryObjectInfo g_memory_oam = {.min_address = 0xe000,
+                                               .max_address = 0xfe9f};
     constexpr uint16_t g_lcd_control_address = 0xFF40;
     constexpr uint16_t g_lcd_status = 0xFF41;
     constexpr uint16_t g_scroll_x_address = 0xFF42;
@@ -47,16 +49,16 @@ namespace gb {
 #undef BIT
 
     class PPU {
-    public:
+      public:
         uint8_t read(uint16_t address) const;
         void write(uint16_t address, uint8_t data);
 
-    private:
+      private:
         PPUMode mode_ = PPUMode::VBLANK;
         bool dma_running_ = false;
         uint16_t current_dma_address_ = 0;
 
-        //memory-mapped registers
+        // memory-mapped registers
         uint8_t lcd_control_ = 0;
         uint8_t status_ = 0;
         uint8_t scroll_x_ = 0;
@@ -70,8 +72,7 @@ namespace gb {
         uint8_t window_x_ = 0;
         uint8_t window_y_ = 0;
 
-
         RAM<g_memory_vram.size> vram_;
         RAM<g_memory_oam.size> oam_;
     };
-}
+} // namespace gb

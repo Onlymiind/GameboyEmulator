@@ -3,38 +3,38 @@
 #include "gb/cpu/Operation.h"
 #include "utils/Utils.h"
 
-
-#include <cstdint>
 #include <climits>
+#include <cstdint>
 #include <stdexcept>
 
 namespace gb::cpu {
     using enum Flags;
 
     uint8_t SharpSM83::loadByte(ArgumentInfo dst, ArgumentInfo src) {
-        switch(src.src) {
-        case ArgumentSource::IndirectImmediate: //LD A, [nn]
+        switch (src.src) {
+        case ArgumentSource::IndirectImmediate: // LD A, [nn]
             sheduleReadToReg(data_buffer_.getWord(), dst.reg);
             last_instruction_.src = data_buffer_.getWord();
             last_instruction_.dst = dst.reg;
             return 4;
-        case ArgumentSource::Indirect: //LD r, [HL], LD A, [rr]
+        case ArgumentSource::Indirect: // LD r, [HL], LD A, [rr]
             sheduleReadToReg(getWordRegister(src.reg), dst.reg);
             last_instruction_.src = src.reg;
             last_instruction_.dst = dst.reg;
             return 2;
-        case ArgumentSource::Immediate: //LD r, n, LD [HL], n
+        case ArgumentSource::Immediate: // LD r, n, LD [HL], n
             setByteRegister(dst.reg, data_buffer_.get());
             last_instruction_.src = data_buffer_.get();
             last_instruction_.dst = dst.reg;
             return dst.reg == Registers::HL ? 3 : 2;
         case ArgumentSource::Register:
-            if(dst.src == ArgumentSource::IndirectImmediate) { //LD [nn], A
-                sheduleWriteByte(data_buffer_.getWord(), getByteRegister(src.reg));
+            if (dst.src == ArgumentSource::IndirectImmediate) { // LD [nn], A
+                sheduleWriteByte(data_buffer_.getWord(),
+                                 getByteRegister(src.reg));
                 last_instruction_.dst = data_buffer_.getWord();
                 last_instruction_.src = src.reg;
                 return 4;
-            } else { //LD r, r, LD [HL], r, LD [rr], A
+            } else { // LD r, r, LD [HL], r, LD [rr], A
                 setByteRegister(dst.reg, getByteRegister(src.reg));
                 last_instruction_.src = src.reg;
                 last_instruction_.dst = dst.reg;
@@ -47,83 +47,87 @@ namespace gb::cpu {
     }
 
     uint8_t SharpSM83::LD(DecodedInstruction instr) {
-        switch(*instr.LD_subtype) {
-            case LoadSubtype::Typical: {
-                if(instr.dst.src == ArgumentSource::Register && instr.dst.type == ArgumentType::Unsigned16) {
-                    last_instruction_.dst = instr.dst.reg;
-                    uint16_t value = 0;
-                    if(instr.src.src == ArgumentSource::Immediate) {
-                        value = data_buffer_.getWord();
-                        last_instruction_.src = value;
-                    } else { //LD SP, HL
-                        value = reg_.HL();
-                        last_instruction_.src = Registers::HL;
-                        sheduleMemoryNoOp();
-                    }
-                    setWordRegister(instr.dst.reg, value);
-                    return instr.src.src == ArgumentSource::Immediate ? 3 : 2;
-                } else {
-                    return loadByte(instr.dst, instr.src);
+        switch (*instr.LD_subtype) {
+        case LoadSubtype::Typical: {
+            if (instr.dst.src == ArgumentSource::Register &&
+                instr.dst.type == ArgumentType::Unsigned16) {
+                last_instruction_.dst = instr.dst.reg;
+                uint16_t value = 0;
+                if (instr.src.src == ArgumentSource::Immediate) {
+                    value = data_buffer_.getWord();
+                    last_instruction_.src = value;
+                } else { // LD SP, HL
+                    value = reg_.HL();
+                    last_instruction_.src = Registers::HL;
+                    sheduleMemoryNoOp();
                 }
+                setWordRegister(instr.dst.reg, value);
+                return instr.src.src == ArgumentSource::Immediate ? 3 : 2;
+            } else {
+                return loadByte(instr.dst, instr.src);
             }
-            case LoadSubtype::LD_DEC:
-                loadByte(instr.dst, instr.src);
-                --reg_.HL();
-                return 2;
-            case LoadSubtype::LD_INC:
-                loadByte(instr.dst, instr.src);
-                ++reg_.HL();
-                return 2;
-            case LoadSubtype::LD_IO: {
-                //true if loading from register A, false otherwise
-                bool direction = instr.src.reg == Registers::A;
-                uint8_t byte = 0;
-                if(instr.src.src == ArgumentSource::Immediate || instr.dst.src == ArgumentSource::Immediate) {
-                    //LDH [n], A, LDH A, [n]
-                    byte = data_buffer_.get();
-                } else { //LDH [C], A, LDH A, [C]
-                    byte = reg_.C();
-                }
-                uint16_t address = 0xFF00 + uint16_t(byte);
-                if(direction) {
-                    setArgData(last_instruction_.dst, instr.dst, byte);
-                    last_instruction_.src = Registers::A;
-                    sheduleWriteByte(address, reg_.A());
-                } else {
-                    setArgData(last_instruction_.src, instr.src, byte);
-                    last_instruction_.dst = Registers::A;
-                    sheduleReadToReg(address, Registers::A);
-                }
-                bool hasImmediate = (instr.src.src == ArgumentSource::Immediate) || (instr.dst.src == ArgumentSource::Immediate);
-                return hasImmediate ? 3 : 2;
+        }
+        case LoadSubtype::LD_DEC:
+            loadByte(instr.dst, instr.src);
+            --reg_.HL();
+            return 2;
+        case LoadSubtype::LD_INC:
+            loadByte(instr.dst, instr.src);
+            ++reg_.HL();
+            return 2;
+        case LoadSubtype::LD_IO: {
+            // true if loading from register A, false otherwise
+            bool direction = instr.src.reg == Registers::A;
+            uint8_t byte = 0;
+            if (instr.src.src == ArgumentSource::Immediate ||
+                instr.dst.src == ArgumentSource::Immediate) {
+                // LDH [n], A, LDH A, [n]
+                byte = data_buffer_.get();
+            } else { // LDH [C], A, LDH A, [C]
+                byte = reg_.C();
             }
-            case LoadSubtype::LD_Offset_SP: {
-                int8_t offset = data_buffer_.getSigned();
-                last_instruction_.dst = Registers::SP;
-                last_instruction_.src = offset;
-                reg_.setFlag(H, halfCarried(uint8_t(reg_.SP), offset));
-                reg_.setFlag(C, carried(uint8_t(reg_.SP), reinterpret_cast<uint8_t&>(offset)));
-                reg_.setFlag(Z, 0);
-                reg_.setFlag(N, 0);
-                reg_.HL() = reg_.SP + offset;
-                sheduleMemoryNoOp();
-                return 3;
+            uint16_t address = 0xFF00 + uint16_t(byte);
+            if (direction) {
+                setArgData(last_instruction_.dst, instr.dst, byte);
+                last_instruction_.src = Registers::A;
+                sheduleWriteByte(address, reg_.A());
+            } else {
+                setArgData(last_instruction_.src, instr.src, byte);
+                last_instruction_.dst = Registers::A;
+                sheduleReadToReg(address, Registers::A);
             }
-            case LoadSubtype::LD_SP: {
-                uint16_t address = data_buffer_.getWord();
-                last_instruction_.dst = Registers::SP;
-                last_instruction_.src = address;
-                sheduleWriteWord(address, reg_.SP);
-                return 5;
-            }
-            default:
-                throw std::invalid_argument("Unknown LD instruction");
+            bool hasImmediate = (instr.src.src == ArgumentSource::Immediate) ||
+                                (instr.dst.src == ArgumentSource::Immediate);
+            return hasImmediate ? 3 : 2;
+        }
+        case LoadSubtype::LD_Offset_SP: {
+            int8_t offset = data_buffer_.getSigned();
+            last_instruction_.dst = Registers::SP;
+            last_instruction_.src = offset;
+            reg_.setFlag(H, halfCarried(uint8_t(reg_.SP), offset));
+            reg_.setFlag(C, carried(uint8_t(reg_.SP),
+                                    reinterpret_cast<uint8_t &>(offset)));
+            reg_.setFlag(Z, 0);
+            reg_.setFlag(N, 0);
+            reg_.HL() = reg_.SP + offset;
+            sheduleMemoryNoOp();
+            return 3;
+        }
+        case LoadSubtype::LD_SP: {
+            uint16_t address = data_buffer_.getWord();
+            last_instruction_.dst = Registers::SP;
+            last_instruction_.src = address;
+            sheduleWriteWord(address, reg_.SP);
+            return 5;
+        }
+        default:
+            throw std::invalid_argument("Unknown LD instruction");
         }
     }
 
     uint8_t SharpSM83::INC(ArgumentInfo target) {
         last_instruction_.arg() = target.reg;
-        if(target.type == ArgumentType::Unsigned16) {
+        if (target.type == ArgumentType::Unsigned16) {
             uint16_t value = getWordRegister(target.reg);
             ++value;
             setWordRegister(target.reg, value);
@@ -142,7 +146,7 @@ namespace gb::cpu {
 
     uint8_t SharpSM83::DEC(ArgumentInfo target) {
         last_instruction_.arg() = target.reg;
-        if(target.type == ArgumentType::Unsigned16) {
+        if (target.type == ArgumentType::Unsigned16) {
             uint16_t value = getWordRegister(target.reg);
             --value;
             setWordRegister(target.reg, value);
@@ -162,59 +166,66 @@ namespace gb::cpu {
     uint8_t SharpSM83::ADD(DecodedInstruction instr) {
         reg_.setFlag(N, false);
 
-        switch(instr.dst.reg) {
-            case Registers::HL: {
-                last_instruction_.dst = Registers::HL;
-                last_instruction_.src = instr.src.reg;
-                uint16_t value = getWordRegister(instr.src.reg);
-                reg_.setFlag(H, halfCarried(reg_.HL(), value));
-                reg_.setFlag(C, carried(reg_.HL(), value));
-                reg_.HL() += value;
-                sheduleMemoryNoOp();
-                return 2;
+        switch (instr.dst.reg) {
+        case Registers::HL: {
+            last_instruction_.dst = Registers::HL;
+            last_instruction_.src = instr.src.reg;
+            uint16_t value = getWordRegister(instr.src.reg);
+            reg_.setFlag(H, halfCarried(reg_.HL(), value));
+            reg_.setFlag(C, carried(reg_.HL(), value));
+            reg_.HL() += value;
+            sheduleMemoryNoOp();
+            return 2;
+        }
+        case Registers::SP: {
+            last_instruction_.dst = Registers::SP;
+            reg_.setFlag(Z, false);
+            int8_t value = data_buffer_.getSigned();
+            last_instruction_.src = value;
+            reg_.setFlag(
+                H, halfCarried(uint8_t(reg_.SP),
+                               value)); // According to specification H flag
+                                        // should be set if overflow from bit 3
+            reg_.setFlag(C,
+                         carried(uint8_t(reg_.SP),
+                                 uint8_t(value))); // Carry flag should be set
+                                                   // if overflow from bit 7
+            reg_.SP += value;
+            sheduleMemoryNoOp();
+            sheduleMemoryNoOp();
+            return 4;
+        }
+        case Registers::A: {
+            uint8_t value = 0;
+            if (instr.src.src == ArgumentSource::Immediate) { // ADD n
+                value = data_buffer_.get();
+            } else { // ADD r, ADD [HL]
+                value = getByteRegister(instr.src.reg);
             }
-            case Registers::SP: {
-                last_instruction_.dst = Registers::SP;
-                reg_.setFlag(Z, false);
-                int8_t value = data_buffer_.getSigned();
-                last_instruction_.src = value;
-                reg_.setFlag(H, halfCarried(uint8_t(reg_.SP), value)); //According to specification H flag should be set if overflow from bit 3
-                reg_.setFlag(C, carried(uint8_t(reg_.SP), uint8_t(value))); //Carry flag should be set if overflow from bit 7
-                reg_.SP += value;
-                sheduleMemoryNoOp();
-                sheduleMemoryNoOp();
-                return 4;
-            }
-            case Registers::A: {
-                uint8_t value = 0;
-                if(instr.src.src == ArgumentSource::Immediate) { //ADD n
-                    value = data_buffer_.get();
-                } else { //ADD r, ADD [HL]
-                    value = getByteRegister(instr.src.reg);
-                }
-                setArgData(last_instruction_.arg(), instr.src, value);
-                reg_.setFlag(H, halfCarried(reg_.A(), value));
-                reg_.setFlag(C, carried(reg_.A(), value));
-                reg_.A() += value;
-                reg_.setFlag(Z, reg_.A() == 0);
+            setArgData(last_instruction_.arg(), instr.src, value);
+            reg_.setFlag(H, halfCarried(reg_.A(), value));
+            reg_.setFlag(C, carried(reg_.A(), value));
+            reg_.A() += value;
+            reg_.setFlag(Z, reg_.A() == 0);
 
-                uint8_t cycles = 1;
-                if(instr.src.src == ArgumentSource::Immediate || instr.src.src == ArgumentSource::Indirect) {
-                    ++cycles;
-                }
-                return cycles;
+            uint8_t cycles = 1;
+            if (instr.src.src == ArgumentSource::Immediate ||
+                instr.src.src == ArgumentSource::Indirect) {
+                ++cycles;
             }
-            default:
-                throw std::invalid_argument("Unknown ADD instruction");
+            return cycles;
+        }
+        default:
+            throw std::invalid_argument("Unknown ADD instruction");
         }
     }
 
     uint8_t SharpSM83::ADC(ArgumentInfo argument) {
         reg_.setFlag(N, false);
         uint8_t value = 0;
-        if(argument.src == ArgumentSource::Immediate) { //ADC n
+        if (argument.src == ArgumentSource::Immediate) { // ADC n
             value = data_buffer_.get();
-        } else { //ADC r, ADC [HL]
+        } else { // ADC r, ADC [HL]
             value = getByteRegister(argument.reg);
         }
         setArgData(last_instruction_.arg(), argument, value);
@@ -222,7 +233,8 @@ namespace gb::cpu {
 
         reg_.A() += value + uint8_t(reg_.getFlag(C));
         reg_.setFlag(Z, reg_.A() == 0);
-        reg_.setFlag(H, ((regA & 0x0F) + (value &0x0F) + reg_.getFlag(C)) > 0x0F);
+        reg_.setFlag(H,
+                     ((regA & 0x0F) + (value & 0x0F) + reg_.getFlag(C)) > 0x0F);
         reg_.setFlag(C, uint16_t(regA) + value + reg_.getFlag(C) > 0xFF);
 
         return argument.src == ArgumentSource::Register ? 1 : 2;
@@ -231,9 +243,9 @@ namespace gb::cpu {
     uint8_t SharpSM83::SUB(ArgumentInfo argument) {
         reg_.setFlag(N, true);
         uint8_t value = 0;
-        if(argument.src == ArgumentSource::Immediate) { //SUB n
+        if (argument.src == ArgumentSource::Immediate) { // SUB n
             value = data_buffer_.get();
-        } else { //SUB r, SUB [HL]
+        } else { // SUB r, SUB [HL]
             value = getByteRegister(argument.reg);
         }
         setArgData(last_instruction_.arg(), argument, value);
@@ -249,9 +261,9 @@ namespace gb::cpu {
     uint8_t SharpSM83::SBC(ArgumentInfo argument) {
         reg_.setFlag(N, true);
         uint8_t value = 0;
-        if(argument.src == ArgumentSource::Immediate) { //SBC n
+        if (argument.src == ArgumentSource::Immediate) { // SBC n
             value = data_buffer_.get();
-        } else { //SBC r, SBC [HL]
+        } else { // SBC r, SBC [HL]
             value = getByteRegister(argument.reg);
         }
         setArgData(last_instruction_.arg(), argument, value);
@@ -261,22 +273,23 @@ namespace gb::cpu {
         reg_.A() -= value + reg_.getFlag(C);
         reg_.setFlag(Z, reg_.A() == 0);
         reg_.setFlag(H, (regA & 0x0F) < ((value & 0x0F) + reg_.getFlag(C)));
-        reg_.setFlag(C, regA < (static_cast<uint16_t>(value) + reg_.getFlag(C)));
+        reg_.setFlag(C,
+                     regA < (static_cast<uint16_t>(value) + reg_.getFlag(C)));
 
         return argument.src == ArgumentSource::Register ? 1 : 2;
     }
 
     uint8_t SharpSM83::OR(ArgumentInfo argument) {
         uint8_t value = 0;
-        if(argument.src == ArgumentSource::Immediate) { //OR n
+        if (argument.src == ArgumentSource::Immediate) { // OR n
             value = data_buffer_.get();
-        } else { //OR r, OR [HL]
+        } else { // OR r, OR [HL]
             value = getByteRegister(argument.reg);
         }
         setArgData(last_instruction_.arg(), argument, value);
 
-        reg_.clearFlags(); //Only Z flag can be non-zero as a result of OR
-        
+        reg_.clearFlags(); // Only Z flag can be non-zero as a result of OR
+
         reg_.A() |= value;
         reg_.setFlag(Z, reg_.A() == 0);
 
@@ -285,9 +298,9 @@ namespace gb::cpu {
 
     uint8_t SharpSM83::AND(ArgumentInfo argument) {
         uint8_t value = 0;
-        if(argument.src == ArgumentSource::Immediate) { //AND n
+        if (argument.src == ArgumentSource::Immediate) { // AND n
             value = data_buffer_.get();
-        } else { //AND r, AND [HL]
+        } else { // AND r, AND [HL]
             value = getByteRegister(argument.reg);
         }
         setArgData(last_instruction_.arg(), argument, value);
@@ -302,14 +315,14 @@ namespace gb::cpu {
 
     uint8_t SharpSM83::XOR(ArgumentInfo argument) {
         uint8_t value = 0;
-        if(argument.src == ArgumentSource::Immediate) { //XOR n
+        if (argument.src == ArgumentSource::Immediate) { // XOR n
             value = data_buffer_.get();
-        } else { //XOR r, XOR [HL]
+        } else { // XOR r, XOR [HL]
             value = getByteRegister(argument.reg);
         }
         setArgData(last_instruction_.arg(), argument, value);
 
-        reg_.clearFlags(); //Only Z flag can be non-zero as a result of XOR
+        reg_.clearFlags(); // Only Z flag can be non-zero as a result of XOR
         reg_.A() ^= value;
         reg_.setFlag(Z, reg_.A() == 0);
 
@@ -318,9 +331,9 @@ namespace gb::cpu {
 
     uint8_t SharpSM83::CP(ArgumentInfo argument) {
         uint8_t value = 0;
-        if(argument.src == ArgumentSource::Immediate) { //CP n
+        if (argument.src == ArgumentSource::Immediate) { // CP n
             value = data_buffer_.get();
-        } else { //CP r, CP [HL]
+        } else { // CP r, CP [HL]
             value = getByteRegister(argument.reg);
         }
         setArgData(last_instruction_.arg(), argument, value);
@@ -334,7 +347,7 @@ namespace gb::cpu {
     }
 
     uint8_t SharpSM83::JP(DecodedInstruction instr) {
-        if(instr.src.src == ArgumentSource::Register) { //JP HL
+        if (instr.src.src == ArgumentSource::Register) { // JP HL
             last_instruction_.arg() = Registers::HL;
             reg_.PC = reg_.HL();
             return 1;
@@ -342,7 +355,7 @@ namespace gb::cpu {
         uint16_t address = data_buffer_.getWord();
         last_instruction_.arg() = address;
 
-        if(instr.condition.has_value() && !checkCondition(*instr.condition)) {
+        if (instr.condition.has_value() && !checkCondition(*instr.condition)) {
             return 3;
         }
         reg_.PC = address;
@@ -354,7 +367,7 @@ namespace gb::cpu {
         int8_t relAddress = data_buffer_.getSigned();
         last_instruction_.arg() = relAddress;
 
-        if(condition.has_value() && (!checkCondition(*condition))) {
+        if (condition.has_value() && (!checkCondition(*condition))) {
             return 2;
         }
 
@@ -372,7 +385,7 @@ namespace gb::cpu {
 
     uint8_t SharpSM83::POP(Registers reg) {
         last_instruction_.arg() = reg;
-        //TODO: verify that reg is double register
+        // TODO: verify that reg is double register
         shedulePopStack(reg);
         return 3;
     }
@@ -389,7 +402,7 @@ namespace gb::cpu {
         uint16_t address = data_buffer_.getWord();
         last_instruction_.arg() = address;
 
-        if(condition.has_value() && (!checkCondition(*condition))) {
+        if (condition.has_value() && (!checkCondition(*condition))) {
             return 3;
         }
 
@@ -401,9 +414,9 @@ namespace gb::cpu {
 
     uint8_t SharpSM83::RET(std::optional<Conditions> condition) {
         bool conditional = condition.has_value();
-        if(conditional) {
+        if (conditional) {
             sheduleMemoryNoOp();
-            if(!checkCondition(*condition)) {
+            if (!checkCondition(*condition)) {
                 return 2;
             }
         }
@@ -433,7 +446,7 @@ namespace gb::cpu {
     }
 
     uint8_t SharpSM83::HALT() {
-        if(getPendingInterrupt() && !IME_) {
+        if (getPendingInterrupt() && !IME_) {
             halt_bug_ = true;
         } else {
             halt_mode_ = true;
@@ -442,7 +455,7 @@ namespace gb::cpu {
     }
 
     uint8_t SharpSM83::STOP() {
-        //TODO: check for corrupted STOP
+        // TODO: check for corrupted STOP
         stopped_ = true;
         return 1;
     }
@@ -511,7 +524,8 @@ namespace gb::cpu {
     uint8_t SharpSM83::RLCA() {
         reg_.clearFlags();
         reg_.setFlag(C, (reg_.A() & 0b10000000) != 0);
-        reg_.A() = (reg_.A() << 1) | (reg_.A() >> (sizeof(uint8_t) * CHAR_BIT - 1));
+        reg_.A() =
+            (reg_.A() << 1) | (reg_.A() >> (sizeof(uint8_t) * CHAR_BIT - 1));
 
         return 1;
     }
@@ -519,7 +533,8 @@ namespace gb::cpu {
     uint8_t SharpSM83::RRCA() {
         reg_.clearFlags();
         reg_.setFlag(C, (reg_.A() & 0b00000001) != 0);
-        reg_.A() = (reg_.A() >> 1) | (reg_.A() << (sizeof(uint8_t) * CHAR_BIT - 1));
+        reg_.A() =
+            (reg_.A() >> 1) | (reg_.A() << (sizeof(uint8_t) * CHAR_BIT - 1));
 
         return 1;
     }
@@ -529,7 +544,9 @@ namespace gb::cpu {
         uint8_t value = getByteRegister(reg);
 
         reg_.setFlag(C, (value & 0x80) != 0);
-        value = (value << 1) | (value >> (sizeof(uint8_t) * CHAR_BIT - 1)); // (value << n) | (value >> (BIT_COUNT - n))
+        value = (value << 1) |
+                (value >> (sizeof(uint8_t) * CHAR_BIT -
+                           1)); // (value << n) | (value >> (BIT_COUNT - n))
         reg_.setFlag(Z, value == 0);
         setByteRegister(reg, value);
         return reg == Registers::HL ? 4 : 2;
@@ -540,7 +557,9 @@ namespace gb::cpu {
         uint8_t value = getByteRegister(reg);
 
         reg_.setFlag(C, (value & 0x01) != 0);
-        value = (value >> 1) | (value << (sizeof(uint8_t) * CHAR_BIT - 1)); // (value >> n) | (value << (BIT_COUNT - n))
+        value = (value >> 1) |
+                (value << (sizeof(uint8_t) * CHAR_BIT -
+                           1)); // (value >> n) | (value << (BIT_COUNT - n))
         reg_.setFlag(Z, value == 0);
         setByteRegister(reg, value);
         return reg == Registers::HL ? 4 : 2;
@@ -640,4 +659,4 @@ namespace gb::cpu {
         setByteRegister(reg, getByteRegister(reg) | mask);
         return reg == Registers::HL ? 4 : 2;
     }
-}
+} // namespace gb::cpu
