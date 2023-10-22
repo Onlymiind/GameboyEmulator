@@ -47,7 +47,11 @@ namespace gb::cpu {
         const uint8_t &L() const { return registers_[size_t(Registers::L)]; }
 
         void setLow(Registers reg, uint8_t data) {
-            registers_[uint8_t(reg) & uint8_t(Registers::LOW_REG_MASK)] = data;
+            size_t idx = uint8_t(reg) & uint8_t(Registers::LOW_REG_MASK);
+            if (idx >= registers_.size()) [[unlikely]] {
+                throw std::invalid_argument("register index out of bounds");
+            }
+            registers_[idx] = data;
             registers_[flags] &= uint8_t(Flags::ALL);
         }
 
@@ -55,6 +59,9 @@ namespace gb::cpu {
             size_t idx = (uint8_t(reg) & uint8_t(Registers::HIGH_REG_MASK)) >> 4;
             if (idx == 0) [[unlikely]] {
                 throw std::invalid_argument("attempting to setHigh() of byte register");
+            }
+            if (idx >= registers_.size()) [[unlikely]] {
+                throw std::invalid_argument("register index out of bounds");
             }
             registers_[idx] = data;
         }

@@ -18,6 +18,9 @@ namespace gb {
         bool isInRange(uint16_t address) const {
             return address >= minAddress() && address <= maxAddress();
         }
+
+      protected:
+        ~MemoryObserver();
     };
 
     constexpr MemoryObjectInfo g_memory_rom = {.min_address = 0x0000, .max_address = 0x7FFF};

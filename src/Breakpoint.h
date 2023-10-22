@@ -6,6 +6,7 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <span>
 
 namespace emulator {
 
@@ -82,7 +83,7 @@ namespace emulator {
 
         bool empty() const { return min_address == max_address; }
         bool isInRange(uint16_t address) const {
-            return address >= min_address && address <= max_address;
+            return address >= min_address && address < max_address;
         }
         bool overlaps(MemoryBreakpointData other) const {
             if (empty()) {
@@ -101,7 +102,6 @@ namespace emulator {
     class MemoryBreakpointTree {
         struct Node {
             MemoryBreakpointData data;
-            bool is_black = false;
             uint16_t max_address = 0;
 
             Node *parent = nullptr;
@@ -111,6 +111,8 @@ namespace emulator {
 
       public:
         class Iterator {
+            friend class MemoryBreakpointTree;
+
           public:
             const MemoryBreakpointData &operator*() const { return ptr_->data; }
             const MemoryBreakpointData *operator->() const { return &ptr_->data; }
@@ -121,10 +123,13 @@ namespace emulator {
 
           private:
             const Node *ptr_ = nullptr;
+            const MemoryBreakpointTree *tree_ = nullptr;
         };
 
         void insert(MemoryBreakpointData data);
         void erase(Iterator it);
+
+        void rebuildTree();
 
         bool isBreakpointTriggered(uint16_t address, uint8_t data, bool is_read) {
             return find(root_.get(), address, data, is_read);
@@ -136,11 +141,10 @@ namespace emulator {
         size_t size() const;
 
       private:
-        void rotate(Node *node, bool rotate_right);
-
         static bool find(Node *node, uint16_t address, uint8_t data, bool is_read);
-        static bool isBlack(Node *node) { return !node || node->is_black; }
         static Node *getParent(Node *node) { return node ? node->parent : nullptr; }
+        static std::unique_ptr<Node> buildTree(std::span<MemoryBreakpointData> elems);
+        static void insert(Node *node, MemoryBreakpointData data);
 
         std::unique_ptr<Node> root_;
         size_t size_ = 0;
