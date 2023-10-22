@@ -20,7 +20,7 @@ namespace gb {
         }
 
       protected:
-        ~MemoryObserver();
+        ~MemoryObserver() = default;
     };
 
     constexpr MemoryObjectInfo g_memory_rom = {.min_address = 0x0000, .max_address = 0x7FFF};

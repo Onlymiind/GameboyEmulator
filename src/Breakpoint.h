@@ -83,19 +83,25 @@ namespace emulator {
 
         bool empty() const { return min_address == max_address; }
         bool isInRange(uint16_t address) const {
-            return address >= min_address && address < max_address;
+            return address >= min_address && address <= max_address;
         }
         bool overlaps(MemoryBreakpointData other) const {
             if (empty()) {
                 return false;
             }
 
-            return other.isInRange(min_address) || other.isInRange(max_address - 1);
+            return other.isInRange(min_address) || other.isInRange(max_address);
         }
 
         bool operator<(MemoryBreakpointData other) {
             return min_address != other.min_address ? min_address < other.min_address
                                                     : max_address < other.max_address;
+        }
+
+        bool operator==(MemoryBreakpointData other) {
+            return min_address == other.min_address && max_address == other.max_address &&
+                   value == other.value && break_on_read == other.break_on_read &&
+                   break_on_write == other.break_on_write;
         }
     };
 
@@ -122,9 +128,15 @@ namespace emulator {
             bool operator==(Iterator other) { return ptr_ == other.ptr_; }
 
           private:
-            const Node *ptr_ = nullptr;
+            Iterator(Node *ptr, const MemoryBreakpointTree *tree) : ptr_(ptr), tree_(tree) {}
+            Node *ptr_ = nullptr;
             const MemoryBreakpointTree *tree_ = nullptr;
         };
+
+        MemoryBreakpointTree() = default;
+        MemoryBreakpointTree(std::span<MemoryBreakpointData> elems) : size_(elems.size()) {
+            root_ = buildTree(elems);
+        }
 
         void insert(MemoryBreakpointData data);
         void erase(Iterator it);
@@ -136,15 +148,17 @@ namespace emulator {
         }
 
         Iterator begin() const;
-        Iterator end() const;
+        Iterator end() const { return Iterator{nullptr, this}; }
 
-        size_t size() const;
+        size_t size() const { return size_; }
 
       private:
         static bool find(Node *node, uint16_t address, uint8_t data, bool is_read);
         static Node *getParent(Node *node) { return node ? node->parent : nullptr; }
         static std::unique_ptr<Node> buildTree(std::span<MemoryBreakpointData> elems);
         static void insert(Node *node, MemoryBreakpointData data);
+        static std::unique_ptr<Node> replace(MemoryBreakpointTree &tree, Node *old_node,
+                                             std::unique_ptr<Node> &&new_node);
 
         std::unique_ptr<Node> root_;
         size_t size_ = 0;
