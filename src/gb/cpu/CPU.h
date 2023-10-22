@@ -15,16 +15,15 @@
 
 namespace gb::cpu {
 
-    inline const std::unordered_map<InterruptFlags, uint16_t>
-        g_interrupt_vectors = {{InterruptFlags::VBlank, 0x0040},
-                               {InterruptFlags::LCD_STAT, 0x0048},
-                               {InterruptFlags::Timer, 0x0050},
-                               {InterruptFlags::Serial, 0x0058},
-                               {InterruptFlags::Joypad, 0x0060}};
+    inline const std::unordered_map<InterruptFlags, uint16_t> g_interrupt_vectors = {
+        {InterruptFlags::VBlank, 0x0040},
+        {InterruptFlags::LCD_STAT, 0x0048},
+        {InterruptFlags::Timer, 0x0050},
+        {InterruptFlags::Serial, 0x0058},
+        {InterruptFlags::Joypad, 0x0060}};
 
     struct Instruction {
-        using Argument =
-            Variant<std::monostate, Registers, int8_t, uint8_t, uint16_t>;
+        using Argument = Variant<std::monostate, Registers, int8_t, uint8_t, uint16_t>;
 
         InstructionType type = InstructionType::None;
         std::optional<LoadSubtype> load_subtype;
@@ -100,8 +99,7 @@ namespace gb::cpu {
         uint16_t getProgramCounter() const { return reg_.PC; }
 
         bool isFinished() const {
-            return !current_instruction_ && !prefixed_next_ &&
-                   memory_op_queue_.empty();
+            return !current_instruction_ && !prefixed_next_ && memory_op_queue_.empty();
             //(memory_op_queue_.size() == 1 || ( && memory_op_executed_));
         }
 
@@ -129,8 +127,7 @@ namespace gb::cpu {
 
         bool checkCondition(Conditions condition);
 
-        void setArgData(Instruction::Argument &arg, ArgumentInfo info,
-                        uint8_t data);
+        void setArgData(Instruction::Argument &arg, ArgumentInfo info, uint8_t data);
 
         void sheduleMemoryNoOp();
         void sheduleReadByte(uint16_t address);

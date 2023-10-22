@@ -11,9 +11,7 @@
 
 namespace gb {
 
-    bool less(const MemoryObserver *mem, uint16_t address) {
-        return mem->maxAddress() < address;
-    }
+    bool less(const MemoryObserver *mem, uint16_t address) { return mem->maxAddress() < address; }
 
     uint8_t AddressBus::read(uint16_t address) const {
         uint8_t data = 0;
@@ -21,8 +19,7 @@ namespace gb {
             data = cartridge_.read(address);
         } else if (g_memory_vram.isInRange(address)) {
             data = vram_[address - g_memory_vram.min_address];
-        } else if (g_memory_cartridge_ram.isInRange(address) &&
-                   cartridge_.hasRAM()) {
+        } else if (g_memory_cartridge_ram.isInRange(address) && cartridge_.hasRAM()) {
             data = cartridge_.read(address);
         } else if (g_memory_wram.isInRange(address)) {
             data = wram_[address - g_memory_wram.min_address];
@@ -64,8 +61,7 @@ namespace gb {
             cartridge_.write(address, data);
         } else if (g_memory_vram.isInRange(address)) {
             vram_[address - g_memory_vram.min_address] = data;
-        } else if (g_memory_cartridge_ram.isInRange(address) &&
-                   cartridge_.hasRAM()) {
+        } else if (g_memory_cartridge_ram.isInRange(address) && cartridge_.hasRAM()) {
             cartridge_.write(address, data);
         } else if (g_memory_wram.isInRange(address)) {
             wram_[address - g_memory_wram.min_address] = data;
@@ -99,8 +95,7 @@ namespace gb {
         }
     }
 
-    std::string AddressBus::getErrorDescription(uint16_t address,
-                                                int value) const {
+    std::string AddressBus::getErrorDescription(uint16_t address, int value) const {
         std::stringstream err;
 
         if (value == -1) {

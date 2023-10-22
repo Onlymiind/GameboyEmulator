@@ -29,8 +29,7 @@ namespace gb::cpu {
             return dst.reg == Registers::HL ? 3 : 2;
         case ArgumentSource::Register:
             if (dst.src == ArgumentSource::IndirectImmediate) { // LD [nn], A
-                sheduleWriteByte(data_buffer_.getWord(),
-                                 getByteRegister(src.reg));
+                sheduleWriteByte(data_buffer_.getWord(), getByteRegister(src.reg));
                 last_instruction_.dst = data_buffer_.getWord();
                 last_instruction_.src = src.reg;
                 return 4;
@@ -105,8 +104,7 @@ namespace gb::cpu {
             last_instruction_.dst = Registers::SP;
             last_instruction_.src = offset;
             reg_.setFlag(H, halfCarried(uint8_t(reg_.SP), offset));
-            reg_.setFlag(C, carried(uint8_t(reg_.SP),
-                                    reinterpret_cast<uint8_t &>(offset)));
+            reg_.setFlag(C, carried(uint8_t(reg_.SP), reinterpret_cast<uint8_t &>(offset)));
             reg_.setFlag(Z, 0);
             reg_.setFlag(N, 0);
             reg_.HL() = reg_.SP + offset;
@@ -182,14 +180,12 @@ namespace gb::cpu {
             reg_.setFlag(Z, false);
             int8_t value = data_buffer_.getSigned();
             last_instruction_.src = value;
-            reg_.setFlag(
-                H, halfCarried(uint8_t(reg_.SP),
-                               value)); // According to specification H flag
-                                        // should be set if overflow from bit 3
-            reg_.setFlag(C,
-                         carried(uint8_t(reg_.SP),
-                                 uint8_t(value))); // Carry flag should be set
-                                                   // if overflow from bit 7
+            reg_.setFlag(H, halfCarried(uint8_t(reg_.SP),
+                                        value)); // According to specification H flag
+                                                 // should be set if overflow from bit 3
+            reg_.setFlag(C, carried(uint8_t(reg_.SP),
+                                    uint8_t(value))); // Carry flag should be set
+                                                      // if overflow from bit 7
             reg_.SP += value;
             sheduleMemoryNoOp();
             sheduleMemoryNoOp();
@@ -233,8 +229,7 @@ namespace gb::cpu {
 
         reg_.A() += value + uint8_t(reg_.getFlag(C));
         reg_.setFlag(Z, reg_.A() == 0);
-        reg_.setFlag(H,
-                     ((regA & 0x0F) + (value & 0x0F) + reg_.getFlag(C)) > 0x0F);
+        reg_.setFlag(H, ((regA & 0x0F) + (value & 0x0F) + reg_.getFlag(C)) > 0x0F);
         reg_.setFlag(C, uint16_t(regA) + value + reg_.getFlag(C) > 0xFF);
 
         return argument.src == ArgumentSource::Register ? 1 : 2;
@@ -273,8 +268,7 @@ namespace gb::cpu {
         reg_.A() -= value + reg_.getFlag(C);
         reg_.setFlag(Z, reg_.A() == 0);
         reg_.setFlag(H, (regA & 0x0F) < ((value & 0x0F) + reg_.getFlag(C)));
-        reg_.setFlag(C,
-                     regA < (static_cast<uint16_t>(value) + reg_.getFlag(C)));
+        reg_.setFlag(C, regA < (static_cast<uint16_t>(value) + reg_.getFlag(C)));
 
         return argument.src == ArgumentSource::Register ? 1 : 2;
     }
@@ -524,8 +518,7 @@ namespace gb::cpu {
     uint8_t SharpSM83::RLCA() {
         reg_.clearFlags();
         reg_.setFlag(C, (reg_.A() & 0b10000000) != 0);
-        reg_.A() =
-            (reg_.A() << 1) | (reg_.A() >> (sizeof(uint8_t) * CHAR_BIT - 1));
+        reg_.A() = (reg_.A() << 1) | (reg_.A() >> (sizeof(uint8_t) * CHAR_BIT - 1));
 
         return 1;
     }
@@ -533,8 +526,7 @@ namespace gb::cpu {
     uint8_t SharpSM83::RRCA() {
         reg_.clearFlags();
         reg_.setFlag(C, (reg_.A() & 0b00000001) != 0);
-        reg_.A() =
-            (reg_.A() >> 1) | (reg_.A() << (sizeof(uint8_t) * CHAR_BIT - 1));
+        reg_.A() = (reg_.A() >> 1) | (reg_.A() << (sizeof(uint8_t) * CHAR_BIT - 1));
 
         return 1;
     }
@@ -544,9 +536,8 @@ namespace gb::cpu {
         uint8_t value = getByteRegister(reg);
 
         reg_.setFlag(C, (value & 0x80) != 0);
-        value = (value << 1) |
-                (value >> (sizeof(uint8_t) * CHAR_BIT -
-                           1)); // (value << n) | (value >> (BIT_COUNT - n))
+        value = (value << 1) | (value >> (sizeof(uint8_t) * CHAR_BIT -
+                                          1)); // (value << n) | (value >> (BIT_COUNT - n))
         reg_.setFlag(Z, value == 0);
         setByteRegister(reg, value);
         return reg == Registers::HL ? 4 : 2;
@@ -557,9 +548,8 @@ namespace gb::cpu {
         uint8_t value = getByteRegister(reg);
 
         reg_.setFlag(C, (value & 0x01) != 0);
-        value = (value >> 1) |
-                (value << (sizeof(uint8_t) * CHAR_BIT -
-                           1)); // (value >> n) | (value << (BIT_COUNT - n))
+        value = (value >> 1) | (value << (sizeof(uint8_t) * CHAR_BIT -
+                                          1)); // (value >> n) | (value << (BIT_COUNT - n))
         reg_.setFlag(Z, value == 0);
         setByteRegister(reg, value);
         return reg == Registers::HL ? 4 : 2;

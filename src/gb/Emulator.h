@@ -23,9 +23,7 @@ namespace gb {
 
         uint16_t getPC() const { return cpu_.getProgramCounter(); }
 
-        void setMemoryObserver(MemoryObserver &observer) {
-            bus_.setObserver(observer);
-        }
+        void setMemoryObserver(MemoryObserver &observer) { bus_.setObserver(observer); }
         void removeMemoryObserver() { bus_.removeObserver(); }
 
         void tick();
@@ -34,9 +32,7 @@ namespace gb {
 
         void reset() { cpu_.reset(); }
 
-        void setROM(std::vector<uint8_t> rom) {
-            bus_.setRomData(std::move(rom));
-        }
+        void setROM(std::vector<uint8_t> rom) { bus_.setRomData(std::move(rom)); }
 
         void start() { is_running_ = true; }
 
@@ -45,9 +41,7 @@ namespace gb {
         bool instructionFinished() const { return cpu_.isFinished(); }
         bool isHalted() const { return cpu_.isHalted(); }
 
-        cpu::Instruction getLastInstruction() const {
-            return cpu_.getLastInstruction();
-        }
+        cpu::Instruction getLastInstruction() const { return cpu_.getLastInstruction(); }
 
         uint8_t peekMemory(uint16_t address) { return bus_.read(address); }
 

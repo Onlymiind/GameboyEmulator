@@ -3,8 +3,8 @@
 #include <iostream>
 
 namespace gb::cpu {
-#define CASE(x)                                                                \
-    case ENUM_NAME::x:                                                         \
+#define CASE(x)                                                                                    \
+    case ENUM_NAME::x:                                                                             \
         return #x
 
     std::string_view to_string(InstructionType type) {

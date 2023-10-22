@@ -69,11 +69,10 @@ namespace gb::cpu {
     }
 
     std::optional<InterruptFlags> SharpSM83::getPendingInterrupt() const {
-        uint8_t pending_interrupts = bus_.getInterruptEnable().getFlags() &
-                                     bus_.getInterruptFlags().getFlags();
+        uint8_t pending_interrupts =
+            bus_.getInterruptEnable().getFlags() & bus_.getInterruptFlags().getFlags();
         if (pending_interrupts != 0) {
-            return static_cast<InterruptFlags>(pending_interrupts &
-                                               -pending_interrupts);
+            return static_cast<InterruptFlags>(pending_interrupts & -pending_interrupts);
         } else {
             return {};
         }
@@ -200,14 +199,11 @@ namespace gb::cpu {
         case type::SWAP:
             return SWAP(current_instruction_->arg().reg);
         case type::BIT:
-            return BIT(current_instruction_->arg().reg,
-                       *current_instruction_->bit);
+            return BIT(current_instruction_->arg().reg, *current_instruction_->bit);
         case type::RES:
-            return RES(current_instruction_->arg().reg,
-                       *current_instruction_->bit);
+            return RES(current_instruction_->arg().reg, *current_instruction_->bit);
         case type::SET:
-            return SET(current_instruction_->arg().reg,
-                       *current_instruction_->bit);
+            return SET(current_instruction_->arg().reg, *current_instruction_->bit);
         default:
             throw std::runtime_error("unknown instruction");
         }
@@ -249,8 +245,7 @@ namespace gb::cpu {
         case Registers::DE:
             return data_buffer_.get();
         default:
-            throw std::invalid_argument(
-                "Trying to get byte from unknown register");
+            throw std::invalid_argument("Trying to get byte from unknown register");
             return 0;
         }
     }
@@ -268,8 +263,7 @@ namespace gb::cpu {
         case Registers::AF:
             return reg_.AF();
         default:
-            throw std::invalid_argument(
-                "Trying to get byte from unknown register");
+            throw std::invalid_argument("Trying to get byte from unknown register");
             return 0;
         }
     }
@@ -307,8 +301,7 @@ namespace gb::cpu {
             sheduleWriteByte(reg_.DE(), data);
             return;
         default:
-            throw std::invalid_argument(
-                "Trying to write byte to unknown register");
+            throw std::invalid_argument("Trying to write byte to unknown register");
         }
     }
 
@@ -330,8 +323,7 @@ namespace gb::cpu {
             reg_.setAF(data);
             return;
         default:
-            throw std::invalid_argument(
-                "Trying to write word to unknown register");
+            throw std::invalid_argument("Trying to write word to unknown register");
         }
     }
 
@@ -351,10 +343,8 @@ namespace gb::cpu {
         }
     }
 
-    void SharpSM83::setArgData(Instruction::Argument &arg, ArgumentInfo info,
-                               uint8_t data) {
-        if (info.src == ArgumentSource::Register ||
-            info.src == ArgumentSource::Indirect) {
+    void SharpSM83::setArgData(Instruction::Argument &arg, ArgumentInfo info, uint8_t data) {
+        if (info.src == ArgumentSource::Register || info.src == ArgumentSource::Indirect) {
             arg = info.reg;
         } else {
             arg = data;
@@ -371,29 +361,23 @@ namespace gb::cpu {
     void SharpSM83::sheduleMemoryNoOp() { pushMemoryOp(MemoryOp{}); }
 
     void SharpSM83::sheduleReadByte(uint16_t address) {
-        pushMemoryOp(
-            MemoryOp{.address = address, .type = MemoryOp::Type::READ});
+        pushMemoryOp(MemoryOp{.address = address, .type = MemoryOp::Type::READ});
     }
 
     void SharpSM83::sheduleReadWord(uint16_t address) {
-        pushMemoryOp(
-            MemoryOp{.address = address, .type = MemoryOp::Type::READ_LOW});
-        pushMemoryOp(
-            MemoryOp{.address = ++address, .type = MemoryOp::Type::READ_HIGH});
+        pushMemoryOp(MemoryOp{.address = address, .type = MemoryOp::Type::READ_LOW});
+        pushMemoryOp(MemoryOp{.address = ++address, .type = MemoryOp::Type::READ_HIGH});
     }
 
     void SharpSM83::sheduleWriteByte(uint16_t address, uint8_t data) {
-        pushMemoryOp(MemoryOp{
-            .address = address, .type = MemoryOp::Type::WRITE, .data = data});
+        pushMemoryOp(MemoryOp{.address = address, .type = MemoryOp::Type::WRITE, .data = data});
     }
 
     void SharpSM83::sheduleWriteWord(uint16_t address, uint16_t data) {
-        pushMemoryOp(MemoryOp{.address = address,
-                              .type = MemoryOp::Type::WRITE,
-                              .data = uint8_t(data)});
-        pushMemoryOp(MemoryOp{.address = ++address,
-                              .type = MemoryOp::Type::WRITE,
-                              .data = uint8_t(data >> 8)});
+        pushMemoryOp(
+            MemoryOp{.address = address, .type = MemoryOp::Type::WRITE, .data = uint8_t(data)});
+        pushMemoryOp(MemoryOp{
+            .address = ++address, .type = MemoryOp::Type::WRITE, .data = uint8_t(data >> 8)});
     }
 
     void SharpSM83::shedulePushStack(uint16_t data) {
@@ -402,9 +386,8 @@ namespace gb::cpu {
                               .type = MemoryOp::Type::WRITE,
                               .data = uint8_t(data >> 8)});
         --reg_.SP;
-        pushMemoryOp(MemoryOp{.address = uint16_t(reg_.SP),
-                              .type = MemoryOp::Type::WRITE,
-                              .data = uint8_t(data)});
+        pushMemoryOp(MemoryOp{
+            .address = uint16_t(reg_.SP), .type = MemoryOp::Type::WRITE, .data = uint8_t(data)});
     }
 
     void SharpSM83::shedulePopStack(Registers reg) {
@@ -419,16 +402,13 @@ namespace gb::cpu {
         case Registers::DE:
         case Registers::HL:
         case Registers::PC:
-            pushMemoryOp(MemoryOp{.address = address,
-                                  .type = MemoryOp::Type::READ_LOW,
-                                  .data = reg});
-            pushMemoryOp(MemoryOp{.address = ++address,
-                                  .type = MemoryOp::Type::READ_HIGH,
-                                  .data = reg});
+            pushMemoryOp(
+                MemoryOp{.address = address, .type = MemoryOp::Type::READ_LOW, .data = reg});
+            pushMemoryOp(
+                MemoryOp{.address = ++address, .type = MemoryOp::Type::READ_HIGH, .data = reg});
             break;
         default:
-            pushMemoryOp(MemoryOp{
-                .address = address, .type = MemoryOp::Type::READ, .data = reg});
+            pushMemoryOp(MemoryOp{.address = address, .type = MemoryOp::Type::READ, .data = reg});
             break;
         }
     }
@@ -491,34 +471,18 @@ namespace gb::cpu {
             return;
         case READ:
             if (op.data.is<Registers>()) {
-                setByteRegister(op.data.get<Registers>(),
-                                bus_.read(op.address));
+                reg_.setLow(op.data.get<Registers>(), bus_.read(op.address));
             } else {
                 data_buffer_.put(bus_.read(op.address));
             }
             break;
         case READ_HIGH:
             if (op.data.is<Registers>()) {
-                switch (op.data.get<Registers>()) {
-                case Registers::HL:
-                    reg_.H() = bus_.read(op.address);
-                    break;
-                case Registers::BC:
-                    reg_.B() = bus_.read(op.address);
-                    break;
-                case Registers::DE:
-                    reg_.D() = bus_.read(op.address);
-                    break;
-                case Registers::AF:
-                    reg_.A() = bus_.read(op.address);
-                    break;
-                case Registers::PC:
-                    reg_.PC = (reg_.PC & 0x00FF) |
-                              (uint16_t(bus_.read(op.address)) << 8);
-                    break;
-                default:
-                    throw std::runtime_error(
-                        "invalid register for READ_HIGH memory op");
+                Registers reg = op.data.get<Registers>();
+                if (reg == Registers::PC) {
+                    reg_.PC = (reg_.PC & 0x00FF) | (uint16_t(bus_.read(op.address)) << 8);
+                } else {
+                    reg_.setHigh(reg, bus_.read(op.address));
                 }
             } else {
                 data_buffer_.putHigh(bus_.read(op.address));
@@ -526,27 +490,11 @@ namespace gb::cpu {
             break;
         case READ_LOW:
             if (op.data.is<Registers>()) {
-                switch (op.data.get<Registers>()) {
-                case Registers::HL:
-                    reg_.L() = bus_.read(op.address);
-                    break;
-                case Registers::BC:
-                    reg_.C() = bus_.read(op.address);
-                    break;
-                case Registers::DE:
-                    reg_.E() = bus_.read(op.address);
-                    break;
-                case Registers::AF:
-                    reg_.setAF((uint16_t(reg_.A()) << 8) |
-                               bus_.read(op.address));
-                    break;
-                case Registers::PC:
-                    reg_.PC =
-                        (reg_.PC & 0xFF00) | uint16_t(bus_.read(op.address));
-                    break;
-                default:
-                    throw std::runtime_error(
-                        "invalid register for READ_LOW memory op");
+                Registers reg = op.data.get<Registers>();
+                if (reg == Registers::PC) {
+                    reg_.PC = (reg_.PC & 0xFF00) | uint16_t(bus_.read(op.address));
+                } else {
+                    reg_.setLow(reg, bus_.read(op.address));
                 }
             } else {
                 data_buffer_.putLow(bus_.read(op.address));

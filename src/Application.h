@@ -80,8 +80,7 @@ SP: 0x%.4x, PC: 0x%.4x)";
         void drawBreakpointMenu();
         void drawMemoryView();
 
-        template <typename Element>
-        void pushRecent(std::list<Element> &cont, const Element &elem) {
+        template <typename Element> void pushRecent(std::list<Element> &cont, const Element &elem) {
             cont.push_back(elem);
             if (cont.size() > g_recent_cache_size) {
                 cont.pop_front();
@@ -89,13 +88,11 @@ SP: 0x%.4x, PC: 0x%.4x)";
         }
 
         void addPCBreakpoint(uint16_t address);
-        void addMemoryBreakpoint(uint8_t flags, uint16_t min_address,
-                                 uint16_t max_address,
+        void addMemoryBreakpoint(uint8_t flags, uint16_t min_address, uint16_t max_address,
                                  std::optional<uint8_t> data);
         void resetBreakpoints();
 
-        void printInstruction(StringBuffer<g_instruction_string_buf_size> &buf,
-                              size_t idx);
+        void printInstruction(StringBuffer<g_instruction_string_buf_size> &buf, size_t idx);
 
       private:
         gb::Emulator emulator_;

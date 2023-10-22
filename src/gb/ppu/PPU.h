@@ -4,10 +4,8 @@
 
 namespace gb {
 
-    constexpr MemoryObjectInfo g_memory_vram = {.min_address = 0x8000,
-                                                .max_address = 0x9fff};
-    constexpr MemoryObjectInfo g_memory_oam = {.min_address = 0xe000,
-                                               .max_address = 0xfe9f};
+    constexpr MemoryObjectInfo g_memory_vram = {.min_address = 0x8000, .max_address = 0x9fff};
+    constexpr MemoryObjectInfo g_memory_oam = {.min_address = 0xe000, .max_address = 0xfe9f};
     constexpr uint16_t g_lcd_control_address = 0xFF40;
     constexpr uint16_t g_lcd_status = 0xFF41;
     constexpr uint16_t g_scroll_x_address = 0xFF42;
@@ -21,12 +19,7 @@ namespace gb {
     constexpr uint16_t g_window_y_address = 0xFF4A;
     constexpr uint16_t g_window_x_address = 0xFF4B;
 
-    enum class PPUMode : uint8_t {
-        HBLANK = 0,
-        VBLANK = 1,
-        OAM_SCAN = 2,
-        RENDER = 3
-    };
+    enum class PPUMode : uint8_t { HBLANK = 0, VBLANK = 1, OAM_SCAN = 2, RENDER = 3 };
 
 #define BIT(x) 1 << x
     enum class LCDControlFlags : uint8_t {

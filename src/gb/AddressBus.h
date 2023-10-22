@@ -20,30 +20,19 @@ namespace gb {
         }
     };
 
-    constexpr MemoryObjectInfo g_memory_rom = {.min_address = 0x0000,
-                                               .max_address = 0x7FFF};
-    constexpr MemoryObjectInfo g_memory_vram = {.min_address = 0x8000,
-                                                .max_address = 0x9fff};
+    constexpr MemoryObjectInfo g_memory_rom = {.min_address = 0x0000, .max_address = 0x7FFF};
+    constexpr MemoryObjectInfo g_memory_vram = {.min_address = 0x8000, .max_address = 0x9fff};
     constexpr MemoryObjectInfo g_memory_cartridge_ram = {.min_address = 0xa000,
                                                          .max_address = 0xbfff};
-    constexpr MemoryObjectInfo g_memory_wram = {.min_address = 0xc000,
-                                                .max_address = 0xdfff};
-    constexpr MemoryObjectInfo g_memory_mirror = {.min_address = 0xe000,
-                                                  .max_address = 0xfdff};
-    constexpr MemoryObjectInfo g_memory_oam = {.min_address = 0xe000,
-                                               .max_address = 0xfe9f};
-    constexpr MemoryObjectInfo g_memory_forbidden = {.min_address = 0xfea0,
-                                                     .max_address = 0xfeff};
-    constexpr MemoryObjectInfo g_memory_io_unused = {.min_address = 0xff00,
-                                                     .max_address = 0xff03};
-    constexpr MemoryObjectInfo g_memory_timer = {.min_address = 0xFF04,
-                                                 .max_address = 0xFF07};
-    constexpr MemoryObjectInfo g_memory_io_unused2 = {.min_address = 0xff08,
-                                                      .max_address = 0xff0e};
-    constexpr MemoryObjectInfo g_memory_io_unused3 = {.min_address = 0xff10,
-                                                      .max_address = 0xff7f};
-    constexpr MemoryObjectInfo g_memory_hram = {.min_address = 0xff80,
-                                                .max_address = 0xfffe};
+    constexpr MemoryObjectInfo g_memory_wram = {.min_address = 0xc000, .max_address = 0xdfff};
+    constexpr MemoryObjectInfo g_memory_mirror = {.min_address = 0xe000, .max_address = 0xfdff};
+    constexpr MemoryObjectInfo g_memory_oam = {.min_address = 0xe000, .max_address = 0xfe9f};
+    constexpr MemoryObjectInfo g_memory_forbidden = {.min_address = 0xfea0, .max_address = 0xfeff};
+    constexpr MemoryObjectInfo g_memory_io_unused = {.min_address = 0xff00, .max_address = 0xff03};
+    constexpr MemoryObjectInfo g_memory_timer = {.min_address = 0xFF04, .max_address = 0xFF07};
+    constexpr MemoryObjectInfo g_memory_io_unused2 = {.min_address = 0xff08, .max_address = 0xff0e};
+    constexpr MemoryObjectInfo g_memory_io_unused3 = {.min_address = 0xff10, .max_address = 0xff7f};
+    constexpr MemoryObjectInfo g_memory_hram = {.min_address = 0xff80, .max_address = 0xfffe};
 
     class AddressBus {
       public:
@@ -51,9 +40,7 @@ namespace gb {
 
         ~AddressBus() = default;
 
-        void setRomData(std::vector<uint8_t> data) {
-            cartridge_.setROM(std::move(data));
-        }
+        void setRomData(std::vector<uint8_t> data) { cartridge_.setROM(std::move(data)); }
         void update() { timer_.update(); }
 
         void setObserver(MemoryObserver &observer) { observer_ = &observer; }
@@ -65,12 +52,8 @@ namespace gb {
         InterruptRegister &getInterruptFlags() { return interrupt_flags_; }
         InterruptRegister &getInterruptEnable() { return interrupt_enable_; }
 
-        const InterruptRegister &getInterruptFlags() const {
-            return interrupt_flags_;
-        }
-        const InterruptRegister &getInterruptEnable() const {
-            return interrupt_enable_;
-        }
+        const InterruptRegister &getInterruptFlags() const { return interrupt_flags_; }
+        const InterruptRegister &getInterruptEnable() const { return interrupt_enable_; }
 
       private:
         std::string getErrorDescription(uint16_t address, int value = -1) const;

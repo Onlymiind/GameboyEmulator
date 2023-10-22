@@ -4,6 +4,7 @@
 
 #include <array>
 #include <bit>
+#include <cstddef>
 #include <cstdint>
 #include <stdexcept>
 
@@ -29,49 +30,54 @@ namespace gb::cpu {
         static constexpr size_t flags = 0;
 
       public:
-        uint8_t &A() { return registers_[1]; }
-        uint8_t &B() { return registers_[3]; }
-        uint8_t &C() { return registers_[2]; }
-        uint8_t &D() { return registers_[5]; }
-        uint8_t &E() { return registers_[4]; }
-        uint8_t &H() { return registers_[7]; }
-        uint8_t &L() { return registers_[6]; }
+        uint8_t &A() { return registers_[size_t(Registers::A)]; }
+        uint8_t &B() { return registers_[size_t(Registers::B)]; }
+        uint8_t &C() { return registers_[size_t(Registers::C)]; }
+        uint8_t &D() { return registers_[size_t(Registers::D)]; }
+        uint8_t &E() { return registers_[size_t(Registers::E)]; }
+        uint8_t &H() { return registers_[size_t(Registers::H)]; }
+        uint8_t &L() { return registers_[size_t(Registers::L)]; }
 
-        const uint8_t &A() const { return registers_[1]; }
-        const uint8_t &B() const { return registers_[3]; }
-        const uint8_t &C() const { return registers_[2]; }
-        const uint8_t &D() const { return registers_[5]; }
-        const uint8_t &E() const { return registers_[4]; }
-        const uint8_t &H() const { return registers_[7]; }
-        const uint8_t &L() const { return registers_[6]; }
+        const uint8_t &A() const { return registers_[size_t(Registers::A)]; }
+        const uint8_t &B() const { return registers_[size_t(Registers::B)]; }
+        const uint8_t &C() const { return registers_[size_t(Registers::C)]; }
+        const uint8_t &D() const { return registers_[size_t(Registers::D)]; }
+        const uint8_t &E() const { return registers_[size_t(Registers::E)]; }
+        const uint8_t &H() const { return registers_[size_t(Registers::H)]; }
+        const uint8_t &L() const { return registers_[size_t(Registers::L)]; }
 
-        uint8_t &getByteRegister(Registers reg) {
-            if (reg > Registers::H || reg < Registers::A) {
-                throw std::invalid_argument(
-                    "invalid register passed to RegisterFile::getByteRegister");
+        void setLow(Registers reg, uint8_t data) {
+            registers_[uint8_t(reg) & uint8_t(Registers::LOW_REG_MASK)] = data;
+            registers_[flags] &= uint8_t(Flags::ALL);
+        }
+
+        void setHigh(Registers reg, uint8_t data) {
+            size_t idx = (uint8_t(reg) & uint8_t(Registers::HIGH_REG_MASK)) >> 4;
+            if (idx == 0) [[unlikely]] {
+                throw std::invalid_argument("attempting to setHigh() of byte register");
             }
-            return registers_[uint8_t(reg)];
+            registers_[idx] = data;
         }
 
         void setAF(uint16_t data) {
-            *(std::bit_cast<uint16_t *>(&registers_[0])) = data;
+            *(std::bit_cast<uint16_t *>(&registers_[flags])) = data;
             registers_[flags] &= uint8_t(Flags::ALL);
         }
-        uint16_t &BC() { return *(std::bit_cast<uint16_t *>(&registers_[2])); }
-        uint16_t &DE() { return *(std::bit_cast<uint16_t *>(&registers_[4])); }
-        uint16_t &HL() { return *(std::bit_cast<uint16_t *>(&registers_[6])); }
+        uint16_t &BC() { return *(std::bit_cast<uint16_t *>(&registers_[size_t(Registers::C)])); }
+        uint16_t &DE() { return *(std::bit_cast<uint16_t *>(&registers_[size_t(Registers::E)])); }
+        uint16_t &HL() { return *(std::bit_cast<uint16_t *>(&registers_[size_t(Registers::L)])); }
 
         const uint16_t &AF() const {
-            return *(std::bit_cast<const uint16_t *>(&registers_[0]));
+            return *(std::bit_cast<const uint16_t *>(&registers_[flags]));
         }
         const uint16_t &BC() const {
-            return *(std::bit_cast<const uint16_t *>(&registers_[2]));
+            return *(std::bit_cast<const uint16_t *>(&registers_[size_t(Registers::C)]));
         }
         const uint16_t &DE() const {
-            return *(std::bit_cast<const uint16_t *>(&registers_[4]));
+            return *(std::bit_cast<const uint16_t *>(&registers_[size_t(Registers::E)]));
         }
         const uint16_t &HL() const {
-            return *(std::bit_cast<const uint16_t *>(&registers_[6]));
+            return *(std::bit_cast<const uint16_t *>(&registers_[size_t(Registers::L)]));
         }
 
         void setFlag(Flags flag, bool value) {
@@ -79,9 +85,7 @@ namespace gb::cpu {
             registers_[flags] |= value ? uint8_t(flag) : 0;
         }
 
-        bool getFlag(Flags flag) const {
-            return (registers_[flags] & uint8_t(flag)) != 0;
-        }
+        bool getFlag(Flags flag) const { return (registers_[flags] & uint8_t(flag)) != 0; }
 
         void clearFlags() { registers_[flags] = 0; }
 
@@ -103,9 +107,7 @@ namespace gb::cpu {
     inline bool halfCarried(uint8_t lhs, uint8_t rhs) {
         return ((lhs & 0x0F) + (rhs & 0x0F)) > 0x0F;
     }
-    inline bool halfBorrowed(uint8_t lhs, uint8_t rhs) {
-        return (lhs & 0x0F) < (rhs & 0x0F);
-    }
+    inline bool halfBorrowed(uint8_t lhs, uint8_t rhs) { return (lhs & 0x0F) < (rhs & 0x0F); }
     inline bool halfCarried(uint16_t rhs, uint16_t lhs) {
         return ((lhs & 0x0FFF) + (rhs & 0x0FFF)) > 0x0FFF;
     }

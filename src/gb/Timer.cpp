@@ -7,10 +7,8 @@
 namespace gb {
     void Timer::update() {
         ++counter_;
-        bool currentFreqBit =
-            (counter_ & frequency_bit_mask_[TAC_.freqency]) != 0;
-        if (frequency_bit_was_set_ &&
-            !(currentFreqBit && TAC_.enable)) { // Falling edge
+        bool currentFreqBit = (counter_ & frequency_bit_mask_[TAC_.freqency]) != 0;
+        if (frequency_bit_was_set_ && !(currentFreqBit && TAC_.enable)) { // Falling edge
             ++TIMA_;
             if (TIMA_ == 0) {
                 TIMA_ = TMA_;
@@ -31,9 +29,8 @@ namespace gb {
         case g_timer_tac_address:
             return (uint8_t(TAC_.enable) << 2) | TAC_.freqency;
         default:
-            throw std::invalid_argument(
-                "Attempting to read data from timer at invalid adress: " +
-                std::to_string(address));
+            throw std::invalid_argument("Attempting to read data from timer at invalid adress: " +
+                                        std::to_string(address));
             return 0x00;
         }
     }
@@ -55,8 +52,8 @@ namespace gb {
             break;
         default:
             throw std::invalid_argument(
-                "Attempting to write data to timer at invalid adress: " +
-                std::to_string(address) + ", data: " + std::to_string(+data));
+                "Attempting to write data to timer at invalid adress: " + std::to_string(address) +
+                ", data: " + std::to_string(+data));
         }
     }
 } // namespace gb

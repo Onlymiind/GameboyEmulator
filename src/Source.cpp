@@ -2,8 +2,7 @@
 
 int main() {
 
-    std::unique_ptr<emulator::Application> app =
-        std::make_unique<emulator::Application>();
+    std::unique_ptr<emulator::Application> app = std::make_unique<emulator::Application>();
 
     app->run();
 

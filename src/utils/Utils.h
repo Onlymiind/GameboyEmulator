@@ -26,15 +26,12 @@ inline std::vector<uint8_t> readFile(const std::filesystem::path &path) {
     return contents;
 }
 
-template <typename T,
-          typename std::enable_if<std::is_integral<T>{}, bool>::type = true>
+template <typename T, typename std::enable_if<std::is_integral<T>{}, bool>::type = true>
 inline void toHexOutput(std::stringstream &stream, T value) {
-    stream << "0x" << std::setfill('0') << std::setw(sizeof(T) * 2) << std::hex
-           << +value;
+    stream << "0x" << std::setfill('0') << std::setw(sizeof(T) * 2) << std::hex << +value;
 }
 
-template <typename... Args>
-std::string printToString(std::string_view separator, Args... args) {
+template <typename... Args> std::string printToString(std::string_view separator, Args... args) {
     std::stringstream stream;
     ((stream << separator << args), ...);
     return stream.str();
@@ -47,9 +44,7 @@ template <typename... Args> class Variant : public std::variant<Args...> {
     using Base::variant;
     using Base::operator=;
 
-    template <typename T> bool is() const {
-        return std::holds_alternative<T>(*this);
-    }
+    template <typename T> bool is() const { return std::holds_alternative<T>(*this); }
 
     template <typename T> T &get() { return std::get<T>(*this); }
 
@@ -57,9 +52,7 @@ template <typename... Args> class Variant : public std::variant<Args...> {
 
     template <typename T> const T &get() const { return std::get<T>(*this); }
 
-    template <typename T> const T *get_if() const {
-        return std::get_if<T>(this);
-    }
+    template <typename T> const T *get_if() const { return std::get_if<T>(this); }
 
     bool empty() const { return std::holds_alternative<std::monostate>(*this); }
 };
@@ -94,8 +87,7 @@ template <typename T, size_t CAPACITY> class RingBuffer {
   public:
     RingBuffer() = default;
     static_assert(CAPACITY >= 0, "capacity must be non-zero");
-    static_assert(std::is_trivially_destructible<T>::value,
-                  "T must be trivially destructible");
+    static_assert(std::is_trivially_destructible<T>::value, "T must be trivially destructible");
 
     template <typename... Args> void push_back(Args &&...args) {
         data_[current_] = T{std::forward<Args...>(args)...};
@@ -131,8 +123,7 @@ template <typename T, size_t CAPACITY> class RingBuffer {
 template <typename T, size_t CAPACITY> class Queue {
   public:
     static_assert(CAPACITY >= 0, "capacity must be non-zero");
-    static_assert(std::is_trivially_destructible<T>::value,
-                  "T must be trivially destructible");
+    static_assert(std::is_trivially_destructible<T>::value, "T must be trivially destructible");
 
     Queue() = default;
 
@@ -141,8 +132,7 @@ template <typename T, size_t CAPACITY> class Queue {
 
     T pop_front() {
         if (empty()) {
-            throw std::runtime_error(
-                "attempting to pop_front from empty queue");
+            throw std::runtime_error("attempting to pop_front from empty queue");
         }
         T elem = data_[begin_];
         begin_ = (begin_ + 1) % CAPACITY;

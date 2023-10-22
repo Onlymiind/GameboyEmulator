@@ -26,21 +26,13 @@ namespace gb {
 
         uint8_t read() const { return interrupts_; }
 
-        void write(uint8_t data) {
-            interrupts_ = g_unused_interrupt_bits | data;
-        }
+        void write(uint8_t data) { interrupts_ = g_unused_interrupt_bits | data; }
 
-        inline void setFlag(InterruptFlags flag) {
-            interrupts_ |= static_cast<uint8_t>(flag);
-        }
+        inline void setFlag(InterruptFlags flag) { interrupts_ |= static_cast<uint8_t>(flag); }
 
-        inline void clearFlag(InterruptFlags flag) {
-            interrupts_ &= ~static_cast<uint8_t>(flag);
-        }
+        inline void clearFlag(InterruptFlags flag) { interrupts_ &= ~static_cast<uint8_t>(flag); }
 
-        inline uint8_t getFlags() const {
-            return interrupts_ & (~g_unused_interrupt_bits);
-        }
+        inline uint8_t getFlags() const { return interrupts_ & (~g_unused_interrupt_bits); }
 
       private:
         uint8_t interrupts_;

@@ -56,14 +56,7 @@ namespace gb::cpu {
 
     // Some LD instructions are quite different fron others, this enum is used
     // to mark them
-    enum class LoadSubtype : uint8_t {
-        Typical = 0,
-        LD_INC,
-        LD_DEC,
-        LD_IO,
-        LD_SP,
-        LD_Offset_SP
-    };
+    enum class LoadSubtype : uint8_t { Typical = 0, LD_INC, LD_DEC, LD_IO, LD_SP, LD_Offset_SP };
 
     enum class ArgumentSource : uint8_t {
         None = 0,
@@ -73,28 +66,28 @@ namespace gb::cpu {
         IndirectImmediate
     };
 
-    enum class ArgumentType : uint8_t {
-        None = 0,
-        Unsigned8,
-        Unsigned16,
-        Signed8
-    };
+    enum class ArgumentType : uint8_t { None = 0, Unsigned8, Unsigned16, Signed8 };
 
     enum class Registers : uint8_t {
         None = 0,
-        A,
-        C,
-        B,
-        E,
-        D,
-        L,
-        H,
-        AF,
-        BC,
-        DE,
-        HL,
-        PC,
-        SP
+
+        FLAGS = 0,
+        A = 1,
+        C = 2,
+        B = 3,
+        E = 4,
+        D = 5,
+        L = 6,
+        H = 7,
+        AF = A << 4,
+        BC = (B << 4) | C,
+        DE = (D << 4) | E,
+        HL = (H << 4) | L,
+        SP = 254,
+        PC = 255,
+
+        LOW_REG_MASK = 0x0F,
+        HIGH_REG_MASK = 0xF0
     };
 
     enum class Conditions : uint8_t { NotZero, Zero, NotCarry, Carry };
@@ -124,8 +117,7 @@ namespace gb::cpu {
         // For Debugging
         inline bool operator==(DecodedInstruction other) const {
             return type == other.type && src == other.src && dst == other.dst &&
-                   condition == other.condition &&
-                   reset_vector == other.reset_vector &&
+                   condition == other.condition && reset_vector == other.reset_vector &&
                    LD_subtype == other.LD_subtype && bit == other.bit;
         }
 
@@ -139,8 +131,7 @@ namespace gb::cpu {
     };
 
     inline bool operator==(PrefixedInstruction lhs, PrefixedInstruction rhs) {
-        return lhs.type == rhs.type && lhs.target == rhs.target &&
-               lhs.bit == rhs.bit;
+        return lhs.type == rhs.type && lhs.target == rhs.target && lhs.bit == rhs.bit;
     }
 
     // Struct for easy opcode decomposition;

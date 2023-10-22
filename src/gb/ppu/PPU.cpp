@@ -14,8 +14,7 @@ namespace gb {
         case g_lcd_control_address:
             return lcd_control_;
         case g_lcd_status:
-            return status_ | (uint8_t(current_y_ == y_compare_) << 2) |
-                   uint8_t(mode_);
+            return status_ | (uint8_t(current_y_ == y_compare_) << 2) | uint8_t(mode_);
         case g_scroll_x_address:
             return scroll_x_;
         case g_scroll_y_address:
