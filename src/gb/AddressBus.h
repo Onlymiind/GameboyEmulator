@@ -39,9 +39,7 @@ namespace gb {
 
     class AddressBus {
       public:
-        AddressBus() {}
-
-        ~AddressBus() = default;
+        AddressBus() = default;
 
         void setRomData(std::vector<uint8_t> data) { cartridge_.setROM(std::move(data)); }
         void update() { timer_.update(); }
@@ -63,15 +61,15 @@ namespace gb {
 
         MemoryObserver *observer_ = nullptr;
 
-        RAM<g_memory_vram.size> vram_;
-        RAM<g_memory_wram.size> wram_;
-        RAM<g_memory_oam.size> oam_;
+        RAM<g_memory_vram.size> vram_{};
+        RAM<g_memory_wram.size> wram_{};
+        RAM<g_memory_oam.size> oam_{};
 
-        RAM<g_memory_io_unused.size> unused_io_;
-        RAM<g_memory_io_unused2.size> unused_io2_;
-        RAM<g_memory_io_unused3.size> unused_io3_;
+        RAM<g_memory_io_unused.size> unused_io_{};
+        RAM<g_memory_io_unused2.size> unused_io2_{};
+        RAM<g_memory_io_unused3.size> unused_io3_{};
 
-        RAM<g_memory_hram.size> hram_;
+        RAM<g_memory_hram.size> hram_{};
         Cartridge cartridge_;
         InterruptRegister interrupt_enable_;
         InterruptRegister interrupt_flags_;

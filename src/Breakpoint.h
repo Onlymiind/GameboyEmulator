@@ -73,120 +73,47 @@ namespace emulator {
     };
 
     struct MemoryBreakpointData {
-        uint16_t min_address = 0;
-        uint16_t max_address = 0;
+        enum class BreakOn : uint8_t { ALWAYS = 1, READ = 0, WRITE = 2 };
 
-        bool break_on_read = true;
-        bool break_on_write = true;
+        uint16_t address = 0;
+
+        BreakOn break_on = BreakOn::ALWAYS;
 
         std::optional<uint8_t> value;
 
-        bool empty() const { return min_address == max_address; }
-        bool isInRange(uint16_t address) const {
-            return address >= min_address && address <= max_address;
-        }
-        bool overlaps(MemoryBreakpointData other) const {
-            if (empty()) {
-                return false;
+        bool operator<(MemoryBreakpointData other) const {
+            if (address == other.address) {
+                return break_on < other.break_on;
             }
-
-            return other.isInRange(min_address) || other.isInRange(max_address);
+            return address < other.address;
         }
 
-        bool operator<(MemoryBreakpointData other) {
-            return min_address != other.min_address ? min_address < other.min_address
-                                                    : max_address < other.max_address;
+        bool operator==(MemoryBreakpointData other) const {
+            return address == other.address && break_on == other.break_on && value == other.value;
         }
-
-        bool operator==(MemoryBreakpointData other) {
-            return min_address == other.min_address && max_address == other.max_address &&
-                   value == other.value && break_on_read == other.break_on_read &&
-                   break_on_write == other.break_on_write;
-        }
-    };
-
-    class MemoryBreakpointTree {
-        struct Node {
-            MemoryBreakpointData data;
-            uint16_t max_address = 0;
-
-            Node *parent = nullptr;
-            std::unique_ptr<Node> left;
-            std::unique_ptr<Node> right;
-        };
-
-      public:
-        class Iterator {
-            friend class MemoryBreakpointTree;
-
-          public:
-            const MemoryBreakpointData &operator*() const { return ptr_->data; }
-            const MemoryBreakpointData *operator->() const { return &ptr_->data; }
-
-            Iterator &operator++();
-
-            bool operator==(Iterator other) { return ptr_ == other.ptr_; }
-
-          private:
-            Iterator(Node *ptr, const MemoryBreakpointTree *tree) : ptr_(ptr), tree_(tree) {}
-            Node *ptr_ = nullptr;
-            const MemoryBreakpointTree *tree_ = nullptr;
-        };
-
-        MemoryBreakpointTree() = default;
-        MemoryBreakpointTree(std::span<MemoryBreakpointData> elems) : size_(elems.size()) {
-            root_ = buildTree(elems);
-        }
-
-        void insert(MemoryBreakpointData data);
-        void erase(Iterator it);
-
-        void rebuildTree();
-
-        bool isBreakpointTriggered(uint16_t address, uint8_t data, bool is_read) {
-            return find(root_.get(), address, data, is_read);
-        }
-
-        Iterator begin() const;
-        Iterator end() const { return Iterator{nullptr, this}; }
-
-        size_t size() const { return size_; }
-
-      private:
-        static bool find(Node *node, uint16_t address, uint8_t data, bool is_read);
-        static Node *getParent(Node *node) { return node ? node->parent : nullptr; }
-        static std::unique_ptr<Node> buildTree(std::span<MemoryBreakpointData> elems);
-        static void insert(Node *node, MemoryBreakpointData data);
-        static std::unique_ptr<Node> replace(MemoryBreakpointTree &tree, Node *old_node,
-                                             std::unique_ptr<Node> &&new_node);
-
-        std::unique_ptr<Node> root_;
-        size_t size_ = 0;
     };
 
     class MemoryBreakpoints : public gb::MemoryObserver {
       public:
         MemoryBreakpoints(std::function<void()> &&callback) : callback_(std::move(callback)) {}
 
-        void addBreakpoint(MemoryBreakpointData data) { breakpoints_.insert(data); }
-
-        void removeBreakpoint(MemoryBreakpointTree::Iterator it) { breakpoints_.erase(it); }
-
-        const MemoryBreakpointTree &getBreakpoints() const { return breakpoints_; }
-
-        void onRead(uint16_t address, uint8_t data) override {
-            if (breakpoints_.isBreakpointTriggered(address, data, true)) {
-                callback_();
-            }
+        void addBreakpoint(MemoryBreakpointData breakpoint) {
+            breakpoints_.insert(
+                std::lower_bound(breakpoints_.begin(), breakpoints_.end(), breakpoint), breakpoint);
         }
-        void onWrite(uint16_t address, uint8_t data) override {
-            if (breakpoints_.isBreakpointTriggered(address, data, false)) {
-                callback_();
-            }
-        }
+
+        void removeBreakpoint(MemoryBreakpointData breakpoint);
+
+        const std::vector<MemoryBreakpointData> &getBreakpoints() const { return breakpoints_; }
+
+        void onRead(uint16_t address, uint8_t data) override;
+        void onWrite(uint16_t address, uint8_t data) override;
+
+        uint16_t minAddress() const override { return 0; }
+        uint16_t maxAddress() const override { return uint16_t(-1); }
 
       private:
         std::function<void()> callback_;
-        MemoryBreakpointTree breakpoints_;
+        std::vector<MemoryBreakpointData> breakpoints_;
     };
 } // namespace emulator

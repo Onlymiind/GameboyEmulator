@@ -97,7 +97,7 @@ if(BUILD_TESTS OR TESTS_ONLY)
         src/tests/DecoderTest.cpp
         src/tests/TimerTest.cpp
         src/tests/integration/IntegrationTest.cpp
-        src/tests/MemoryBreakpointTreeTest.cpp
+        src/tests/MemoryBreakpointsTest.cpp
 
         src/Breakpoint.h
         src/Breakpoint.cpp
