@@ -73,6 +73,8 @@ SP: 0x%.4x, PC: 0x%.4x)";
         void drawBreakpointMenu();
         void drawMemoryView();
 
+        void drawMemoryRegion(gb::MemoryObjectType region);
+
         template <typename Element> void pushRecent(std::list<Element> &cont, const Element &elem) {
             cont.push_back(elem);
             if (cont.size() > g_recent_cache_size) {
@@ -107,6 +109,5 @@ SP: 0x%.4x, PC: 0x%.4x)";
         bool single_step_ = true;
 
         int refresh_rate_ = 60;
-        uint16_t mem_range_[2] = {0, 0};
     };
 } // namespace emulator

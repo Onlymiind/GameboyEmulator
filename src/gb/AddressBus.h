@@ -37,12 +37,42 @@ namespace gb {
     constexpr MemoryObjectInfo g_memory_io_unused3 = {.min_address = 0xff10, .max_address = 0xff7f};
     constexpr MemoryObjectInfo g_memory_hram = {.min_address = 0xff80, .max_address = 0xfffe};
 
+    enum class MemoryObjectType { ROM, VRAM, CARTRIDGE_RAM, WRAM, OAM, IO, HRAM, IE };
+
+    constexpr MemoryObjectInfo objectTypeToInfo(MemoryObjectType type) {
+        using enum MemoryObjectType;
+        switch (type) {
+        case ROM:
+            return g_memory_rom;
+        case VRAM:
+            return g_memory_vram;
+        case CARTRIDGE_RAM:
+            return g_memory_cartridge_ram;
+        case WRAM:
+            return g_memory_wram;
+        case OAM:
+            return g_memory_oam;
+        case IO:
+            return MemoryObjectInfo{.min_address = g_memory_io_unused.min_address,
+                                    .max_address = g_memory_io_unused3.max_address};
+        case HRAM:
+            return g_memory_hram;
+        case IE:
+            return MemoryObjectInfo{g_interrupt_enable_address, g_interrupt_enable_address};
+        default:
+            return MemoryObjectInfo{};
+        }
+    }
+
     class AddressBus {
       public:
         AddressBus() = default;
 
-        void setRomData(std::vector<uint8_t> data) { cartridge_.setROM(std::move(data)); }
+        void setROMData(std::vector<uint8_t> data) { cartridge_.setROM(std::move(data)); }
         void update() { timer_.update(); }
+
+        bool hasROM() const { return cartridge_.hasROM(); };
+        bool hasCartridgeRAM() const { return cartridge_.hasRAM(); }
 
         void setObserver(MemoryObserver &observer) { observer_ = &observer; }
         void removeObserver() { observer_ = nullptr; }

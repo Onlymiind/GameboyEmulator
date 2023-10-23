@@ -32,7 +32,7 @@ namespace gb {
 
         void reset() { cpu_.reset(); }
 
-        void setROM(std::vector<uint8_t> rom) { bus_.setRomData(std::move(rom)); }
+        void setROM(std::vector<uint8_t> rom) { bus_.setROMData(std::move(rom)); }
 
         void start() { is_running_ = true; }
 
@@ -44,6 +44,9 @@ namespace gb {
         cpu::Instruction getLastInstruction() const { return cpu_.getLastInstruction(); }
 
         uint8_t peekMemory(uint16_t address) { return bus_.read(address); }
+
+        bool hasROM() const { return bus_.hasROM(); }
+        bool hasCartridgeRAM() const { return bus_.hasCartridgeRAM(); }
 
       private:
         AddressBus bus_;

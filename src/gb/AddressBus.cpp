@@ -1,5 +1,6 @@
 #include "gb/AddressBus.h"
 #include "gb/InterruptRegister.h"
+#include "gb/memory/BasicComponents.h"
 #include "utils/Utils.h"
 
 #include <algorithm>
@@ -110,4 +111,5 @@ namespace gb {
 
         return err.str();
     }
+
 } // namespace gb

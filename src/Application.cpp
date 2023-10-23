@@ -236,22 +236,61 @@ namespace emulator {
     }
 
     void Application::drawMemoryView() {
+
+        if (ImGui::BeginTabBar("View memory")) {
+            using enum gb::MemoryObjectType;
+            gb::MemoryObjectType memory_to_display = ROM;
+            if (ImGui::BeginTabItem("ROM")) {
+                drawMemoryRegion(ROM);
+                ImGui::EndTabItem();
+            }
+            if (ImGui::BeginTabItem("VRAM")) {
+                drawMemoryRegion(VRAM);
+                ImGui::EndTabItem();
+            }
+            if (ImGui::BeginTabItem("Cartridge RAM")) {
+                drawMemoryRegion(CARTRIDGE_RAM);
+                ImGui::EndTabItem();
+            }
+            if (ImGui::BeginTabItem("WRAM")) {
+                drawMemoryRegion(WRAM);
+                ImGui::EndTabItem();
+            }
+            if (ImGui::BeginTabItem("OAM")) {
+                drawMemoryRegion(OAM);
+                ImGui::EndTabItem();
+            }
+            if (ImGui::BeginTabItem("IO")) {
+                drawMemoryRegion(IO);
+                ImGui::EndTabItem();
+            }
+            if (ImGui::BeginTabItem("HRAM")) {
+                drawMemoryRegion(HRAM);
+                ImGui::EndTabItem();
+            }
+            if (ImGui::BeginTabItem("Interrupt Enable")) {
+                drawMemoryRegion(IE);
+                ImGui::EndTabItem();
+            }
+
+            ImGui::EndTabBar();
+        }
+    }
+
+    void Application::drawMemoryRegion(gb::MemoryObjectType region) {
         constexpr std::string_view row_fmt =
             "0x%.4x: %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x "
             "%.2x %.2x %.2x %.2x %.2x";
 
-        ImGui::TextUnformatted("Memory range to display:");
-        ImGui::InputScalarN(
-            "##input mem range", ImGuiDataType_U16, mem_range_, 2, nullptr, nullptr, "%.4x",
-            ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_EnterReturnsTrue);
-        if (mem_range_[0] > mem_range_[1]) {
-            mem_range_[1] = mem_range_[0];
+        gb::MemoryObjectInfo info = gb::objectTypeToInfo(region);
+        uint16_t len = info.max_address - info.min_address + 1;
+        if ((region == gb::MemoryObjectType::ROM && !emulator_.hasROM()) ||
+            (region == gb::MemoryObjectType::CARTRIDGE_RAM && !emulator_.hasCartridgeRAM())) {
+            len = 0;
         }
-
-        uint16_t len = mem_range_[1] - mem_range_[0];
         uint16_t i = 0;
         for (; i + 15 < len; i += 16) {
-            uint16_t base = mem_range_[0] + i;
+            uint16_t base = info.min_address + i;
             ImGui::Text(row_fmt.data(), base, emulator_.peekMemory(base),
                         emulator_.peekMemory(base + 1), emulator_.peekMemory(base + 2),
                         emulator_.peekMemory(base + 3), emulator_.peekMemory(base + 4),
@@ -267,10 +306,10 @@ namespace emulator {
             // account for null char!!
             size_t last_row_len = strlen("0xffff:") + (len - i) * strlen(" ff") + 1;
             std::string buf(last_row_len, '\0');
-            int written = sprintf(buf.data(), "0x%.4x:", mem_range_[0] + i);
+            int written = sprintf(buf.data(), "0x%.4x:", info.min_address + i);
             for (; i < len; ++i) {
-                written +=
-                    sprintf(buf.data() + written, " %.2x", emulator_.peekMemory(mem_range_[0] + i));
+                written += sprintf(buf.data() + written, " %.2x",
+                                   emulator_.peekMemory(info.min_address + i));
             }
             ImGui::TextUnformatted(buf.data());
         }
