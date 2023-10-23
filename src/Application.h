@@ -53,13 +53,6 @@ SP: 0x%.4x, PC: 0x%.4x)";
         gb::cpu::Instruction instruction;
     };
 
-    struct MemoryBreakpointData_ {
-        uint16_t addresses[2] = {0, 0};
-        bool read = true;
-        bool write = true;
-        std::optional<uint8_t> value;
-    };
-
     class Application {
       public:
         Application();
@@ -88,9 +81,7 @@ SP: 0x%.4x, PC: 0x%.4x)";
         }
 
         void addPCBreakpoint(uint16_t address);
-        void addMemoryBreakpoint(uint8_t flags, uint16_t min_address, uint16_t max_address,
-                                 std::optional<uint8_t> data);
-        void resetBreakpoints();
+        void addMemoryBreakpoint();
 
         void printInstruction(StringBuffer<g_instruction_string_buf_size> &buf, size_t idx);
 
@@ -104,12 +95,10 @@ SP: 0x%.4x, PC: 0x%.4x)";
         GLFWwindow *window_ = nullptr;
 
         std::vector<uint16_t> pc_breakpoints_;
-        // std::list is used since pointers to elements must be valid after
-        // removal
-        std::list<MemoryBreakpoint> memory_breakpoints_;
+        MemoryBreakpoints memory_breakpoints_{[this]() { single_step_ = true; }};
 
         // buffers for GUI
-        MemoryBreakpointData_ memory_breakpoint_data_;
+        MemoryBreakpointData memory_breakpoint_data_;
         std::string new_romdir_;
         std::optional<gb::cpu::RegisterFile> registers_to_print_;
 

@@ -79,10 +79,8 @@ namespace emulator {
             ImGui::TextUnformatted("Single stepping");
         }
 
-        // FIXME: memory breakpoints are currently broken, check Breakpoint.h
-        // for in-progress fix
-        //  ImGui::TableNextColumn();
-        //  drawBreakpointMenu();
+        ImGui::TableNextColumn();
+        drawBreakpointMenu();
         ImGui::EndTable();
 
         drawMemoryView();
@@ -188,60 +186,51 @@ namespace emulator {
         }
 
         ImGui::TextUnformatted("Add memory breakpoint:");
-        ImGui::InputScalarN("###addresses", ImGuiDataType_U16, memory_breakpoint_data_.addresses, 2,
-                            nullptr, nullptr, "%.4x",
-                            ImGuiInputTextFlags_CharsHexadecimal |
-                                ImGuiInputTextFlags_EnterReturnsTrue);
-        if (memory_breakpoint_data_.addresses[1] < memory_breakpoint_data_.addresses[0]) {
-            memory_breakpoint_data_.addresses[1] = memory_breakpoint_data_.addresses[0];
+        ImGui::InputScalar("##address", ImGuiDataType_U16, &memory_breakpoint_data_.address,
+                           nullptr, nullptr, "%.4x", ImGuiInputTextFlags_CharsHexadecimal);
+        if (ImGui::BeginCombo("Break on:", to_string(memory_breakpoint_data_.break_on).data())) {
+            if (ImGui::Selectable(to_string(MemoryBreakpointData::BreakOn::ALWAYS).data())) {
+                memory_breakpoint_data_.break_on = MemoryBreakpointData::BreakOn::ALWAYS;
+            } else if (ImGui::Selectable(to_string(MemoryBreakpointData::BreakOn::READ).data())) {
+                memory_breakpoint_data_.break_on = MemoryBreakpointData::BreakOn::READ;
+            } else if (ImGui::Selectable(to_string(MemoryBreakpointData::BreakOn::WRITE).data())) {
+                memory_breakpoint_data_.break_on = MemoryBreakpointData::BreakOn::WRITE;
+            }
+            ImGui::EndCombo();
         }
-        ImGui::Checkbox("Read", &memory_breakpoint_data_.read);
-        ImGui::Checkbox("Write", &memory_breakpoint_data_.write);
 
-        uint8_t temp_value = 0;
+        uint8_t temp_value = memory_breakpoint_data_.value ? *memory_breakpoint_data_.value : 0;
+
+        // ImGui issue: InputScalar won't return true if the value is unchanged
+        // this means that to set memory_breakpoint_data_.value to 0
+        // you first need to input some non-zero value in GUI
         if (ImGui::InputScalar("value", ImGuiDataType_U8, &temp_value, nullptr, nullptr, "%.2x",
-                               ImGuiInputTextFlags_CharsHexadecimal |
-                                   ImGuiInputTextFlags_EnterReturnsTrue)) {
+                               ImGuiInputTextFlags_CharsHexadecimal)) {
             memory_breakpoint_data_.value = temp_value;
         }
 
         if (ImGui::Button("Add")) {
-            uint8_t flags = 0;
-            if (memory_breakpoint_data_.read) {
-                flags |= uint8_t(MemoryBreakpointFlags::READ);
-            }
-            if (memory_breakpoint_data_.write) {
-                flags |= uint8_t(MemoryBreakpointFlags::WRITE);
-            }
-            addMemoryBreakpoint(flags, memory_breakpoint_data_.addresses[0],
-                                memory_breakpoint_data_.addresses[1],
-                                memory_breakpoint_data_.value);
-            memory_breakpoint_data_ = MemoryBreakpointData_{};
+            addMemoryBreakpoint();
         }
         {
             ImGui::Text("Memory breakpoints: ");
-            auto delete_it = memory_breakpoints_.end();
-            std::string buf(strlen("Min address: 0xffff\nMax address: "
-                                   "0xffff\nRead: 1, write: 1, value: 0xff"),
-                            '\0');
-            for (auto it = memory_breakpoints_.begin(); it != memory_breakpoints_.end(); ++it) {
-                int written =
-                    sprintf(buf.data(),
-                            "Min address: 0x%.4x\nMax address: 0x%.4x\nRead: %d, "
-                            "write: %d",
-                            it->maxAddress(), it->minAddress(),
-                            (it->getFlags() & uint8_t(MemoryBreakpointFlags::READ)) != 0,
-                            (it->getFlags() & uint8_t(MemoryBreakpointFlags::WRITE)) != 0);
-                if (it->getValue()) {
-                    sprintf(buf.data() + written, ", value: 0x%.2x", *it->getValue());
+            std::optional<MemoryBreakpointData> delete_val;
+            std::string buf(strlen("Address: 0xffff\nBreak on: ALWAYS, value: 0xff"), '\0');
+            for (auto br : memory_breakpoints_.getBreakpoints()) {
+
+                // it is fine to use %s to print to_string(br.break_on) since it is a string literal
+                int written = sprintf(buf.data(), "Address: 0x%.4x\nBreak on: %s", br.address,
+                                      to_string(br.break_on).data());
+                if (br.value) {
+                    sprintf(buf.data() + written, ", value: 0x%.2x", *br.value);
                 }
                 ImGui::Selectable(buf.c_str());
                 if (ImGui::IsItemHovered() && ImGui::IsKeyPressed(ImGuiKey_Backspace)) {
-                    delete_it = it;
+                    delete_val = br;
                 }
             }
-            if (delete_it != memory_breakpoints_.end()) {
-                memory_breakpoints_.erase(delete_it);
+            if (delete_val) {
+                memory_breakpoints_.removeBreakpoint(*delete_val);
             }
         }
     }
@@ -287,7 +276,10 @@ namespace emulator {
         }
     }
 
-    Application::Application() { initGUI(); }
+    Application::Application() {
+        initGUI();
+        emulator_.setMemoryObserver(memory_breakpoints_);
+    }
 
     void Application::run() {
         size_t updates_per_frame = size_t(g_cycles_per_second / size_t(refresh_rate_));
@@ -379,15 +371,10 @@ namespace emulator {
                 // StringBuffer<g_instruction_string_buf_size> buf;
                 // printInstruction(buf, recent_instructions_.size() - 1);
                 // std::cout << buf.data() << std::endl;
-                if (std::binary_search(pc_breakpoints_.begin(), pc_breakpoints_.end(),
+                if (!single_step_ &&
+                    std::binary_search(pc_breakpoints_.begin(), pc_breakpoints_.end(),
                                        instr_data.instruction.pc)) {
                     single_step_ = true;
-                }
-                for (auto &br : memory_breakpoints_) {
-                    if (br.isHit()) {
-                        single_step_ = true;
-                        br.reset();
-                    }
                 }
             }
             emulator_.tick();
@@ -436,16 +423,9 @@ namespace emulator {
         pc_breakpoints_.insert(it, address);
     }
 
-    void Application::addMemoryBreakpoint(uint8_t flags, uint16_t min_address, uint16_t max_address,
-                                          std::optional<uint8_t> data) {
-        memory_breakpoints_.push_front(MemoryBreakpoint(min_address, max_address, flags, data));
-        emulator_.setMemoryObserver(*memory_breakpoints_.begin());
-    }
-
-    void Application::resetBreakpoints() {
-        for (auto &br : memory_breakpoints_) {
-            br.reset();
-        }
+    void Application::addMemoryBreakpoint() {
+        memory_breakpoints_.addBreakpoint(memory_breakpoint_data_);
+        memory_breakpoint_data_ = MemoryBreakpointData{};
     }
 
     void Application::printInstruction(StringBuffer<g_instruction_string_buf_size> &buf,
