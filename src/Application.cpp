@@ -59,7 +59,7 @@ namespace emulator {
                         regs.getFlag(gb::cpu::Flags::HALF_CARRY),
                         regs.getFlag(gb::cpu::Flags::NEGATIVE), regs.getFlag(gb::cpu::Flags::ZERO),
                         regs.A(), regs.AF(), regs.C(), regs.B(), regs.BC(), regs.E(), regs.D(),
-                        regs.DE(), regs.H(), regs.L(), regs.HL(), regs.SP, regs.PC);
+                        regs.DE(), regs.H(), regs.L(), regs.HL(), regs.sp, regs.pc);
         }
 
         ImGui::NewLine();
@@ -368,7 +368,7 @@ namespace emulator {
                 recent_instructions_.push_back(instr);
                 if (!single_step_ &&
                     std::binary_search(pc_breakpoints_.begin(), pc_breakpoints_.end(),
-                                       instr.registers.PC)) {
+                                       instr.registers.pc)) {
                     single_step_ = true;
                 }
             }
@@ -429,7 +429,7 @@ namespace emulator {
         std::stringstream out;
         out.rdbuf()->pubsetbuf(buf.data(), buf.capacityWithNullChar());
 
-        out << std::hex << instr.registers.PC << ' ' << to_string(instr.type);
+        out << std::hex << instr.registers.pc << ' ' << to_string(instr.type);
         if (instr.condition) {
             out << ' ' << to_string(*instr.condition);
         }
@@ -452,7 +452,7 @@ namespace emulator {
         };
 
         if (instr.load_subtype) {
-            if (*instr.load_subtype == LoadSubtype::LD_Offset_SP) {
+            if (*instr.load_subtype == LoadSubtype::LD_OFFSET_SP) {
                 out << " HL,";
             } else if (*instr.load_subtype == LoadSubtype::LD_IO) {
                 out << "H";

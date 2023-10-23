@@ -12,8 +12,8 @@ https://gb-archive.github.io/salvage/decoding_gbz80_opcodes/Decoding%20Gamboy%20
 */
 namespace gb::cpu {
 
-    DecodedInstruction decodeUnprefixed(opcode code);
-    DecodedInstruction decodePrefixed(opcode code);
+    DecodedInstruction decodeUnprefixed(Opcode code);
+    DecodedInstruction decodePrefixed(Opcode code);
 
-    inline bool isPrefix(opcode code) { return code.code == 0xCB; }
+    inline bool isPrefix(Opcode code) { return code.code == 0xCB; }
 } // namespace gb::cpu

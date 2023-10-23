@@ -28,7 +28,8 @@ namespace gb {
     template <size_t SIZE> using RAM = std::array<uint8_t, SIZE>;
 
     struct MemoryObjectInfo {
-        uint16_t min_address, max_address = 0;
+        uint16_t min_address = 0;
+        uint16_t max_address = 0;
         uint16_t size = static_cast<uint16_t>(max_address - min_address + 1);
 
         constexpr bool isInRange(uint16_t address) const {

@@ -15,44 +15,44 @@ constexpr std::array<std::pair<uint8_t, DecodedInstruction>, 10> unprefixed_samp
     {{0x00, {{}, {}, {}, {}, {}, InstructionType::NOP}},
      {0x40,
       {{},
-       LoadSubtype::Typical,
+       LoadSubtype::TYPICAL,
        {},
-       {ArgumentSource::Register, ArgumentType::Unsigned8, Registers::B},
-       {ArgumentSource::Register, ArgumentType::Unsigned8, Registers::B},
+       {ArgumentSource::REGISTER, ArgumentType::UNSIGNED_8, Registers::B},
+       {ArgumentSource::REGISTER, ArgumentType::UNSIGNED_8, Registers::B},
        InstructionType::LD}},
      {0x82,
       {{},
        {},
        {},
-       {ArgumentSource::Register, ArgumentType::Unsigned8, Registers::D},
-       {ArgumentSource::Register, ArgumentType::Unsigned8, Registers::A},
+       {ArgumentSource::REGISTER, ArgumentType::UNSIGNED_8, Registers::D},
+       {ArgumentSource::REGISTER, ArgumentType::UNSIGNED_8, Registers::A},
        InstructionType::ADD}},
      {0xC6,
       {{},
        {},
        {},
-       {ArgumentSource::Immediate, ArgumentType::Unsigned8, Registers::None},
-       {ArgumentSource::Register, ArgumentType::Unsigned8, Registers::A},
+       {ArgumentSource::IMMEDIATE, ArgumentType::UNSIGNED_8, Registers::NONE},
+       {ArgumentSource::REGISTER, ArgumentType::UNSIGNED_8, Registers::A},
        InstructionType::ADD}},
      {0xE0,
       {{},
        LoadSubtype::LD_IO,
        {},
-       {ArgumentSource::Register, ArgumentType::Unsigned8, Registers::A},
-       {ArgumentSource::Immediate, ArgumentType::Unsigned8, Registers::None},
+       {ArgumentSource::REGISTER, ArgumentType::UNSIGNED_8, Registers::A},
+       {ArgumentSource::IMMEDIATE, ArgumentType::UNSIGNED_8, Registers::NONE},
        InstructionType::LD}},
      {0x31,
       {{},
-       LoadSubtype::Typical,
+       LoadSubtype::TYPICAL,
        {},
-       {ArgumentSource::Immediate, ArgumentType::Unsigned16, Registers::None},
-       {ArgumentSource::Register, ArgumentType::Unsigned16, Registers::SP},
+       {ArgumentSource::IMMEDIATE, ArgumentType::UNSIGNED_16, Registers::NONE},
+       {ArgumentSource::REGISTER, ArgumentType::UNSIGNED_16, Registers::SP},
        InstructionType::LD}},
      {0xC2,
       {{},
        {},
-       Conditions::NotZero,
-       {ArgumentSource::Immediate, ArgumentType::Unsigned16, Registers::None},
+       Conditions::NOT_ZERO,
+       {ArgumentSource::IMMEDIATE, ArgumentType::UNSIGNED_16, Registers::NONE},
        {},
        InstructionType::JP}},
      {0xFF, {0x38, {}, {}, {}, {}, InstructionType::RST}},
@@ -60,7 +60,7 @@ constexpr std::array<std::pair<uint8_t, DecodedInstruction>, 10> unprefixed_samp
       {{},
        {},
        {},
-       {ArgumentSource::Immediate, ArgumentType::Signed8, Registers::None},
+       {ArgumentSource::IMMEDIATE, ArgumentType::SIGNED_8, Registers::NONE},
        {},
        InstructionType::JR}},
      {0x76, {{}, {}, {}, {}, {}, InstructionType::HALT}}}};
@@ -69,27 +69,27 @@ TEST_CASE("prefix") { REQUIRE(isPrefix({0xCB})); }
 
 TEST_CASE("decoding prefixed instructions") {
     DecodedInstruction RLC_B = {
-        .src = {.src = ArgumentSource::Register,
-                .type = ArgumentType::Unsigned8,
+        .src = {.src = ArgumentSource::REGISTER,
+                .type = ArgumentType::UNSIGNED_8,
                 .reg = Registers::B},
         .type = InstructionType::RLC,
     };
     uint8_t RLC_B_code = 0x00;
     DecodedInstruction SRA_A = {
-        .src = {.src = ArgumentSource::Register,
-                .type = ArgumentType::Unsigned8,
+        .src = {.src = ArgumentSource::REGISTER,
+                .type = ArgumentType::UNSIGNED_8,
                 .reg = Registers::A},
         .type = InstructionType::SRA,
     };
     uint8_t SRA_A_code = 0x2F;
-    DecodedInstruction BIT_6_A = {.src = {.src = ArgumentSource::Register,
-                                          .type = ArgumentType::Unsigned8,
+    DecodedInstruction BIT_6_A = {.src = {.src = ArgumentSource::REGISTER,
+                                          .type = ArgumentType::UNSIGNED_8,
                                           .reg = Registers::A},
                                   .type = InstructionType::BIT,
                                   .bit = 6};
     uint8_t BIT_6_A_code = 0x77;
-    DecodedInstruction SET_0_B = {.src = {.src = ArgumentSource::Register,
-                                          .type = ArgumentType::Unsigned8,
+    DecodedInstruction SET_0_B = {.src = {.src = ArgumentSource::REGISTER,
+                                          .type = ArgumentType::UNSIGNED_8,
                                           .reg = Registers::B},
                                   .type = InstructionType::SET,
                                   .bit = 0};
@@ -104,7 +104,7 @@ TEST_CASE("decoding prefixed instructions") {
 TEST_CASE("decoding unprefixed instructions") {
 
     for (const auto &[code, instr] : unprefixed_sample) {
-        if (instr.type != InstructionType::None) {
+        if (instr.type != InstructionType::NONE) {
             std::cout << "Testing instruction: " << std::hex << "0x" << std::setfill('0')
                       << std::setw(sizeof(uint8_t) * 2) << +code << std::endl;
             REQUIRE(decodeUnprefixed(code) == instr);

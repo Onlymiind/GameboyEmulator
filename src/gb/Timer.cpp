@@ -7,15 +7,15 @@
 namespace gb {
     void Timer::update() {
         ++counter_;
-        bool currentFreqBit = (counter_ & frequency_bit_mask_[TAC_.freqency]) != 0;
-        if (frequency_bit_was_set_ && !(currentFreqBit && TAC_.enable)) { // Falling edge
+        bool current_freq_bit = (counter_ & g_frequency_bit_mask[TAC_.freqency]) != 0;
+        if (frequency_bit_was_set_ && !(current_freq_bit && TAC_.enable)) { // Falling edge
             ++TIMA_;
             if (TIMA_ == 0) {
                 TIMA_ = TMA_;
-                interrupt_flags_.setFlag(InterruptFlags::Timer);
+                interrupt_flags_.setFlag(InterruptFlags::TIMER);
             }
         }
-        frequency_bit_was_set_ = currentFreqBit && TAC_.enable;
+        frequency_bit_was_set_ = current_freq_bit && TAC_.enable;
     }
 
     uint8_t Timer::read(uint16_t address) const {

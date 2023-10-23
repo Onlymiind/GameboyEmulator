@@ -7,7 +7,7 @@
 namespace gb::cpu {
 
     enum class InstructionType : uint8_t {
-        None = 0,
+        NONE = 0,
         NOP,
         LD,
         INC,
@@ -56,20 +56,20 @@ namespace gb::cpu {
 
     // Some LD instructions are quite different fron others, this enum is used
     // to mark them
-    enum class LoadSubtype : uint8_t { Typical = 0, LD_INC, LD_DEC, LD_IO, LD_SP, LD_Offset_SP };
+    enum class LoadSubtype : uint8_t { TYPICAL = 0, LD_INC, LD_DEC, LD_IO, LD_SP, LD_OFFSET_SP };
 
     enum class ArgumentSource : uint8_t {
-        None = 0,
-        Register,
-        Indirect,
-        Immediate,
-        IndirectImmediate
+        NONE = 0,
+        REGISTER,
+        INDIRECT,
+        IMMEDIATE,
+        INDIRECT_IMMEDIATE
     };
 
-    enum class ArgumentType : uint8_t { None = 0, Unsigned8, Unsigned16, Signed8 };
+    enum class ArgumentType : uint8_t { NONE = 0, UNSIGNED_8, UNSIGNED_16, SIGNED_8 };
 
     enum class Registers : uint8_t {
-        None = 0,
+        NONE = 0,
 
         FLAGS = 0,
         A = 1,
@@ -90,12 +90,12 @@ namespace gb::cpu {
         HIGH_REG_MASK = 0xF0
     };
 
-    enum class Conditions : uint8_t { NotZero, Zero, NotCarry, Carry };
+    enum class Conditions : uint8_t { NOT_ZERO, ZERO, NOT_CARRY, CARRY };
 
     struct ArgumentInfo {
-        ArgumentSource src = ArgumentSource::None;
-        ArgumentType type = ArgumentType::None;
-        Registers reg = Registers::None;
+        ArgumentSource src = ArgumentSource::NONE;
+        ArgumentType type = ArgumentType::NONE;
+        Registers reg = Registers::NONE;
 
         inline bool operator==(ArgumentInfo other) const {
             return src == other.src && type == other.type && reg == other.reg;
@@ -106,11 +106,11 @@ namespace gb::cpu {
         // Used only in RST instruction
         std::optional<uint16_t> reset_vector;
         // Used only in LD instructions
-        std::optional<LoadSubtype> LD_subtype;
+        std::optional<LoadSubtype> ld_subtype;
         std::optional<Conditions> condition;
         ArgumentInfo src;
         ArgumentInfo dst;
-        InstructionType type = InstructionType::None;
+        InstructionType type = InstructionType::NONE;
         // Used only in prefixed instructions
         std::optional<uint8_t> bit;
 
@@ -118,7 +118,7 @@ namespace gb::cpu {
         inline bool operator==(DecodedInstruction other) const {
             return type == other.type && src == other.src && dst == other.dst &&
                    condition == other.condition && reset_vector == other.reset_vector &&
-                   LD_subtype == other.LD_subtype && bit == other.bit;
+                   ld_subtype == other.ld_subtype && bit == other.bit;
         }
 
         ArgumentInfo &arg() { return src; }
@@ -126,7 +126,7 @@ namespace gb::cpu {
 
     struct PrefixedInstruction {
         InstructionType type;
-        Registers target = Registers::None;
+        Registers target = Registers::NONE;
         std::optional<uint8_t> bit;
     };
 
@@ -135,9 +135,9 @@ namespace gb::cpu {
     }
 
     // Struct for easy opcode decomposition;
-    struct opcode {
-        opcode() : code(0) {}
-        opcode(uint8_t val) : code(val) {}
+    struct Opcode {
+        Opcode() : code(0) {}
+        Opcode(uint8_t val) : code(val) {}
 
         inline uint8_t getX() const { return (code & 0b11000000) >> 6; }
         inline uint8_t getY() const { return (code & 0b00111000) >> 3; }

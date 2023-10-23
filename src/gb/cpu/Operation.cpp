@@ -10,7 +10,7 @@ namespace gb::cpu {
     std::string_view to_string(InstructionType type) {
 #define ENUM_NAME InstructionType
         switch (type) {
-            CASE(None);
+            CASE(NONE);
             CASE(NOP);
             CASE(LD);
             CASE(INC);
@@ -74,7 +74,9 @@ namespace gb::cpu {
             CASE(SP);
             CASE(PC);
             CASE(HL);
-            CASE(None);
+            CASE(NONE);
+        default:
+            return "";
         }
 #undef ENUM_NAME
     }
@@ -82,14 +84,16 @@ namespace gb::cpu {
     std::string_view to_string(Conditions cond) {
         using enum Conditions;
         switch (cond) {
-        case NotZero:
+        case NOT_ZERO:
             return "nz";
-        case Zero:
+        case ZERO:
             return "z";
-        case NotCarry:
+        case NOT_CARRY:
             return "nc";
-        case Carry:
+        case CARRY:
             return "c";
+        default:
+            return "";
         }
     }
 

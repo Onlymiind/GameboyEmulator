@@ -16,16 +16,16 @@
 namespace gb::cpu {
 
     inline const std::unordered_map<InterruptFlags, uint16_t> g_interrupt_vectors = {
-        {InterruptFlags::VBlank, 0x0040},
+        {InterruptFlags::VBLANK, 0x0040},
         {InterruptFlags::LCD_STAT, 0x0048},
-        {InterruptFlags::Timer, 0x0050},
-        {InterruptFlags::Serial, 0x0058},
-        {InterruptFlags::Joypad, 0x0060}};
+        {InterruptFlags::TIMER, 0x0050},
+        {InterruptFlags::SERIAL, 0x0058},
+        {InterruptFlags::JOYPAD, 0x0060}};
 
     struct Instruction {
         using Argument = Variant<std::monostate, Registers, int8_t, uint8_t, uint16_t>;
 
-        InstructionType type = InstructionType::None;
+        InstructionType type = InstructionType::NONE;
         std::optional<LoadSubtype> load_subtype;
         std::optional<Conditions> condition;
 
@@ -72,7 +72,7 @@ namespace gb::cpu {
         }
         int8_t getSigned() {
             empty_ = true;
-            return std::bit_cast<int8_t>(lsb_);
+            return int8_t(lsb_);
         }
         uint16_t getWord() {
             empty_ = true;
@@ -91,13 +91,12 @@ namespace gb::cpu {
     class SharpSM83 {
       public:
         SharpSM83(AddressBus &bus);
-        ~SharpSM83() {}
 
         void tick();
 
         RegisterFile getRegisters() const { return reg_; }
 
-        uint16_t getProgramCounter() const { return reg_.PC; }
+        uint16_t getProgramCounter() const { return reg_.pc; }
 
         bool isFinished() const {
             return !current_instruction_ && !prefixed_next_ && memory_op_queue_.empty();
@@ -142,7 +141,7 @@ namespace gb::cpu {
         void sheduleFetchInstruction();
         void executeMemoryOp();
 
-        void decode(opcode code);
+        void decode(Opcode code);
         void pushMemoryOp(MemoryOp op);
 
         // Unprefixed instrictions. Return the amount of machine cycles needed

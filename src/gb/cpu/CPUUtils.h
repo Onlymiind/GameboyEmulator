@@ -27,7 +27,7 @@ namespace gb::cpu {
 #undef BIT
 
     class RegisterFile {
-        static constexpr size_t flags = 0;
+        static constexpr size_t g_flags = 0;
 
       public:
         uint8_t &A() { return registers_[size_t(Registers::A)]; }
@@ -52,7 +52,7 @@ namespace gb::cpu {
                 throw std::invalid_argument("register index out of bounds");
             }
             registers_[idx] = data;
-            registers_[flags] &= uint8_t(Flags::ALL);
+            registers_[g_flags] &= uint8_t(Flags::ALL);
         }
 
         void setHigh(Registers reg, uint8_t data) {
@@ -67,15 +67,15 @@ namespace gb::cpu {
         }
 
         void setAF(uint16_t data) {
-            *(std::bit_cast<uint16_t *>(&registers_[flags])) = data;
-            registers_[flags] &= uint8_t(Flags::ALL);
+            *(std::bit_cast<uint16_t *>(&registers_[g_flags])) = data;
+            registers_[g_flags] &= uint8_t(Flags::ALL);
         }
         uint16_t &BC() { return *(std::bit_cast<uint16_t *>(&registers_[size_t(Registers::C)])); }
         uint16_t &DE() { return *(std::bit_cast<uint16_t *>(&registers_[size_t(Registers::E)])); }
         uint16_t &HL() { return *(std::bit_cast<uint16_t *>(&registers_[size_t(Registers::L)])); }
 
         const uint16_t &AF() const {
-            return *(std::bit_cast<const uint16_t *>(&registers_[flags]));
+            return *(std::bit_cast<const uint16_t *>(&registers_[g_flags]));
         }
         const uint16_t &BC() const {
             return *(std::bit_cast<const uint16_t *>(&registers_[size_t(Registers::C)]));
@@ -88,16 +88,16 @@ namespace gb::cpu {
         }
 
         void setFlag(Flags flag, bool value) {
-            registers_[flags] &= ~uint8_t(flag);
-            registers_[flags] |= value ? uint8_t(flag) : 0;
+            registers_[g_flags] &= ~uint8_t(flag);
+            registers_[g_flags] |= value ? uint8_t(flag) : 0;
         }
 
-        bool getFlag(Flags flag) const { return (registers_[flags] & uint8_t(flag)) != 0; }
+        bool getFlag(Flags flag) const { return (registers_[g_flags] & uint8_t(flag)) != 0; }
 
-        void clearFlags() { registers_[flags] = 0; }
+        void clearFlags() { registers_[g_flags] = 0; }
 
-        uint16_t PC;
-        uint16_t SP;
+        uint16_t pc;
+        uint16_t sp;
 
       private:
         alignas(uint16_t) std::array<uint8_t, 8> registers_;

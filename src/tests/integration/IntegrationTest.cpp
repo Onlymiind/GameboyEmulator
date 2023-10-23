@@ -22,9 +22,9 @@ class TestOutputReader : public gb::MemoryObserver {
     void onWrite(uint16_t address, uint8_t data) override {
         // Used to get output from blargg's test ROMs.
         if (address == 0xFF01) {
-            symbol = data;
+            symbol_ = data;
         } else if (address == 0xFF02 && data == 0x81) {
-            out_ << symbol;
+            out_ << symbol_;
         }
     }
 
@@ -33,7 +33,7 @@ class TestOutputReader : public gb::MemoryObserver {
 
   private:
     std::ostream &out_;
-    uint8_t symbol = 0;
+    uint8_t symbol_ = 0;
 };
 
 TEST_CASE("run cpu test roms") {

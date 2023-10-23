@@ -3,11 +3,11 @@
 
 namespace gb {
     enum class InterruptFlags : uint8_t {
-        VBlank = 1 << 0,
+        VBLANK = 1 << 0,
         LCD_STAT = 1 << 1,
-        Timer = 1 << 2,
-        Serial = 1 << 3,
-        Joypad = 1 << 4,
+        TIMER = 1 << 2,
+        SERIAL = 1 << 3,
+        JOYPAD = 1 << 4,
     };
 
     constexpr uint8_t g_unused_interrupt_bits = 0b11100000;

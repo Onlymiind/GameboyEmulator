@@ -43,7 +43,7 @@ TEST_CASE("interrupt") {
         }
     }
 
-    REQUIRE((reg.getFlags() & static_cast<uint8_t>(gb::InterruptFlags::Timer)));
+    REQUIRE((reg.getFlags() & static_cast<uint8_t>(gb::InterruptFlags::TIMER)));
 }
 
 TEST_CASE("frequencies") {
@@ -57,11 +57,11 @@ TEST_CASE("frequencies") {
 
         for (int i = 1024 * 256 - 1; i > 0; --i) {
             timer.update();
-            REQUIRE(!(reg.getFlags() & static_cast<uint8_t>(gb::InterruptFlags::Timer)));
+            REQUIRE(!(reg.getFlags() & static_cast<uint8_t>(gb::InterruptFlags::TIMER)));
         }
 
         timer.update();
-        REQUIRE((reg.getFlags() & static_cast<uint8_t>(gb::InterruptFlags::Timer)));
+        REQUIRE((reg.getFlags() & static_cast<uint8_t>(gb::InterruptFlags::TIMER)));
     }
     {
         gb::InterruptRegister reg;
@@ -73,11 +73,11 @@ TEST_CASE("frequencies") {
 
         for (int i = 16 * 256 - 1; i > 0; --i) {
             timer.update();
-            REQUIRE(!(reg.getFlags() & static_cast<uint8_t>(gb::InterruptFlags::Timer)));
+            REQUIRE(!(reg.getFlags() & static_cast<uint8_t>(gb::InterruptFlags::TIMER)));
         }
 
         timer.update();
-        REQUIRE((reg.getFlags() & static_cast<uint8_t>(gb::InterruptFlags::Timer)));
+        REQUIRE((reg.getFlags() & static_cast<uint8_t>(gb::InterruptFlags::TIMER)));
     }
     {
         gb::InterruptRegister reg;
@@ -89,11 +89,11 @@ TEST_CASE("frequencies") {
 
         for (int i = 64 * 256 - 1; i > 0; --i) {
             timer.update();
-            REQUIRE(!(reg.getFlags() & static_cast<uint8_t>(gb::InterruptFlags::Timer)));
+            REQUIRE(!(reg.getFlags() & static_cast<uint8_t>(gb::InterruptFlags::TIMER)));
         }
 
         timer.update();
-        REQUIRE((reg.getFlags() & static_cast<uint8_t>(gb::InterruptFlags::Timer)));
+        REQUIRE((reg.getFlags() & static_cast<uint8_t>(gb::InterruptFlags::TIMER)));
     }
     {
         gb::InterruptRegister reg;
@@ -105,10 +105,10 @@ TEST_CASE("frequencies") {
 
         for (int i = 256 * 256 - 1; i > 0; --i) {
             timer.update();
-            REQUIRE(!(reg.getFlags() & static_cast<uint8_t>(gb::InterruptFlags::Timer)));
+            REQUIRE(!(reg.getFlags() & static_cast<uint8_t>(gb::InterruptFlags::TIMER)));
         }
 
         timer.update();
-        REQUIRE((reg.getFlags() & static_cast<uint8_t>(gb::InterruptFlags::Timer)));
+        REQUIRE((reg.getFlags() & static_cast<uint8_t>(gb::InterruptFlags::TIMER)));
     }
 }

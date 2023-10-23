@@ -19,8 +19,8 @@ namespace gb::cpu {
         reg_.DE() = 0x00D8;
         reg_.HL() = 0x014D;
 
-        reg_.SP = 0xFFFE;
-        reg_.PC = 0x0100;
+        reg_.sp = 0xFFFE;
+        reg_.pc = 0x0100;
     }
 
     void SharpSM83::tick() {
@@ -47,7 +47,7 @@ namespace gb::cpu {
         } else if (!halt_mode_ && memory_op_queue_.empty()) {
             if (!current_instruction_) {
                 last_instruction_ = Instruction{.registers = reg_};
-                last_instruction_.registers.PC = last_pc_;
+                last_instruction_.registers.pc = last_pc_;
                 std::optional<InterruptFlags> interrupt = getPendingInterrupt();
                 if (interrupt && IME_) {
                     handleInterrupt(*interrupt);
@@ -87,12 +87,12 @@ namespace gb::cpu {
         // reg_.PC contains address of the byte after the instruction
         shedulePushStack(last_pc_);
         sheduleMemoryNoOp();
-        reg_.PC = g_interrupt_vectors.at(interrupt);
+        reg_.pc = g_interrupt_vectors.at(interrupt);
         sheduleFetchInstruction();
         cycles_to_finish_ = 5;
     }
 
-    void SharpSM83::decode(opcode code) {
+    void SharpSM83::decode(Opcode code) {
         if (!prefixed_next_ && isPrefix(code)) {
             prefixed_next_ = true;
             sheduleFetchInstruction();
@@ -109,7 +109,7 @@ namespace gb::cpu {
         } else {
             current_instruction_ = decodeUnprefixed(code);
             last_instruction_.type = current_instruction_->type;
-            last_instruction_.load_subtype = current_instruction_->LD_subtype;
+            last_instruction_.load_subtype = current_instruction_->ld_subtype;
             last_instruction_.condition = current_instruction_->condition;
         }
         prefixed_next_ = false;
@@ -215,8 +215,8 @@ namespace gb::cpu {
         reg_.DE() = 0x00D8;
         reg_.HL() = 0x014D;
 
-        reg_.SP = 0xFFFE;
-        reg_.PC = 0x0100;
+        reg_.sp = 0xFFFE;
+        reg_.pc = 0x0100;
 
         IME_ = false;
         last_instruction_ = Instruction{};
@@ -259,7 +259,7 @@ namespace gb::cpu {
         case Registers::HL:
             return reg_.HL();
         case Registers::SP:
-            return reg_.SP;
+            return reg_.sp;
         case Registers::AF:
             return reg_.AF();
         default:
@@ -317,7 +317,7 @@ namespace gb::cpu {
             reg_.HL() = data;
             return;
         case Registers::SP:
-            reg_.SP = data;
+            reg_.sp = data;
             return;
         case Registers::AF:
             reg_.setAF(data);
@@ -329,13 +329,13 @@ namespace gb::cpu {
 
     bool SharpSM83::checkCondition(Conditions condition) {
         switch (condition) {
-        case Conditions::Carry:
+        case Conditions::CARRY:
             return reg_.getFlag(Flags::CARRY);
-        case Conditions::NotCarry:
+        case Conditions::NOT_CARRY:
             return !reg_.getFlag(Flags::CARRY);
-        case Conditions::Zero:
+        case Conditions::ZERO:
             return reg_.getFlag(Flags::ZERO);
-        case Conditions::NotZero:
+        case Conditions::NOT_ZERO:
             return !reg_.getFlag(Flags::ZERO);
         default:
             // Never happens
@@ -344,7 +344,7 @@ namespace gb::cpu {
     }
 
     void SharpSM83::setArgData(Instruction::Argument &arg, ArgumentInfo info, uint8_t data) {
-        if (info.src == ArgumentSource::Register || info.src == ArgumentSource::Indirect) {
+        if (info.src == ArgumentSource::REGISTER || info.src == ArgumentSource::INDIRECT) {
             arg = info.reg;
         } else {
             arg = data;
@@ -381,18 +381,18 @@ namespace gb::cpu {
     }
 
     void SharpSM83::shedulePushStack(uint16_t data) {
-        --reg_.SP;
-        pushMemoryOp(MemoryOp{.address = uint16_t(reg_.SP),
+        --reg_.sp;
+        pushMemoryOp(MemoryOp{.address = uint16_t(reg_.sp),
                               .type = MemoryOp::Type::WRITE,
                               .data = uint8_t(data >> 8)});
-        --reg_.SP;
+        --reg_.sp;
         pushMemoryOp(MemoryOp{
-            .address = uint16_t(reg_.SP), .type = MemoryOp::Type::WRITE, .data = uint8_t(data)});
+            .address = uint16_t(reg_.sp), .type = MemoryOp::Type::WRITE, .data = uint8_t(data)});
     }
 
     void SharpSM83::shedulePopStack(Registers reg) {
-        sheduleReadToReg(reg_.SP, reg);
-        reg_.SP += 2;
+        sheduleReadToReg(reg_.sp, reg);
+        reg_.sp += 2;
     }
 
     void SharpSM83::sheduleReadToReg(uint16_t address, Registers reg) {
@@ -414,32 +414,32 @@ namespace gb::cpu {
     }
 
     void SharpSM83::sheduleFetchInstruction() {
-        sheduleReadByte(reg_.PC);
+        sheduleReadByte(reg_.pc);
         if (!prefixed_next_) {
-            last_pc_ = reg_.PC;
+            last_pc_ = reg_.pc;
         }
         if (halt_bug_) {
             halt_bug_ = false;
         } else {
-            ++reg_.PC;
+            ++reg_.pc;
         }
         current_instruction_ = {};
     }
 
     void SharpSM83::sheduleMemoryAcceses(DecodedInstruction instr) {
         switch (instr.src.src) {
-        case ArgumentSource::Immediate:
-        case ArgumentSource::IndirectImmediate:
+        case ArgumentSource::IMMEDIATE:
+        case ArgumentSource::INDIRECT_IMMEDIATE:
             // Just read the immediate
-            if (instr.src.type == ArgumentType::Unsigned16) {
-                sheduleReadWord(reg_.PC);
-                reg_.PC += 2;
+            if (instr.src.type == ArgumentType::UNSIGNED_16) {
+                sheduleReadWord(reg_.pc);
+                reg_.pc += 2;
             } else {
-                sheduleReadByte(reg_.PC);
-                ++reg_.PC;
+                sheduleReadByte(reg_.pc);
+                ++reg_.pc;
             }
             return;
-        case ArgumentSource::Indirect:
+        case ArgumentSource::INDIRECT:
             if (instr.src.reg == Registers::C) {
                 return;
             }
@@ -447,14 +447,14 @@ namespace gb::cpu {
             return;
         }
 
-        if (instr.dst.src == ArgumentSource::IndirectImmediate ||
-            instr.dst.src == ArgumentSource::Immediate) {
-            if (instr.dst.type == ArgumentType::Unsigned16) {
-                sheduleReadWord(reg_.PC);
-                reg_.PC += 2;
+        if (instr.dst.src == ArgumentSource::INDIRECT_IMMEDIATE ||
+            instr.dst.src == ArgumentSource::IMMEDIATE) {
+            if (instr.dst.type == ArgumentType::UNSIGNED_16) {
+                sheduleReadWord(reg_.pc);
+                reg_.pc += 2;
             } else {
-                sheduleReadByte(reg_.PC);
-                ++reg_.PC;
+                sheduleReadByte(reg_.pc);
+                ++reg_.pc;
             }
         }
     }
@@ -480,7 +480,7 @@ namespace gb::cpu {
             if (op.data.is<Registers>()) {
                 Registers reg = op.data.get<Registers>();
                 if (reg == Registers::PC) {
-                    reg_.PC = (reg_.PC & 0x00FF) | (uint16_t(bus_.read(op.address)) << 8);
+                    reg_.pc = (reg_.pc & 0x00FF) | (uint16_t(bus_.read(op.address)) << 8);
                 } else {
                     reg_.setHigh(reg, bus_.read(op.address));
                 }
@@ -492,7 +492,7 @@ namespace gb::cpu {
             if (op.data.is<Registers>()) {
                 Registers reg = op.data.get<Registers>();
                 if (reg == Registers::PC) {
-                    reg_.PC = (reg_.PC & 0xFF00) | uint16_t(bus_.read(op.address));
+                    reg_.pc = (reg_.pc & 0xFF00) | uint16_t(bus_.read(op.address));
                 } else {
                     reg_.setLow(reg, bus_.read(op.address));
                 }
