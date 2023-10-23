@@ -18,4 +18,3 @@ Tests' source code is located under src/tests directory. To build tests add `-DB
 ## TODO list
 - instr_timing test is currently failing
 - Finish PPU implementation
-- CPU instructions are displayed in the GUI with delay

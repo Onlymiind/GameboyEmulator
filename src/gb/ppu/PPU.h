@@ -65,7 +65,7 @@ namespace gb {
         uint8_t window_x_ = 0;
         uint8_t window_y_ = 0;
 
-        RAM<g_memory_vram.size> vram_;
-        RAM<g_memory_oam.size> oam_;
+        RAM<g_memory_vram.size> vram_{};
+        RAM<g_memory_oam.size> oam_{};
     };
 } // namespace gb

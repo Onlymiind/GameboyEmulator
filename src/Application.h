@@ -48,11 +48,6 @@ SP: 0x%.4x, PC: 0x%.4x)";
 
     constexpr size_t g_recent_cache_size = 10;
 
-    struct InstructionData {
-        gb::cpu::RegisterFile registers;
-        gb::cpu::Instruction instruction;
-    };
-
     class Application {
       public:
         Application();
@@ -90,7 +85,7 @@ SP: 0x%.4x, PC: 0x%.4x)";
 
         std::vector<std::filesystem::path> roms_;
         std::list<std::filesystem::path> recent_roms_;
-        RingBuffer<InstructionData, g_recent_cache_size> recent_instructions_;
+        RingBuffer<gb::cpu::Instruction, g_recent_cache_size> recent_instructions_;
 
         GLFWwindow *window_ = nullptr;
 

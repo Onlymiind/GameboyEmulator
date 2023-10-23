@@ -362,22 +362,16 @@ namespace emulator {
 
     void Application::update() {
         try {
-            InstructionData instr_data;
-            bool fetch_data = emulator_.instructionFinished();
-            if (fetch_data) {
-                instr_data.registers = emulator_.getRegisters();
-                instr_data.instruction = emulator_.getLastInstruction();
-                recent_instructions_.push_back(instr_data);
-                // StringBuffer<g_instruction_string_buf_size> buf;
-                // printInstruction(buf, recent_instructions_.size() - 1);
-                // std::cout << buf.data() << std::endl;
+            emulator_.tick();
+            if (emulator_.instructionFinished()) {
+                gb::cpu::Instruction instr = emulator_.getLastInstruction();
+                recent_instructions_.push_back(instr);
                 if (!single_step_ &&
                     std::binary_search(pc_breakpoints_.begin(), pc_breakpoints_.end(),
-                                       instr_data.instruction.pc)) {
+                                       instr.registers.PC)) {
                     single_step_ = true;
                 }
             }
-            emulator_.tick();
         } catch (const std::exception &e) {
             std::cout << "exception occured during emulator update: " << e.what() << std::endl;
         }
@@ -431,12 +425,11 @@ namespace emulator {
     void Application::printInstruction(StringBuffer<g_instruction_string_buf_size> &buf,
                                        size_t idx) {
         using namespace gb::cpu;
-        auto &instr_data = recent_instructions_[idx];
-        auto &instr = instr_data.instruction;
+        auto &instr = recent_instructions_[idx];
         std::stringstream out;
         out.rdbuf()->pubsetbuf(buf.data(), buf.capacityWithNullChar());
 
-        out << std::hex << instr.pc << ' ' << to_string(instr.type);
+        out << std::hex << instr.registers.PC << ' ' << to_string(instr.type);
         if (instr.condition) {
             out << ' ' << to_string(*instr.condition);
         }

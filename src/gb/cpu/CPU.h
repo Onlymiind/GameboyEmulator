@@ -31,7 +31,8 @@ namespace gb::cpu {
 
         Argument src;
         Argument dst;
-        uint16_t pc = 0;
+
+        RegisterFile registers;
 
         Argument &arg() { return src; }
         Argument &arg1() { return src; }
