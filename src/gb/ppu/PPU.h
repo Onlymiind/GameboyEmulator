@@ -1,5 +1,6 @@
 #pragma once
 #include "gb/memory/BasicComponents.h"
+#include "utils/Utils.h"
 #include <cstdint>
 
 namespace gb {
@@ -21,25 +22,23 @@ namespace gb {
 
     enum class PPUMode : uint8_t { HBLANK = 0, VBLANK = 1, OAM_SCAN = 2, RENDER = 3 };
 
-#define BIT(x) 1 << x
     enum class LCDControlFlags : uint8_t {
-        BG_ENABLE = BIT(0),
-        OBJ_ENABLE = BIT(1),
-        OBJ_SIZE = BIT(2),
-        BG_TILE_MAP = BIT(3),
-        BG_TILE_AREA = BIT(4),
-        WINDOW_ENABLE = BIT(5),
-        WINDOW_TILE_MAP = BIT(6),
-        ENABLE = BIT(7)
+        BG_ENABLE = setBit(0),
+        OBJ_ENABLE = setBit(1),
+        OBJ_SIZE = setBit(2),
+        BG_TILE_MAP = setBit(3),
+        BG_TILE_AREA = setBit(4),
+        WINDOW_ENABLE = setBit(5),
+        WINDOW_TILE_MAP = setBit(6),
+        ENABLE = setBit(7)
     };
 
     enum class PPUInterruptSelectFlags : uint8_t {
-        HBLANK = BIT(3),
-        VBLANK = BIT(4),
-        OAM_SCAN = BIT(5),
-        Y_COMPARE = BIT(6)
+        HBLANK = setBit(3),
+        VBLANK = setBit(4),
+        OAM_SCAN = setBit(5),
+        Y_COMPARE = setBit(6)
     };
-#undef BIT
 
     class PPU {
       public:

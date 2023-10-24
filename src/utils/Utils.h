@@ -155,3 +155,5 @@ template <typename T, size_t CAPACITY> class Queue {
     size_t end_ = 0;
     size_t size_ = 0;
 };
+
+constexpr inline uint8_t setBit(uint8_t bit) { return uint8_t(1) << bit; }

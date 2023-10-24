@@ -10,12 +10,11 @@
 
 namespace gb::cpu {
 
-#define BIT(x) 1 << x
     enum class Flags : uint8_t {
-        CARRY = BIT(4),
-        HALF_CARRY = BIT(5),
-        NEGATIVE = BIT(6),
-        ZERO = BIT(7),
+        CARRY = setBit(4),
+        HALF_CARRY = setBit(5),
+        NEGATIVE = setBit(6),
+        ZERO = setBit(7),
 
         ALL = CARRY | HALF_CARRY | NEGATIVE | ZERO,
 
@@ -24,7 +23,6 @@ namespace gb::cpu {
         N = NEGATIVE,
         Z = ZERO,
     };
-#undef BIT
 
     class RegisterFile {
         static constexpr size_t g_flags = 0;
