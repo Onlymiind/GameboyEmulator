@@ -30,7 +30,7 @@ namespace emulator {
         }
     }
 
-    constexpr double g_cycles_per_second = 4'000'000;
+    constexpr size_t g_cycles_per_second = size_t(1) << 22;
     constexpr const char *g_regs_fmt =
         R"(Carry: %d, Half carry: %d
 Negative: %d, Zero: %d

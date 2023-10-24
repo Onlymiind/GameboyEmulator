@@ -1,12 +1,20 @@
 #include "gb/ppu/PPU.h"
+#include "gb/InterruptRegister.h"
+#include <cstdint>
 #include <stdexcept>
 
 namespace gb {
 
     uint8_t PPU::read(uint16_t address) const {
         if (g_memory_vram.isInRange(address)) {
+            if (mode_ == PPUMode::RENDER) {
+                return 0xff;
+            }
             return vram_[address - g_memory_vram.min_address];
         } else if (g_memory_oam.isInRange(address)) {
+            if (mode_ == PPUMode::OAM_SCAN || mode_ == PPUMode::RENDER) {
+                return 0xff;
+            }
             return oam_[address - g_memory_oam.min_address];
         }
 
@@ -43,8 +51,14 @@ namespace gb {
 
     void PPU::write(uint16_t address, uint8_t data) {
         if (g_memory_vram.isInRange(address)) {
+            if (mode_ == PPUMode::RENDER) {
+                return;
+            }
             vram_[address - g_memory_vram.min_address] = data;
         } else if (g_memory_oam.isInRange(address)) {
+            if (mode_ == PPUMode::OAM_SCAN || mode_ == PPUMode::RENDER) {
+                return;
+            }
             oam_[address - g_memory_oam.min_address] = data;
         }
 
@@ -61,7 +75,7 @@ namespace gb {
         case g_scroll_y_address:
             scroll_y_ = data;
             break;
-        case g_lcd_y_address:
+        case g_lcd_y_address: // read only
             break;
         case g_y_compare_address:
             y_compare_ = data;
@@ -87,6 +101,79 @@ namespace gb {
             break;
         default:
             throw std::invalid_argument("unreachable");
+        }
+    }
+
+    void PPU::tick() {
+        if (!(lcd_control_ & uint8_t(LCDControlFlags::ENABLE))) {
+            return;
+        } else if (mode_ == PPUMode::RENDER && cycles_to_finish_ <= g_rener_extra_duration) {
+            return;
+        }
+
+        switch (mode_) {
+        case PPUMode::OAM_SCAN: {
+            // each OAM entry is 4 bytes long, y coordinate is the first byte in the entry
+            size_t idx = (g_oam_fetch_duration - cycles_to_finish_) * 4;
+            // spend 80 clock cycles to check 40 y coordinates
+            if (cycles_to_finish_ % 2 == 0 && oam_[idx] == current_y_) {
+                objects_on_current_line_.push_back(decodeObjectAttributes(
+                    std::span<uint8_t, 4>{&oam_[idx], 4},
+                    (lcd_control_ & uint8_t(LCDControlFlags::OBJ_SIZE)) != 0));
+            }
+            break;
+        }
+        case PPUMode::RENDER:
+            // TODO
+            break;
+        case PPUMode::HBLANK:
+            break;
+        case PPUMode::VBLANK:
+            if (cycles_to_finish_ % g_scanline_duration == g_scanline_duration - 1) {
+                ++current_y_;
+            }
+            break;
+        default:
+            throw std::runtime_error("unexpected PPU mode");
+        }
+
+        --cycles_to_finish_;
+        bool set_interrupt = false;
+        if (cycles_to_finish_ == 0) {
+            switch (mode_) {
+            case PPUMode::OAM_SCAN:
+                mode_ = PPUMode::RENDER;
+                cycles_to_finish_ = g_render_duration;
+                break;
+            case PPUMode::RENDER:
+                mode_ = PPUMode::HBLANK;
+                cycles_to_finish_ = g_scanline_duration - g_render_duration;
+                set_interrupt = status_ & uint8_t(PPUInterruptSelectFlags::HBLANK);
+                break;
+            case PPUMode::HBLANK:
+                if (current_y_ == g_screen_height) {
+                    mode_ = PPUMode::VBLANK;
+                    cycles_to_finish_ = g_vblank_duration;
+                    set_interrupt = status_ & uint8_t(PPUInterruptSelectFlags::VBLANK);
+                } else {
+                    mode_ = PPUMode::OAM_SCAN;
+                    cycles_to_finish_ = g_oam_fetch_duration;
+                    set_interrupt = status_ & uint8_t(PPUInterruptSelectFlags::OAM_SCAN);
+                }
+                ++current_y_;
+                break;
+            case PPUMode::VBLANK:
+                mode_ = PPUMode::OAM_SCAN;
+                current_y_ = 0;
+                break;
+            default:
+                throw std::runtime_error("unexpected PPU mode");
+            }
+        }
+        set_interrupt = set_interrupt || (current_y_ == y_compare_ &&
+                                          (status_ & uint8_t(PPUInterruptSelectFlags::Y_COMPARE)));
+        if (set_interrupt) {
+            interrupt_flags_.setFlag(InterruptFlags::LCD_STAT);
         }
     }
 } // namespace gb

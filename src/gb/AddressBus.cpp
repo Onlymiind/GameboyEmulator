@@ -12,7 +12,7 @@
 
 namespace gb {
 
-    bool less(const MemoryObserver *mem, uint16_t address) { return mem->maxAddress() < address; }
+    bool less(const IMemoryObserver *mem, uint16_t address) { return mem->maxAddress() < address; }
 
     uint8_t AddressBus::read(uint16_t address) const {
         uint8_t data = 0;

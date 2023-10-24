@@ -134,5 +134,3 @@ TEST_CASE_METHOD(InitTest, "deletion") {
         }
     }
 }
-
-// TODO: deletion, search

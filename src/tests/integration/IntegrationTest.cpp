@@ -15,7 +15,7 @@
 
 std::string run_cmd = "-run ";
 
-class TestOutputReader : public gb::MemoryObserver {
+class TestOutputReader : public gb::IMemoryObserver {
   public:
     TestOutputReader(std::ostream &out) : out_(out) {}
 

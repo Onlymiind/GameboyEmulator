@@ -21,6 +21,9 @@ namespace emulator {
     }
 
     void MemoryBreakpoints::onRead(uint16_t address, uint8_t data) {
+        if (breakpoints_.empty()) {
+            return;
+        }
         bool found = false;
         auto it =
             std::lower_bound(breakpoints_.begin(), breakpoints_.end(),
@@ -41,6 +44,9 @@ namespace emulator {
     }
 
     void MemoryBreakpoints::onWrite(uint16_t address, uint8_t data) {
+        if (breakpoints_.empty()) {
+            return;
+        }
         bool found = false;
         auto it = std::lower_bound(
             breakpoints_.begin(), breakpoints_.end(),

@@ -8,7 +8,7 @@
 #include <vector>
 
 namespace gb {
-    class MemoryObserver {
+    class IMemoryObserver {
       public:
         virtual void onRead(uint16_t address, uint8_t data){};
         virtual void onWrite(uint16_t address, uint8_t data){};
@@ -20,7 +20,7 @@ namespace gb {
         }
 
       protected:
-        ~MemoryObserver() = default;
+        ~IMemoryObserver() = default;
     };
 
     constexpr MemoryObjectInfo g_memory_rom = {.min_address = 0x0000, .max_address = 0x7FFF};
@@ -74,7 +74,7 @@ namespace gb {
         bool hasROM() const { return cartridge_.hasROM(); };
         bool hasCartridgeRAM() const { return cartridge_.hasRAM(); }
 
-        void setObserver(MemoryObserver &observer) { observer_ = &observer; }
+        void setObserver(IMemoryObserver &observer) { observer_ = &observer; }
         void removeObserver() { observer_ = nullptr; }
 
         uint8_t read(uint16_t address) const;
@@ -89,7 +89,7 @@ namespace gb {
       private:
         std::string getErrorDescription(uint16_t address, int value = -1) const;
 
-        MemoryObserver *observer_ = nullptr;
+        IMemoryObserver *observer_ = nullptr;
 
         RAM<g_memory_vram.size> vram_{};
         RAM<g_memory_wram.size> wram_{};

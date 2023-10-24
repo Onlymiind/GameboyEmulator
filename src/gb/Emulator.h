@@ -23,7 +23,7 @@ namespace gb {
 
         uint16_t getPC() const { return cpu_.getProgramCounter(); }
 
-        void setMemoryObserver(MemoryObserver &observer) { bus_.setObserver(observer); }
+        void setMemoryObserver(IMemoryObserver &observer) { bus_.setObserver(observer); }
         void removeMemoryObserver() { bus_.removeObserver(); }
 
         void tick();
