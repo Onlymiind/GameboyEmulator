@@ -58,11 +58,11 @@ namespace emulator {
 
         const std::vector<MemoryBreakpointData> &getBreakpoints() const { return breakpoints_; }
 
-        void onRead(uint16_t address, uint8_t data) override;
-        void onWrite(uint16_t address, uint8_t data) override;
+        void onRead(uint16_t address, uint8_t data) noexcept override;
+        void onWrite(uint16_t address, uint8_t data) noexcept override;
 
-        uint16_t minAddress() const override { return 0; }
-        uint16_t maxAddress() const override { return uint16_t(-1); }
+        uint16_t minAddress() const noexcept override { return 0; }
+        uint16_t maxAddress() const noexcept override { return uint16_t(-1); }
 
       private:
         std::function<void()> callback_;

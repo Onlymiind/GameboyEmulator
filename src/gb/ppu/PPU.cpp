@@ -105,7 +105,7 @@ namespace gb {
     }
 
     void PPU::tick() {
-        if (!(lcd_control_ & uint8_t(LCDControlFlags::ENABLE))) {
+        if (!(lcd_control_ & LCDControlFlags::ENABLE)) {
             return;
         } else if (mode_ == PPUMode::RENDER && cycles_to_finish_ <= g_rener_extra_duration) {
             return;
@@ -113,18 +113,24 @@ namespace gb {
 
         switch (mode_) {
         case PPUMode::OAM_SCAN: {
-            // each OAM entry is 4 bytes long, y coordinate is the first byte in the entry
-            size_t idx = (g_oam_fetch_duration - cycles_to_finish_) * 4;
             // spend 80 clock cycles to check 40 y coordinates
-            if (cycles_to_finish_ % 2 == 0 && oam_[idx] == current_y_) {
-                objects_on_current_line_.push_back(decodeObjectAttributes(
-                    std::span<uint8_t, 4>{&oam_[idx], 4},
-                    (lcd_control_ & uint8_t(LCDControlFlags::OBJ_SIZE)) != 0));
+            if (cycles_to_finish_ % 2 == 0) {
+                // each OAM entry is 4 bytes long, y coordinate is the first byte in the entry
+                size_t idx = (g_oam_fetch_duration - cycles_to_finish_) * 4;
+                uint8_t y_coord = oam_[idx];
+                // height = 8 if OBJ_SIZE bit is not set, 16 otherwise
+                uint8_t height = 8 * (((lcd_control_ & LCDControlFlags::OBJ_SIZE) != 0) + 1);
+
+                if (current_y_ >= y_coord && current_y_ <= y_coord + height) {
+                    objects_on_current_line_.push_back(
+                        decodeObjectAttributes(std::span<uint8_t, 4>{&oam_[idx], 4},
+                                               (lcd_control_ & LCDControlFlags::OBJ_SIZE) != 0));
+                }
             }
             break;
         }
         case PPUMode::RENDER:
-            // TODO
+            renderPixelRow();
             break;
         case PPUMode::HBLANK:
             break;
@@ -139,6 +145,7 @@ namespace gb {
 
         --cycles_to_finish_;
         bool set_interrupt = false;
+        bool finish_frame = false;
         if (cycles_to_finish_ == 0) {
             switch (mode_) {
             case PPUMode::OAM_SCAN:
@@ -148,32 +155,36 @@ namespace gb {
             case PPUMode::RENDER:
                 mode_ = PPUMode::HBLANK;
                 cycles_to_finish_ = g_scanline_duration - g_render_duration;
-                set_interrupt = status_ & uint8_t(PPUInterruptSelectFlags::HBLANK);
+                set_interrupt = status_ & PPUInterruptSelectFlags::HBLANK;
                 break;
             case PPUMode::HBLANK:
                 if (current_y_ == g_screen_height) {
                     mode_ = PPUMode::VBLANK;
                     cycles_to_finish_ = g_vblank_duration;
-                    set_interrupt = status_ & uint8_t(PPUInterruptSelectFlags::VBLANK);
+                    set_interrupt = status_ & PPUInterruptSelectFlags::VBLANK;
                 } else {
                     mode_ = PPUMode::OAM_SCAN;
                     cycles_to_finish_ = g_oam_fetch_duration;
-                    set_interrupt = status_ & uint8_t(PPUInterruptSelectFlags::OAM_SCAN);
+                    set_interrupt = status_ & PPUInterruptSelectFlags::OAM_SCAN;
                 }
                 ++current_y_;
                 break;
             case PPUMode::VBLANK:
                 mode_ = PPUMode::OAM_SCAN;
                 current_y_ = 0;
+                if (renderer_) {
+                    renderer_->finishFrame();
+                }
                 break;
             default:
                 throw std::runtime_error("unexpected PPU mode");
             }
         }
         set_interrupt = set_interrupt || (current_y_ == y_compare_ &&
-                                          (status_ & uint8_t(PPUInterruptSelectFlags::Y_COMPARE)));
+                                          (status_ & PPUInterruptSelectFlags::Y_COMPARE));
         if (set_interrupt) {
             interrupt_flags_.setFlag(InterruptFlags::LCD_STAT);
         }
     }
+    void PPU::renderPixelRow() {}
 } // namespace gb

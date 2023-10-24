@@ -10,10 +10,10 @@
 namespace gb {
     class IMemoryObserver {
       public:
-        virtual void onRead(uint16_t address, uint8_t data){};
-        virtual void onWrite(uint16_t address, uint8_t data){};
-        virtual uint16_t minAddress() const = 0;
-        virtual uint16_t maxAddress() const = 0;
+        virtual void onRead(uint16_t address, uint8_t data) noexcept {};
+        virtual void onWrite(uint16_t address, uint8_t data) noexcept {};
+        virtual uint16_t minAddress() const noexcept = 0;
+        virtual uint16_t maxAddress() const noexcept = 0;
 
         bool isInRange(uint16_t address) const {
             return address >= minAddress() && address <= maxAddress();

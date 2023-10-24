@@ -59,6 +59,18 @@ namespace gb {
         PRIORITY = setBit(7)
     };
 
+    constexpr inline uint8_t operator&(uint8_t value, LCDControlFlags flags) {
+        return value & uint8_t(flags);
+    }
+
+    constexpr inline uint8_t operator&(uint8_t value, PPUInterruptSelectFlags flags) {
+        return value & uint8_t(flags);
+    }
+
+    constexpr inline uint8_t operator&(uint8_t value, ObjectAttribbutesFlags flags) {
+        return value & uint8_t(flags);
+    }
+
     struct ObjectAttributes {
         // y posiytion + 16
         uint8_t y = 0;
@@ -78,8 +90,8 @@ namespace gb {
 
     class IRenderer {
       public:
-        virtual void drawPixel(size_t x, size_t y, GBColor color) = 0;
-        virtual void finishFrame() = 0;
+        virtual void drawPixelRow(size_t x, size_t y, std::span<GBColor, 8> color) noexcept = 0;
+        virtual void finishFrame() noexcept = 0;
 
       protected:
         ~IRenderer() = default;
@@ -98,12 +110,14 @@ namespace gb {
 
         void setRenderer(IRenderer &renderer) { renderer_ = &renderer; }
         void removeRenderer() { renderer_ = nullptr; }
+        void renderPixelRow();
 
       private:
         std::vector<ObjectAttributes> objects_on_current_line_;
         size_t cycles_to_finish_ = g_vblank_duration;
         InterruptRegister &interrupt_flags_;
         IRenderer *renderer_ = nullptr;
+        uint8_t current_x_ = 0;
 
         PPUMode mode_ = PPUMode::VBLANK;
         bool dma_running_ = false;
@@ -144,11 +158,10 @@ namespace gb {
             result.tile_idx &= 0xFE;
         }
 
-        result.priority = (raw[3] & uint8_t(ObjectAttribbutesFlags::PRIORITY)) != 0;
-        result.flip_y = (raw[3] & uint8_t(ObjectAttribbutesFlags::FLIP_Y)) != 0;
-        result.flip_x = (raw[3] & uint8_t(ObjectAttribbutesFlags::FLIP_X)) != 0;
-        result.use_object_palette1 =
-            (raw[3] & uint8_t(ObjectAttribbutesFlags::USE_OBJECT_PALETTE1)) != 0;
+        result.priority = (raw[3] & ObjectAttribbutesFlags::PRIORITY) != 0;
+        result.flip_y = (raw[3] & ObjectAttribbutesFlags::FLIP_Y) != 0;
+        result.flip_x = (raw[3] & ObjectAttribbutesFlags::FLIP_X) != 0;
+        result.use_object_palette1 = (raw[3] & ObjectAttribbutesFlags::USE_OBJECT_PALETTE1) != 0;
 
         return result;
     }

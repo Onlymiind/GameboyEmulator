@@ -163,10 +163,9 @@ namespace emulator {
     void Application::drawBreakpointMenu() {
         uint16_t pc_break = 0;
         ImGui::TextUnformatted("Add PC breakpoint:");
-        if (ImGui::InputScalar("###Add PC breakpoint input", ImGuiDataType_U16, &pc_break, nullptr,
-                               nullptr, "%.4x",
-                               ImGuiInputTextFlags_CharsHexadecimal |
-                                   ImGuiInputTextFlags_EnterReturnsTrue)) {
+        if (ImGui::InputScalar(
+                "##Add PC breakpoint input", ImGuiDataType_U16, &pc_break, nullptr, nullptr, "%.4x",
+                ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_EnterReturnsTrue)) {
             addPCBreakpoint(pc_break);
         }
         {

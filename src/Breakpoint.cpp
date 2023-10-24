@@ -20,7 +20,7 @@ namespace emulator {
         }
     }
 
-    void MemoryBreakpoints::onRead(uint16_t address, uint8_t data) {
+    void MemoryBreakpoints::onRead(uint16_t address, uint8_t data) noexcept {
         if (breakpoints_.empty()) {
             return;
         }
@@ -43,7 +43,7 @@ namespace emulator {
         }
     }
 
-    void MemoryBreakpoints::onWrite(uint16_t address, uint8_t data) {
+    void MemoryBreakpoints::onWrite(uint16_t address, uint8_t data) noexcept {
         if (breakpoints_.empty()) {
             return;
         }
