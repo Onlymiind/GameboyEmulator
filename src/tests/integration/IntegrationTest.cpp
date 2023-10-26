@@ -19,7 +19,7 @@ class TestOutputReader : public gb::IMemoryObserver {
   public:
     TestOutputReader(std::ostream &out) : out_(out) {}
 
-    void onWrite(uint16_t address, uint8_t data) override {
+    void onWrite(uint16_t address, uint8_t data) noexcept override {
         // Used to get output from blargg's test ROMs.
         if (address == 0xFF01) {
             symbol_ = data;
@@ -28,8 +28,8 @@ class TestOutputReader : public gb::IMemoryObserver {
         }
     }
 
-    uint16_t minAddress() const override { return 0xFF01; }
-    uint16_t maxAddress() const override { return 0xFF02; }
+    uint16_t minAddress() const noexcept override { return 0xFF01; }
+    uint16_t maxAddress() const noexcept override { return 0xFF02; }
 
   private:
     std::ostream &out_;

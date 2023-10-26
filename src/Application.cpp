@@ -404,6 +404,9 @@ namespace emulator {
             if (emulator_.instructionFinished()) {
                 gb::cpu::Instruction instr = emulator_.getLastInstruction();
                 recent_instructions_.push_back(instr);
+                // StringBuffer<g_instruction_string_buf_size> buf;
+                // printInstruction(buf, recent_instructions_.size() - 1);
+                // std::cout << buf.data() << '\n';
                 if (!single_step_ &&
                     std::binary_search(pc_breakpoints_.begin(), pc_breakpoints_.end(),
                                        instr.registers.pc)) {

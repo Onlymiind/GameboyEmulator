@@ -1,6 +1,8 @@
 #include "gb/cpu/Decoder.h"
+#include "gb/cpu/CPU.h"
 #include "gb/cpu/Operation.h"
 
+#include <stdexcept>
 #include <utility>
 
 // TODO: this is a mess
@@ -54,112 +56,12 @@ namespace gb::cpu {
                      {0xC1, InstructionType::POP}, {0xC5, InstructionType::PUSH},
                      {0xC7, InstructionType::RST}, {0xCF, InstructionType::RST}};
 
-    static const std::unordered_map<uint8_t, InstructionType> g_random_instructions = {
-        {0x00, InstructionType::NOP},  {0x07, InstructionType::RLCA}, {0x08, InstructionType::LD},
-        {0x0F, InstructionType::RRCA},
-
-        {0x10, InstructionType::STOP}, {0x17, InstructionType::RLA},  {0x18, InstructionType::JR},
-        {0x1F, InstructionType::RRA},
-
-        {0x20, InstructionType::JR},   {0x27, InstructionType::DAA},  {0x28, InstructionType::JR},
-        {0x2F, InstructionType::CPL},
-
-        {0x30, InstructionType::JR},   {0x37, InstructionType::SCF},  {0x38, InstructionType::JR},
-        {0x3F, InstructionType::CCF},  {0xC0, InstructionType::RET},  {0xC2, InstructionType::JP},
-        {0xC3, InstructionType::JP},   {0xC4, InstructionType::CALL}, {0xC8, InstructionType::RET},
-        {0xC9, InstructionType::RET},  {0xCA, InstructionType::JP},   {0xCC, InstructionType::CALL},
-        {0xCD, InstructionType::CALL},
-
-        {0xD0, InstructionType::RET},  {0xD2, InstructionType::JP},   {0xD4, InstructionType::CALL},
-        {0xD8, InstructionType::RET},  {0xD9, InstructionType::RETI}, {0xDA, InstructionType::JP},
-        {0xDC, InstructionType::CALL},
-
-        {0xE0, InstructionType::LD},   {0xE2, InstructionType::LD},   {0xE8, InstructionType::ADD},
-        {0xE9, InstructionType::JP},   {0xEA, InstructionType::LD},
-
-        {0xF0, InstructionType::LD},   {0xF2, InstructionType::LD},   {0xF3, InstructionType::DI},
-        {0xF8, InstructionType::LD},   {0xF9, InstructionType::LD},   {0xFA, InstructionType::LD},
-        {0xFB, InstructionType::EI},
-    };
-
-    // Some LD instructions are a pain to decode, so it is done with this lookup
-    // table
-    static const std::unordered_map<uint8_t, DecodedInstruction> g_random_ld = {
-        {0x08,
-         {
-             {},                                                                   // Reset vector
-             LoadSubtype::LD_SP,                                                   // LD Subtype
-             {},                                                                   // Condition
-             {ArgumentSource::REGISTER, ArgumentType::UNSIGNED_16, Registers::SP}, // Source
-             {ArgumentSource::INDIRECT_IMMEDIATE, ArgumentType::UNSIGNED_16,
-              Registers::NONE},  // Destination
-             InstructionType::LD // Instruction type
-         }},
-        {0xE0,
-         {{},
-          LoadSubtype::LD_IO,
-          {},
-          {ArgumentSource::REGISTER, ArgumentType::UNSIGNED_8, Registers::A},
-          {ArgumentSource::IMMEDIATE, ArgumentType::UNSIGNED_8, Registers::NONE},
-          InstructionType::LD}},
-        {0xF0,
-         {{},
-          LoadSubtype::LD_IO,
-          {},
-          {ArgumentSource::IMMEDIATE, ArgumentType::UNSIGNED_8, Registers::NONE},
-          {ArgumentSource::REGISTER, ArgumentType::UNSIGNED_8, Registers::A},
-          InstructionType::LD}},
-        {0xE2,
-         {{},
-          LoadSubtype::LD_IO,
-          {},
-          {ArgumentSource::REGISTER, ArgumentType::UNSIGNED_8, Registers::A},
-          {ArgumentSource::INDIRECT, ArgumentType::UNSIGNED_8, Registers::C},
-          InstructionType::LD}},
-        {0xF2,
-         {{},
-          LoadSubtype::LD_IO,
-          {},
-          {ArgumentSource::INDIRECT, ArgumentType::UNSIGNED_8, Registers::C},
-          {ArgumentSource::REGISTER, ArgumentType::UNSIGNED_8, Registers::A},
-          InstructionType::LD}},
-        {0xF8,
-         {{},
-          LoadSubtype::LD_OFFSET_SP,
-          {},
-          {ArgumentSource::IMMEDIATE, ArgumentType::SIGNED_8, Registers::NONE},
-          {ArgumentSource::REGISTER, ArgumentType::UNSIGNED_16, Registers::HL},
-          InstructionType::LD}},
-        {0xF9,
-         {{},
-          LoadSubtype::TYPICAL,
-          {},
-          {ArgumentSource::REGISTER, ArgumentType::UNSIGNED_16, Registers::HL},
-          {ArgumentSource::REGISTER, ArgumentType::UNSIGNED_16, Registers::SP},
-          InstructionType::LD}},
-        {0xEA,
-         {{},
-          LoadSubtype::TYPICAL,
-          {},
-          {ArgumentSource::REGISTER, ArgumentType::UNSIGNED_8, Registers::A},
-          {ArgumentSource::INDIRECT_IMMEDIATE, ArgumentType::UNSIGNED_16, Registers::NONE},
-          InstructionType::LD}},
-        {0xFA,
-         {{},
-          LoadSubtype::TYPICAL,
-          {},
-          {ArgumentSource::INDIRECT_IMMEDIATE, ArgumentType::UNSIGNED_16, Registers::NONE},
-          {ArgumentSource::REGISTER, ArgumentType::UNSIGNED_8, Registers::A},
-          InstructionType::LD}}};
-
     void setRegisterInfo(uint8_t register_index, ArgumentInfo &register_info);
     void setALUInfo(Opcode code, DecodedInstruction &instruction, bool has_immediate);
-    void decodeRandomInstructions(Opcode code, DecodedInstruction &instruction);
-    void decodeADD(Opcode code, DecodedInstruction &instruction);
     void decodeLD(Opcode code, DecodedInstruction &instruction);
-    void decodeJR(Opcode code, DecodedInstruction &instruction);
-    void decodeJP(Opcode code, DecodedInstruction &instruction);
     void decodeINC_DEC(Opcode code, DecodedInstruction &instruction);
+    DecodedInstruction decodeIrregularInstruction(Opcode code);
+    DecodedInstruction decodeColumn(Opcode code, Type type);
 
     DecodedInstruction decodeUnprefixed(Opcode code) {
         DecodedInstruction result;
@@ -186,112 +88,18 @@ namespace gb::cpu {
         }
 
         if (result.type == Type::NONE) {
-            bool is_random_ld = false;
-            auto it = g_columns.find(code.code);
-            if (it != g_columns.end()) {
-                result.type = it->second;
-            } else {
-                result.type = g_random_instructions.at(code.code);
-                if (result.type == Type::LD) {
-                    is_random_ld = true;
-                }
-            }
-            if (!is_random_ld) {
-                decodeRandomInstructions(code, result);
-            } else {
-                result = g_random_ld.at(code.code);
-            }
+            result = decodeIrregularInstruction(code);
         }
 
         return result;
-    }
-
-    void decodeRandomInstructions(Opcode code, DecodedInstruction &instruction) {
-        switch (instruction.type) {
-        case Type::NOP:
-        case Type::STOP:
-        case Type::SCF:
-        case Type::CCF:
-        case Type::CPL:
-        case Type::DAA:
-        case Type::DI:
-        case Type::EI:
-        case Type::RETI:
-        case Type::RLCA:
-        case Type::RRCA:
-        case Type::RLA:
-        case Type::RRA:
-            return;
-        case Type::RST:
-            instruction.reset_vector = code.getY() * 8;
-            return;
-        case Type::POP:
-            instruction.dst.reg = g_word_registers_af[code.getP()];
-            return;
-        case Type::PUSH:
-            instruction.src.reg = g_word_registers_af[code.getP()];
-            return;
-        case Type::RET:
-            if (code.getZ() == 0) {
-                instruction.condition = g_conditions[code.getY()];
-            }
-            return;
-        case Type::ADD:
-            decodeADD(code, instruction);
-            return;
-        case Type::JR:
-            decodeJR(code, instruction);
-            return;
-        case Type::JP:
-            decodeJP(code, instruction);
-            return;
-        case Type::CALL:
-            if (code.getZ() == 4) {
-                instruction.condition = g_conditions[code.getY()];
-            }
-            instruction.arg().src = ArgumentSource::IMMEDIATE;
-            instruction.arg().type = ArgumentType::UNSIGNED_16;
-            return;
-        case Type::INC:
-        case Type::DEC:
-            decodeINC_DEC(code, instruction);
-            return;
-        case Type::LD:
-            decodeLD(code, instruction);
-            return;
-        default:
-            return;
-        }
-    }
-
-    void decodeADD(Opcode code, DecodedInstruction &instruction) {
-        switch (code.getZ()) {
-        case 0:
-            instruction.dst.src = ArgSrc::REGISTER;
-            instruction.dst.type = ArgType::UNSIGNED_16;
-            instruction.dst.reg = Reg::SP;
-            instruction.src.src = ArgSrc::IMMEDIATE;
-            instruction.src.type = ArgType::SIGNED_8;
-            break;
-        case 1:
-            instruction.dst.src = ArgSrc::REGISTER;
-            instruction.dst.type = ArgType::UNSIGNED_16;
-            instruction.dst.reg = Reg::HL;
-            instruction.src.src = ArgSrc::REGISTER;
-            instruction.src.type = ArgType::UNSIGNED_16;
-            instruction.src.reg = g_word_registers_sp[code.getP()];
-            break;
-        }
     }
 
     void decodeLD(Opcode code, DecodedInstruction &instruction) {
         switch (code.getZ()) {
         case 1:
             instruction.dst.reg = g_word_registers_sp[code.getP()];
-            instruction.dst.src = ArgSrc::REGISTER;
-            instruction.dst.type = ArgType::UNSIGNED_16;
-            instruction.src.src = ArgSrc::IMMEDIATE;
-            instruction.src.type = ArgType::UNSIGNED_16;
+            instruction.dst.src = ArgSrc::DOUBLE_REGISTER;
+            instruction.src.src = ArgSrc::IMMEDIATE_U16;
             break;
         case 2:
             switch (code.getP()) {
@@ -312,17 +120,14 @@ namespace gb::cpu {
             }
 
             instruction.src.src = ArgSrc::REGISTER;
-            instruction.src.type = ArgType::UNSIGNED_8;
             instruction.src.reg = Reg::A;
             instruction.dst.src = ArgSrc::INDIRECT;
-            instruction.dst.type = ArgType::UNSIGNED_8;
             if (code.getQ()) {
                 std::swap(instruction.dst, instruction.src);
             }
             break;
         case 6:
-            instruction.src.src = ArgSrc::IMMEDIATE;
-            instruction.src.type = ArgType::UNSIGNED_8;
+            instruction.src.src = ArgSrc::IMMEDIATE_U8;
 
             setRegisterInfo(code.getY(), instruction.dst);
             break;
@@ -333,36 +138,10 @@ namespace gb::cpu {
         }
     }
 
-    void decodeJR(Opcode code, DecodedInstruction &instruction) {
-        if (code.getY() != 3) {
-            instruction.condition = g_conditions[code.getY() - 4];
-        }
-        instruction.src.src = ArgSrc::IMMEDIATE;
-        instruction.src.type = ArgType::SIGNED_8;
-    }
-
-    void decodeJP(Opcode code, DecodedInstruction &instruction) {
-        switch (code.getZ()) {
-        case 1:
-            instruction.src.src = ArgSrc::REGISTER;
-            instruction.src.type = ArgType::UNSIGNED_16;
-            instruction.src.reg = Reg::HL;
-            break;
-        case 2:
-            instruction.condition = g_conditions[code.getY()];
-            [[fallthrough]];
-        case 3:
-            instruction.src.src = ArgSrc::IMMEDIATE;
-            instruction.src.type = ArgType::UNSIGNED_16;
-            break;
-        }
-    }
-
     void decodeINC_DEC(Opcode code, DecodedInstruction &instruction) {
         switch (code.getZ()) {
         case 3:
-            instruction.src.src = ArgSrc::REGISTER;
-            instruction.src.type = ArgType::UNSIGNED_16;
+            instruction.src.src = ArgSrc::DOUBLE_REGISTER;
             instruction.src.reg = g_word_registers_sp[code.getP()];
             break;
         case 4:
@@ -396,7 +175,6 @@ namespace gb::cpu {
 
         auto &arg = result.arg();
         arg.reg = g_byte_registers[code.getZ()];
-        arg.type = ArgumentType::UNSIGNED_8;
         arg.src = arg.reg == Registers::HL ? ArgumentSource::INDIRECT : ArgumentSource::REGISTER;
 
         return result;
@@ -404,7 +182,6 @@ namespace gb::cpu {
 
     void setRegisterInfo(uint8_t register_index, ArgumentInfo &register_info) {
         register_info.reg = g_byte_registers[register_index];
-        register_info.type = ArgType::UNSIGNED_8;
 
         if (register_info.reg != Reg::HL) {
             register_info.src = ArgSrc::REGISTER;
@@ -416,15 +193,194 @@ namespace gb::cpu {
     void setALUInfo(Opcode code, DecodedInstruction &instruction, bool has_immediate) {
         instruction.type = g_alu[code.getY()];
         instruction.dst.src = ArgSrc::REGISTER;
-        instruction.dst.type = ArgType::UNSIGNED_8;
         instruction.dst.reg = Reg::A;
 
         if (has_immediate) {
-            instruction.src.src = ArgSrc::IMMEDIATE;
-            instruction.src.type = ArgType::UNSIGNED_8;
+            instruction.src.src = ArgSrc::IMMEDIATE_U8;
         } else {
             setRegisterInfo(code.getZ(), instruction.src);
         }
+    }
+
+    DecodedInstruction decodeIrregularInstruction(Opcode code) {
+
+        if (auto it = g_columns.find(code.code); it != g_columns.end()) {
+            return decodeColumn(code, it->second);
+        }
+
+        switch (code.code) {
+        case 0x00:
+            return DecodedInstruction{.type = Type::NOP};
+        case 0x07:
+            return DecodedInstruction{.type = Type::RLCA};
+        case 0x08:
+            return DecodedInstruction{
+                .ld_subtype = LoadSubtype::LD_SP,
+                .src = ArgumentInfo{ArgumentSource::DOUBLE_REGISTER, Registers::SP},
+                .dst = ArgumentInfo{ArgumentSource::IMMEDIATE_U16, Registers::NONE},
+                .type = InstructionType::LD};
+        case 0x0F:
+            return DecodedInstruction{.type = Type::RRCA};
+        case 0x10:
+            return DecodedInstruction{.type = Type::STOP};
+        case 0x17:
+            return DecodedInstruction{.type = Type::RLA};
+        case 0x1F:
+            return DecodedInstruction{.type = Type::RRA};
+        case 0x27:
+            return DecodedInstruction{.type = Type::DAA};
+        case 0x2F:
+            return DecodedInstruction{.type = Type::CPL};
+        case 0x37:
+            return DecodedInstruction{.type = Type::SCF};
+        case 0x3F:
+            return DecodedInstruction{.type = Type::CCF};
+        case 0x18: // JRs
+            return DecodedInstruction{.src = ArgumentInfo{ArgSrc::IMMEDIATE_S8}, .type = Type::JR};
+        case 0x20:
+            [[fallthrough]];
+        case 0x28:
+            [[fallthrough]];
+        case 0x30:
+            [[fallthrough]];
+        case 0x38:
+            return DecodedInstruction{.condition = g_conditions[code.getY() - 4],
+                                      .src = ArgumentInfo{ArgSrc::IMMEDIATE_S8},
+                                      .type = Type::JR};
+        case 0xC0: // RETs
+            [[fallthrough]];
+        case 0xC8:
+            [[fallthrough]];
+        case 0xD0:
+            [[fallthrough]];
+        case 0xD8:
+            return DecodedInstruction{.condition = g_conditions[code.getY()], .type = Type::RET};
+        case 0xC9:
+            return DecodedInstruction{.type = Type::RET};
+        case 0xD9:
+            return DecodedInstruction{.type = Type::RETI};
+        case 0xC2: // JPs
+            [[fallthrough]];
+        case 0xD2:
+            [[fallthrough]];
+        case 0xCA:
+            [[fallthrough]];
+        case 0xDA:
+            return DecodedInstruction{.condition = g_conditions[code.getY()],
+                                      .src = ArgumentInfo{ArgSrc::IMMEDIATE_U16},
+                                      .type = Type::JP};
+        case 0xE9:
+            return DecodedInstruction{.src = ArgumentInfo{ArgSrc::DOUBLE_REGISTER, Reg::HL},
+                                      .type = Type::JP};
+        case 0xC3:
+            return DecodedInstruction{.src = ArgumentInfo{ArgSrc::IMMEDIATE_U16}, .type = Type::JP};
+        case 0xC4: // CALLs
+            [[fallthrough]];
+        case 0xD4:
+            [[fallthrough]];
+        case 0xCC:
+            [[fallthrough]];
+        case 0xDC: {
+            DecodedInstruction instr{.condition = g_conditions[code.getY()], .type = Type::CALL};
+            instr.arg().src = ArgumentSource::IMMEDIATE_U16;
+            return instr;
+        }
+        case 0xCD: {
+            DecodedInstruction instr{.type = Type::CALL};
+            instr.arg().src = ArgumentSource::IMMEDIATE_U16;
+            return instr;
+        }
+        case 0xE8: // ADD SP, e
+            return DecodedInstruction{.src = ArgumentInfo{ArgSrc::IMMEDIATE_S8},
+                                      .dst = ArgumentInfo{ArgSrc::DOUBLE_REGISTER, Reg::SP},
+                                      .type = Type::ADD};
+        case 0xE0:
+            return DecodedInstruction{
+                .ld_subtype = LoadSubtype::LD_IO,
+                .src = ArgumentInfo{ArgumentSource::REGISTER, Registers::A},
+                .dst = ArgumentInfo{ArgumentSource::IMMEDIATE_U8, Registers::NONE},
+                .type = InstructionType::LD};
+        case 0xE2:
+            return DecodedInstruction{.ld_subtype = LoadSubtype::LD_IO,
+                                      .src = ArgumentInfo{ArgumentSource::REGISTER, Registers::A},
+                                      .dst = ArgumentInfo{ArgumentSource::INDIRECT, Registers::C},
+                                      .type = InstructionType::LD};
+        case 0xEA:
+            return DecodedInstruction{
+                .ld_subtype = LoadSubtype::TYPICAL,
+                .src = ArgumentInfo{ArgumentSource::REGISTER, Registers::A},
+                .dst = ArgumentInfo{ArgumentSource::IMMEDIATE_U16, Registers::NONE},
+                .type = InstructionType::LD};
+        case 0xF0:
+            return DecodedInstruction{
+                .ld_subtype = LoadSubtype::LD_IO,
+                .src = ArgumentInfo{ArgumentSource::IMMEDIATE_U8, Registers::NONE},
+                .dst = ArgumentInfo{ArgumentSource::REGISTER, Registers::A},
+                .type = InstructionType::LD};
+        case 0xF2:
+            return DecodedInstruction{.ld_subtype = LoadSubtype::LD_IO,
+                                      .src = ArgumentInfo{ArgumentSource::INDIRECT, Registers::C},
+                                      .dst = ArgumentInfo{ArgumentSource::REGISTER, Registers::A},
+                                      .type = InstructionType::LD};
+        case 0xF3:
+            return DecodedInstruction{.type = Type::DI};
+        case 0xF8:
+            return DecodedInstruction{
+                .ld_subtype = LoadSubtype::LD_OFFSET_SP,
+                .src = ArgumentInfo{ArgumentSource::IMMEDIATE_S8, Registers::NONE},
+                .dst = ArgumentInfo{ArgumentSource::DOUBLE_REGISTER, Registers::HL},
+                .type = InstructionType::LD};
+        case 0xF9:
+            return DecodedInstruction{
+                .ld_subtype = LoadSubtype::TYPICAL,
+                .src = ArgumentInfo{ArgumentSource::DOUBLE_REGISTER, Registers::HL},
+                .dst = ArgumentInfo{ArgumentSource::DOUBLE_REGISTER, Registers::SP},
+                .type = InstructionType::LD};
+        case 0xFA:
+            return DecodedInstruction{
+                .ld_subtype = LoadSubtype::TYPICAL,
+                .src = ArgumentInfo{ArgumentSource::IMMEDIATE_U16, Registers::NONE},
+                .dst = ArgumentInfo{ArgumentSource::REGISTER, Registers::A},
+                .type = InstructionType::LD};
+        case 0xFB:
+            return DecodedInstruction{.type = Type::EI};
+        default:
+            throw std::invalid_argument("invalid instruction");
+        }
+    }
+
+    DecodedInstruction decodeColumn(Opcode code, Type type) {
+        DecodedInstruction instr{.type = type};
+        switch (type) {
+        case Type::LD:
+            decodeLD(code, instr);
+            break;
+        case Type::INC:
+            [[fallthrough]];
+        case Type::DEC:
+            decodeINC_DEC(code, instr);
+            break;
+        case Type::ADD:
+            instr.dst.src = ArgSrc::DOUBLE_REGISTER;
+            instr.dst.reg = Reg::HL;
+            instr.src.src = ArgSrc::DOUBLE_REGISTER;
+            instr.src.reg = g_word_registers_sp[code.getP()];
+            break;
+        case Type::POP:
+            instr.dst.reg = g_word_registers_af[code.getP()];
+            instr.dst.src = ArgSrc::DOUBLE_REGISTER;
+            break;
+        case Type::PUSH:
+            instr.src.reg = g_word_registers_af[code.getP()];
+            instr.src.src = ArgSrc::DOUBLE_REGISTER;
+            break;
+        case Type::RST:
+            instr.reset_vector = code.getY() * 8;
+            break;
+        default:
+            throw std::invalid_argument("invalid instruction type");
+        }
+        return instr;
     }
 
 } // namespace gb::cpu

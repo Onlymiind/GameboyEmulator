@@ -61,9 +61,11 @@ namespace gb::cpu {
     enum class ArgumentSource : uint8_t {
         NONE = 0,
         REGISTER,
+        DOUBLE_REGISTER,
         INDIRECT,
-        IMMEDIATE,
-        INDIRECT_IMMEDIATE
+        IMMEDIATE_U8,
+        IMMEDIATE_U16,
+        IMMEDIATE_S8
     };
 
     enum class ArgumentType : uint8_t { NONE = 0, UNSIGNED_8, UNSIGNED_16, SIGNED_8 };
@@ -94,11 +96,10 @@ namespace gb::cpu {
 
     struct ArgumentInfo {
         ArgumentSource src = ArgumentSource::NONE;
-        ArgumentType type = ArgumentType::NONE;
         Registers reg = Registers::NONE;
 
         inline bool operator==(ArgumentInfo other) const {
-            return src == other.src && type == other.type && reg == other.reg;
+            return src == other.src && reg == other.reg;
         }
     };
 
@@ -107,6 +108,7 @@ namespace gb::cpu {
         std::optional<uint16_t> reset_vector;
         // Used only in LD instructions
         std::optional<LoadSubtype> ld_subtype;
+
         std::optional<Conditions> condition;
         ArgumentInfo src;
         ArgumentInfo dst;
@@ -123,16 +125,6 @@ namespace gb::cpu {
 
         ArgumentInfo &arg() { return src; }
     };
-
-    struct PrefixedInstruction {
-        InstructionType type;
-        Registers target = Registers::NONE;
-        std::optional<uint8_t> bit;
-    };
-
-    inline bool operator==(PrefixedInstruction lhs, PrefixedInstruction rhs) {
-        return lhs.type == rhs.type && lhs.target == rhs.target && lhs.bit == rhs.bit;
-    }
 
     // Struct for easy opcode decomposition;
     struct Opcode {

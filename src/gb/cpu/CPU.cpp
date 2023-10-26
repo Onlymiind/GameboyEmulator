@@ -428,16 +428,14 @@ namespace gb::cpu {
 
     void SharpSM83::sheduleMemoryAcceses(DecodedInstruction instr) {
         switch (instr.src.src) {
-        case ArgumentSource::IMMEDIATE:
-        case ArgumentSource::INDIRECT_IMMEDIATE:
-            // Just read the immediate
-            if (instr.src.type == ArgumentType::UNSIGNED_16) {
-                sheduleReadWord(reg_.pc);
-                reg_.pc += 2;
-            } else {
-                sheduleReadByte(reg_.pc);
-                ++reg_.pc;
-            }
+        case ArgumentSource::IMMEDIATE_S8:
+        case ArgumentSource::IMMEDIATE_U8:
+            sheduleReadByte(reg_.pc);
+            ++reg_.pc;
+            return;
+        case ArgumentSource::IMMEDIATE_U16:
+            sheduleReadWord(reg_.pc);
+            reg_.pc += 2;
             return;
         case ArgumentSource::INDIRECT:
             if (instr.src.reg == Registers::C) {
@@ -447,15 +445,14 @@ namespace gb::cpu {
             return;
         }
 
-        if (instr.dst.src == ArgumentSource::INDIRECT_IMMEDIATE ||
-            instr.dst.src == ArgumentSource::IMMEDIATE) {
-            if (instr.dst.type == ArgumentType::UNSIGNED_16) {
-                sheduleReadWord(reg_.pc);
-                reg_.pc += 2;
-            } else {
-                sheduleReadByte(reg_.pc);
-                ++reg_.pc;
-            }
+        if (instr.dst.src == ArgumentSource::IMMEDIATE_U8) {
+            sheduleReadByte(reg_.pc);
+            ++reg_.pc;
+
+        } else if (instr.dst.src == ArgumentSource::IMMEDIATE_U16) {
+
+            sheduleReadWord(reg_.pc);
+            reg_.pc += 2;
         }
     }
 

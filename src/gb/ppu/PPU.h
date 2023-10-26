@@ -23,6 +23,11 @@ namespace gb {
     constexpr uint16_t g_window_y_address = 0xFF4A;
     constexpr uint16_t g_window_x_address = 0xFF4B;
 
+    constexpr uint16_t g_first_tilemap_base_address = 0x9800;
+    constexpr uint16_t g_second_tilemap_base_address = 0x9C00;
+
+    constexpr uint16_t g_tilemap_dimension = 256;
+
     constexpr size_t g_oam_fetch_duration = 80;
     constexpr size_t g_render_duration = 172;
     constexpr size_t g_rener_extra_duration = 12;
@@ -90,6 +95,7 @@ namespace gb {
 
     class IRenderer {
       public:
+        virtual void drawPixel(size_t x, size_t y, GBColor color) noexcept = 0;
         virtual void drawPixelRow(size_t x, size_t y, std::span<GBColor, 8> color) noexcept = 0;
         virtual void finishFrame() noexcept = 0;
 

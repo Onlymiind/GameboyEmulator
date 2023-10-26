@@ -31,33 +31,51 @@ inline void toHexOutput(std::stringstream &stream, T value) {
     stream << "0x" << std::setfill('0') << std::setw(sizeof(T) * 2) << std::hex << +value;
 }
 
-template <typename... Args> std::string printToString(std::string_view separator, Args... args) {
+template <typename... Args>
+std::string printToString(std::string_view separator, Args... args) {
     std::stringstream stream;
     ((stream << separator << args), ...);
     return stream.str();
 }
 
-template <typename... Args> class Variant : public std::variant<Args...> {
+template <typename... Args>
+class Variant : public std::variant<Args...> {
   public:
     using Base = std::variant<Args...>;
 
     using Base::variant;
     using Base::operator=;
 
-    template <typename T> bool is() const { return std::holds_alternative<T>(*this); }
+    template <typename T>
+    bool is() const {
+        return std::holds_alternative<T>(*this);
+    }
 
-    template <typename T> T &get() { return std::get<T>(*this); }
+    template <typename T>
+    T &get() {
+        return std::get<T>(*this);
+    }
 
-    template <typename T> T *get_if() { return std::get_if<T>(this); }
+    template <typename T>
+    T *get_if() {
+        return std::get_if<T>(this);
+    }
 
-    template <typename T> const T &get() const { return std::get<T>(*this); }
+    template <typename T>
+    const T &get() const {
+        return std::get<T>(*this);
+    }
 
-    template <typename T> const T *get_if() const { return std::get_if<T>(this); }
+    template <typename T>
+    const T *get_if() const {
+        return std::get_if<T>(this);
+    }
 
     bool empty() const { return std::holds_alternative<std::monostate>(*this); }
 };
 
-template <size_t CAPACITY> class StringBuffer {
+template <size_t CAPACITY>
+class StringBuffer {
   public:
     StringBuffer() { data_[0] = '\0'; }
 
@@ -83,13 +101,15 @@ template <size_t CAPACITY> class StringBuffer {
     char data_[CAPACITY + 1];
 };
 
-template <typename T, size_t CAPACITY> class RingBuffer {
+template <typename T, size_t CAPACITY>
+class RingBuffer {
   public:
     RingBuffer() = default;
     static_assert(CAPACITY >= 0, "capacity must be non-zero");
     static_assert(std::is_trivially_destructible<T>::value, "T must be trivially destructible");
 
-    template <typename... Args> void push_back(Args &&...args) {
+    template <typename... Args>
+    void push_back(Args &&...args) {
         data_[current_] = T{std::forward<Args...>(args)...};
         current_ = (current_ + 1) % CAPACITY;
         if (!full_ && current_ == 0) {
@@ -120,7 +140,8 @@ template <typename T, size_t CAPACITY> class RingBuffer {
     bool full_ = false;
 };
 
-template <typename T, size_t CAPACITY> class Queue {
+template <typename T, size_t CAPACITY>
+class Queue {
   public:
     static_assert(CAPACITY >= 0, "capacity must be non-zero");
     static_assert(std::is_trivially_destructible<T>::value, "T must be trivially destructible");
