@@ -92,6 +92,10 @@ namespace gb::cpu {
         HIGH_REG_MASK = 0xF0
     };
 
+    constexpr inline uint8_t operator&(Registers lhs, Registers rhs) {
+        return uint8_t(lhs) & uint8_t(rhs);
+    }
+
     enum class Conditions : uint8_t { NOT_ZERO, ZERO, NOT_CARRY, CARRY };
 
     struct ArgumentInfo {
@@ -123,22 +127,22 @@ namespace gb::cpu {
                    ld_subtype == other.ld_subtype && bit == other.bit;
         }
 
-        ArgumentInfo &arg() { return src; }
+        constexpr ArgumentInfo &arg() { return src; }
     };
 
     // Struct for easy opcode decomposition;
     struct Opcode {
-        Opcode() : code(0) {}
-        Opcode(uint8_t val) : code(val) {}
+        constexpr Opcode() : code(0) {}
+        constexpr Opcode(uint8_t val) : code(val) {}
 
-        inline uint8_t getX() const { return (code & 0b11000000) >> 6; }
-        inline uint8_t getY() const { return (code & 0b00111000) >> 3; }
-        inline uint8_t getZ() const { return (code & 0b00000111) >> 0; }
-        inline uint8_t getP() const { return (code & 0b00110000) >> 4; }
-        inline uint8_t getQ() const { return (code & 0b00001000) >> 3; }
-        inline uint8_t getColumn() const { return code & 0b1100'1111; }
+        constexpr inline uint8_t getX() const { return (code & 0b11000000) >> 6; }
+        constexpr inline uint8_t getY() const { return (code & 0b00111000) >> 3; }
+        constexpr inline uint8_t getZ() const { return (code & 0b00000111) >> 0; }
+        constexpr inline uint8_t getP() const { return (code & 0b00110000) >> 4; }
+        constexpr inline uint8_t getQ() const { return (code & 0b00001000) >> 3; }
+        constexpr inline uint8_t getColumn() const { return code & 0b1100'1111; }
 
-        inline uint8_t getLowerNibble() const { return code & 0x0F; }
+        constexpr inline uint8_t getLowerNibble() const { return code & 0x0F; }
 
         uint8_t code;
     };

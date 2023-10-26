@@ -12,52 +12,37 @@
 using namespace gb::cpu;
 
 constexpr std::array<std::pair<uint8_t, DecodedInstruction>, 10> unprefixed_sample = {
-    {{0x00, {{}, {}, {}, {}, {}, InstructionType::NOP}},
+    {{0x00, {.type = InstructionType::NOP}},
      {0x40,
-      {{},
-       LoadSubtype::TYPICAL,
-       {},
-       {ArgumentSource::REGISTER, Registers::B},
-       {ArgumentSource::REGISTER, Registers::B},
-       InstructionType::LD}},
+      {.ld_subtype = LoadSubtype::TYPICAL,
+       .src = {ArgumentSource::REGISTER, Registers::B},
+       .dst = {ArgumentSource::REGISTER, Registers::B},
+       .type = InstructionType::LD}},
      {0x82,
-      {{},
-       {},
-       {},
-       {ArgumentSource::REGISTER, Registers::D},
-       {ArgumentSource::REGISTER, Registers::A},
-       InstructionType::ADD}},
+      {.src = {ArgumentSource::REGISTER, Registers::D},
+       .dst = {ArgumentSource::REGISTER, Registers::A},
+       .type = InstructionType::ADD}},
      {0xC6,
-      {{},
-       {},
-       {},
-       {ArgumentSource::IMMEDIATE_U8, Registers::NONE},
-       {ArgumentSource::REGISTER, Registers::A},
-       InstructionType::ADD}},
+      {.src = {ArgumentSource::IMMEDIATE_U8, Registers::NONE},
+       .dst = {ArgumentSource::REGISTER, Registers::A},
+       .type = InstructionType::ADD}},
      {0xE0,
-      {{},
-       LoadSubtype::LD_IO,
-       {},
-       {ArgumentSource::REGISTER, Registers::A},
-       {ArgumentSource::IMMEDIATE_U8, Registers::NONE},
-       InstructionType::LD}},
+      {.ld_subtype = LoadSubtype::LD_IO,
+       .src = {ArgumentSource::REGISTER, Registers::A},
+       .dst = {ArgumentSource::IMMEDIATE_U8, Registers::NONE},
+       .type = InstructionType::LD}},
      {0x31,
-      {{},
-       LoadSubtype::TYPICAL,
-       {},
-       {ArgumentSource::IMMEDIATE_U16, Registers::NONE},
-       {ArgumentSource::DOUBLE_REGISTER, Registers::SP},
-       InstructionType::LD}},
+      {.ld_subtype = LoadSubtype::TYPICAL,
+       .src = {ArgumentSource::IMMEDIATE_U16, Registers::NONE},
+       .dst = {ArgumentSource::DOUBLE_REGISTER, Registers::SP},
+       .type = InstructionType::LD}},
      {0xC2,
-      {{},
-       {},
-       Conditions::NOT_ZERO,
-       {ArgumentSource::IMMEDIATE_U16, Registers::NONE},
-       {},
-       InstructionType::JP}},
-     {0xFF, {0x38, {}, {}, {}, {}, InstructionType::RST}},
-     {0x18, {{}, {}, {}, {ArgumentSource::IMMEDIATE_S8, Registers::NONE}, {}, InstructionType::JR}},
-     {0x76, {{}, {}, {}, {}, {}, InstructionType::HALT}}}};
+      {.condition = Conditions::NOT_ZERO,
+       .src = {ArgumentSource::IMMEDIATE_U16, Registers::NONE},
+       .type = InstructionType::JP}},
+     {0xFF, {.reset_vector = 0x38, .type = InstructionType::RST}},
+     {0x18, {.src = {ArgumentSource::IMMEDIATE_S8, Registers::NONE}, .type = InstructionType::JR}},
+     {0x76, {.type = InstructionType::HALT}}}};
 
 TEST_CASE("prefix") { REQUIRE(isPrefix({0xCB})); }
 
@@ -93,7 +78,8 @@ TEST_CASE("decoding unprefixed instructions") {
         if (instr.type != InstructionType::NONE) {
             std::cout << "Testing instruction: " << std::hex << "0x" << std::setfill('0')
                       << std::setw(sizeof(uint8_t) * 2) << +code << std::endl;
-            REQUIRE(decodeUnprefixed(code) == instr);
+            auto result = decodeUnprefixed(code);
+            REQUIRE(result == instr);
         }
     }
 }
