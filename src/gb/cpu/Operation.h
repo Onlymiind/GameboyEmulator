@@ -136,6 +136,7 @@ namespace gb::cpu {
         inline uint8_t getZ() const { return (code & 0b00000111) >> 0; }
         inline uint8_t getP() const { return (code & 0b00110000) >> 4; }
         inline uint8_t getQ() const { return (code & 0b00001000) >> 3; }
+        inline uint8_t getColumn() const { return code & 0b1100'1111; }
 
         inline uint8_t getLowerNibble() const { return code & 0x0F; }
 

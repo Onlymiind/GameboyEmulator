@@ -2,6 +2,7 @@
 #include "gb/cpu/CPU.h"
 #include "gb/cpu/Operation.h"
 
+#include <cstdint>
 #include <stdexcept>
 #include <utility>
 
@@ -12,15 +13,6 @@ namespace gb::cpu {
     using ArgSrc = ArgumentSource;
     using ArgType = ArgumentType;
     using Reg = Registers;
-
-    struct ColumnHash {
-        inline size_t operator()(uint8_t value) const { return value & 0b1100'1111; }
-    };
-    struct CollideableEqual {
-        inline bool operator()(const uint8_t &lhs, const uint8_t &rhs) const {
-            return ColumnHash{}(lhs) == ColumnHash{}(rhs);
-        }
-    };
 
     constexpr std::array<Registers, 8> g_byte_registers = {
         Registers::B, Registers::C, Registers::D,  Registers::E,
@@ -46,22 +38,14 @@ namespace gb::cpu {
         InstructionType::RLC, InstructionType::RRC, InstructionType::RL,   InstructionType::RR,
         InstructionType::SLA, InstructionType::SRA, InstructionType::SWAP, InstructionType::SRL};
 
-    static const std::unordered_map<uint8_t, InstructionType, ColumnHash, CollideableEqual>
-        g_columns = {{0x01, InstructionType::LD},  {0x02, InstructionType::LD},
-                     {0x03, InstructionType::INC}, {0x04, InstructionType::INC},
-                     {0x05, InstructionType::DEC}, {0x06, InstructionType::LD},
-                     {0x09, InstructionType::ADD}, {0x0A, InstructionType::LD},
-                     {0x0B, InstructionType::DEC}, {0x0C, InstructionType::INC},
-                     {0x0D, InstructionType::DEC}, {0x0E, InstructionType::LD},
-                     {0xC1, InstructionType::POP}, {0xC5, InstructionType::PUSH},
-                     {0xC7, InstructionType::RST}, {0xCF, InstructionType::RST}};
-
     static void setRegisterInfo(uint8_t register_index, ArgumentInfo &register_info);
     static void setALUInfo(Opcode code, DecodedInstruction &instruction, bool has_immediate);
-    static void decodeLD(Opcode code, DecodedInstruction &instruction);
-    static void decodeINC_DEC(Opcode code, DecodedInstruction &instruction);
     static DecodedInstruction decodeIrregularInstruction(Opcode code);
-    static DecodedInstruction decodeColumn(Opcode code, Type type);
+    static DecodedInstruction decodeColumn(Opcode code);
+
+    consteval uint8_t getColumnID(uint8_t quarter, uint8_t column) {
+        return (quarter << 6) | column;
+    }
 
     DecodedInstruction decodeUnprefixed(Opcode code) {
         DecodedInstruction result;
@@ -92,64 +76,6 @@ namespace gb::cpu {
         }
 
         return result;
-    }
-
-    void decodeLD(Opcode code, DecodedInstruction &instruction) {
-        switch (code.getZ()) {
-        case 1:
-            instruction.dst.reg = g_word_registers_sp[code.getP()];
-            instruction.dst.src = ArgSrc::DOUBLE_REGISTER;
-            instruction.src.src = ArgSrc::IMMEDIATE_U16;
-            break;
-        case 2:
-            switch (code.getP()) {
-            case 0:
-                instruction.dst.reg = Reg::BC;
-                break;
-            case 1:
-                instruction.dst.reg = Reg::DE;
-                break;
-            case 2:
-                instruction.dst.reg = Reg::HL;
-                instruction.ld_subtype = LoadSubtype::LD_INC;
-                break;
-            case 3:
-                instruction.dst.reg = Reg::HL;
-                instruction.ld_subtype = LoadSubtype::LD_DEC;
-                break;
-            }
-
-            instruction.src.src = ArgSrc::REGISTER;
-            instruction.src.reg = Reg::A;
-            instruction.dst.src = ArgSrc::INDIRECT;
-            if (code.getQ()) {
-                std::swap(instruction.dst, instruction.src);
-            }
-            break;
-        case 6:
-            instruction.src.src = ArgSrc::IMMEDIATE_U8;
-
-            setRegisterInfo(code.getY(), instruction.dst);
-            break;
-        }
-
-        if (!instruction.ld_subtype) {
-            instruction.ld_subtype = LoadSubtype::TYPICAL;
-        }
-    }
-
-    void decodeINC_DEC(Opcode code, DecodedInstruction &instruction) {
-        switch (code.getZ()) {
-        case 3:
-            instruction.src.src = ArgSrc::DOUBLE_REGISTER;
-            instruction.src.reg = g_word_registers_sp[code.getP()];
-            break;
-        case 4:
-        case 5:
-            setRegisterInfo(code.getY(), instruction.src);
-            break;
-        }
-        instruction.dst = instruction.src;
     }
 
     DecodedInstruction decodePrefixed(Opcode code) {
@@ -198,8 +124,8 @@ namespace gb::cpu {
 
     DecodedInstruction decodeIrregularInstruction(Opcode code) {
 
-        if (auto it = g_columns.find(code.code); it != g_columns.end()) {
-            return decodeColumn(code, it->second);
+        if (auto instr = decodeColumn(code); instr.type != Type::NONE) {
+            return instr;
         }
 
         switch (code.code) {
@@ -343,37 +269,104 @@ namespace gb::cpu {
         }
     }
 
-    DecodedInstruction decodeColumn(Opcode code, Type type) {
-        DecodedInstruction instr{.type = type};
-        switch (type) {
-        case Type::LD:
-            decodeLD(code, instr);
+    DecodedInstruction decodeColumn(Opcode code) {
+        DecodedInstruction instr{};
+        switch (code.getColumn()) {
+        case getColumnID(0, 1):
+            instr.ld_subtype = LoadSubtype::TYPICAL;
+            instr.src.src = ArgSrc::IMMEDIATE_U16, instr.dst.src = ArgSrc::DOUBLE_REGISTER;
+            instr.dst.reg = g_word_registers_sp[code.getP()];
+            instr.type = Type::LD;
             break;
-        case Type::INC:
+        case getColumnID(0, 3):
+            instr.src.src = ArgSrc::DOUBLE_REGISTER;
+            instr.src.reg = g_word_registers_sp[code.getP()];
+            instr.type = Type::INC;
+            break;
+        case getColumnID(0, 0xB):
+            instr.src.src = ArgSrc::DOUBLE_REGISTER;
+            instr.src.reg = g_word_registers_sp[code.getP()];
+            instr.type = Type::DEC;
+            break;
+        case getColumnID(0, 4):
             [[fallthrough]];
-        case Type::DEC:
-            decodeINC_DEC(code, instr);
+        case getColumnID(0, 0xC):
+            instr.type = Type::INC;
+            setRegisterInfo(code.getY(), instr.src);
             break;
-        case Type::ADD:
+        case getColumnID(0, 5):
+            [[fallthrough]];
+        case getColumnID(0, 0xD):
+            instr.type = Type::DEC;
+            setRegisterInfo(code.getY(), instr.src);
+            break;
+        case getColumnID(0, 6):
+            instr.src.src = ArgSrc::IMMEDIATE_U8;
+            instr.type = Type::LD;
+            instr.ld_subtype = LoadSubtype::TYPICAL;
+            setRegisterInfo(code.getY(), instr.dst);
+            break;
+        case getColumnID(0, 2):
+            [[fallthrough]];
+        case getColumnID(0, 0xA):
+            switch (code.getP()) {
+            case 0:
+                instr.dst.reg = Reg::BC;
+                instr.ld_subtype = LoadSubtype::TYPICAL;
+                break;
+            case 1:
+                instr.dst.reg = Reg::DE;
+                instr.ld_subtype = LoadSubtype::TYPICAL;
+                break;
+            case 2:
+                instr.dst.reg = Reg::HL;
+                instr.ld_subtype = LoadSubtype::LD_INC;
+                break;
+            case 3:
+                instr.dst.reg = Reg::HL;
+                instr.ld_subtype = LoadSubtype::LD_DEC;
+                break;
+            }
+
+            instr.src.src = ArgSrc::REGISTER;
+            instr.src.reg = Reg::A;
+            instr.dst.src = ArgSrc::INDIRECT;
+            instr.type = Type::LD;
+            if (code.getQ()) {
+                std::swap(instr.dst, instr.src);
+            }
+            break;
+        case getColumnID(0, 9):
             instr.dst.src = ArgSrc::DOUBLE_REGISTER;
             instr.dst.reg = Reg::HL;
             instr.src.src = ArgSrc::DOUBLE_REGISTER;
             instr.src.reg = g_word_registers_sp[code.getP()];
+            instr.type = Type::ADD;
             break;
-        case Type::POP:
-            instr.dst.reg = g_word_registers_af[code.getP()];
+        case getColumnID(0, 0xE):
+            instr.src.src = ArgSrc::IMMEDIATE_U8;
+            instr.type = Type::LD;
+            instr.ld_subtype = LoadSubtype::TYPICAL;
+            setRegisterInfo(code.getY(), instr.dst);
+            break;
+        case getColumnID(3, 1):
             instr.dst.src = ArgSrc::DOUBLE_REGISTER;
+            instr.dst.reg = g_word_registers_af[code.getP()];
+            instr.type = Type::POP;
             break;
-        case Type::PUSH:
-            instr.src.reg = g_word_registers_af[code.getP()];
+        case getColumnID(3, 5):
             instr.src.src = ArgSrc::DOUBLE_REGISTER;
+            instr.src.reg = g_word_registers_af[code.getP()];
+            instr.type = Type::PUSH;
             break;
-        case Type::RST:
+        case getColumnID(3, 7): // RST
+            [[fallthrough]];
+        case getColumnID(3, 0xF):
             instr.reset_vector = code.getY() * 8;
+            instr.type = Type::RST;
             break;
-        default:
-            throw std::invalid_argument("invalid instruction type");
         }
+
         return instr;
     }
 
