@@ -56,12 +56,12 @@ namespace gb::cpu {
                      {0xC1, InstructionType::POP}, {0xC5, InstructionType::PUSH},
                      {0xC7, InstructionType::RST}, {0xCF, InstructionType::RST}};
 
-    void setRegisterInfo(uint8_t register_index, ArgumentInfo &register_info);
-    void setALUInfo(Opcode code, DecodedInstruction &instruction, bool has_immediate);
-    void decodeLD(Opcode code, DecodedInstruction &instruction);
-    void decodeINC_DEC(Opcode code, DecodedInstruction &instruction);
-    DecodedInstruction decodeIrregularInstruction(Opcode code);
-    DecodedInstruction decodeColumn(Opcode code, Type type);
+    static void setRegisterInfo(uint8_t register_index, ArgumentInfo &register_info);
+    static void setALUInfo(Opcode code, DecodedInstruction &instruction, bool has_immediate);
+    static void decodeLD(Opcode code, DecodedInstruction &instruction);
+    static void decodeINC_DEC(Opcode code, DecodedInstruction &instruction);
+    static DecodedInstruction decodeIrregularInstruction(Opcode code);
+    static DecodedInstruction decodeColumn(Opcode code, Type type);
 
     DecodedInstruction decodeUnprefixed(Opcode code) {
         DecodedInstruction result;
@@ -173,21 +173,15 @@ namespace gb::cpu {
             break;
         }
 
-        auto &arg = result.arg();
-        arg.reg = g_byte_registers[code.getZ()];
-        arg.src = arg.reg == Registers::HL ? ArgumentSource::INDIRECT : ArgumentSource::REGISTER;
+        setRegisterInfo(code.getZ(), result.arg());
 
         return result;
     }
 
     void setRegisterInfo(uint8_t register_index, ArgumentInfo &register_info) {
         register_info.reg = g_byte_registers[register_index];
-
-        if (register_info.reg != Reg::HL) {
-            register_info.src = ArgSrc::REGISTER;
-        } else {
-            register_info.src = ArgSrc::INDIRECT;
-        }
+        register_info.src = register_info.reg == Registers::HL ? ArgumentSource::INDIRECT
+                                                               : ArgumentSource::REGISTER;
     }
 
     void setALUInfo(Opcode code, DecodedInstruction &instruction, bool has_immediate) {
