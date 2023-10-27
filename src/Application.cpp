@@ -288,17 +288,19 @@ namespace emulator {
             len = 0;
         }
         uint16_t i = 0;
+        StringBuffer<strlen(row_fmt.data())> row_buf;
         for (; i + 15 < len; i += 16) {
             uint16_t base = info.min_address + i;
-            ImGui::Text(row_fmt.data(), base, emulator_.peekMemory(base),
-                        emulator_.peekMemory(base + 1), emulator_.peekMemory(base + 2),
-                        emulator_.peekMemory(base + 3), emulator_.peekMemory(base + 4),
-                        emulator_.peekMemory(base + 5), emulator_.peekMemory(base + 6),
-                        emulator_.peekMemory(base + 7), emulator_.peekMemory(base + 8),
-                        emulator_.peekMemory(base + 9), emulator_.peekMemory(base + 10),
-                        emulator_.peekMemory(base + 11), emulator_.peekMemory(base + 12),
-                        emulator_.peekMemory(base + 13), emulator_.peekMemory(base + 14),
-                        emulator_.peekMemory(base + 15));
+            int written = sprintf(row_buf.data(), row_fmt.data(), base, emulator_.peekMemory(base),
+                                  emulator_.peekMemory(base + 1), emulator_.peekMemory(base + 2),
+                                  emulator_.peekMemory(base + 3), emulator_.peekMemory(base + 4),
+                                  emulator_.peekMemory(base + 5), emulator_.peekMemory(base + 6),
+                                  emulator_.peekMemory(base + 7), emulator_.peekMemory(base + 8),
+                                  emulator_.peekMemory(base + 9), emulator_.peekMemory(base + 10),
+                                  emulator_.peekMemory(base + 11), emulator_.peekMemory(base + 12),
+                                  emulator_.peekMemory(base + 13), emulator_.peekMemory(base + 14),
+                                  emulator_.peekMemory(base + 15));
+            ImGui::TextUnformatted(row_buf.data(), row_buf.data() + written);
         }
 
         if (i < len) {
