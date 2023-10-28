@@ -2,6 +2,7 @@
 #include "gb/InterruptRegister.h"
 #include "gb/memory/BasicComponents.h"
 #include "utils/Utils.h"
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <span>
@@ -23,8 +24,9 @@ namespace gb {
     constexpr uint16_t g_window_y_address = 0xFF4A;
     constexpr uint16_t g_window_x_address = 0xFF4B;
 
-    constexpr uint16_t g_first_tilemap_base_address = 0x9800;
-    constexpr uint16_t g_second_tilemap_base_address = 0x9C00;
+    constexpr uint16_t g_second_tile_data_block_offset = 0x9000;
+    constexpr uint16_t g_first_tilemap_offset = 0x9800;
+    constexpr uint16_t g_second_tilemap_offset = 0x9C00;
 
     constexpr uint16_t g_tilemap_dimension = 256;
 
@@ -91,23 +93,36 @@ namespace gb {
         bool use_object_palette1 = false;
     };
 
-    enum class GBColor { WHITE, LIGHT_GRAY, DARK_GRAY, BLACK };
+    enum class GBColor : uint8_t { WHITE, LIGHT_GRAY, DARK_GRAY, BLACK };
+    enum class PixelType : uint8_t { BG, WINDOW, SPRITE };
+
+    struct PixelInfo {
+        GBColor color_idx = GBColor::WHITE;
+        PixelType type = PixelType::BG;
+        GBColor default_color = GBColor::WHITE;
+    };
 
     class IRenderer {
       public:
         virtual void drawPixel(size_t x, size_t y, GBColor color) noexcept = 0;
-        virtual void drawPixelRow(size_t x, size_t y, std::span<GBColor, 8> color) noexcept = 0;
+        virtual void drawPixels(size_t x, size_t y, std::span<PixelInfo> color) noexcept = 0;
         virtual void finishFrame() noexcept = 0;
 
       protected:
         ~IRenderer() = default;
     };
 
+    struct PixelFIFO {};
+
     class PPU {
       public:
-        PPU(InterruptRegister &interrupt_flags) : interrupt_flags_(interrupt_flags) {}
+        PPU(InterruptRegister &interrupt_flags) : interrupt_flags_(interrupt_flags) {
+            objects_on_current_line_.reserve(40);
+        }
         PPU(InterruptRegister &interrupt_flags, IRenderer &renderer)
-            : interrupt_flags_(interrupt_flags), renderer_(&renderer) {}
+            : interrupt_flags_(interrupt_flags), renderer_(&renderer) {
+            objects_on_current_line_.reserve(40);
+        }
 
         uint8_t read(uint16_t address) const;
         void write(uint16_t address, uint8_t data);
@@ -119,7 +134,12 @@ namespace gb {
         void renderPixelRow();
 
       private:
+        std::array<GBColor, 8> getTileRow(uint16_t tilemap_base, uint8_t x, uint8_t y);
+        GBColor getBGColor(GBColor color_idx);
+        GBColor getSpriteColor(GBColor color_idx, bool use_obp1);
+
         std::vector<ObjectAttributes> objects_on_current_line_;
+        std::span<ObjectAttributes> objects_to_draw_;
         size_t cycles_to_finish_ = g_vblank_duration;
         InterruptRegister &interrupt_flags_;
         IRenderer *renderer_ = nullptr;
@@ -148,11 +168,11 @@ namespace gb {
         RAM<g_memory_oam.size> oam_{};
     };
 
-    constexpr inline std::array<uint8_t, 8> decodeTileRow(uint8_t low, uint8_t high) {
-        std::array<uint8_t, 8> result{};
+    constexpr inline std::array<GBColor, 8> decodeTileRow(uint8_t low, uint8_t high) {
+        std::array<GBColor, 8> result{};
         // bit 7 is the leftmost pixel of the line
         for (size_t i = 0; i < 8; ++i, low >>= 1, high >>= 1) {
-            result[7 - i] = (low & 1) | ((high & 1) << 1);
+            result[7 - i] = GBColor((low & 1) | ((high & 1) << 1));
         }
         return result;
     }
