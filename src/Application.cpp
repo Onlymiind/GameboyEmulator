@@ -44,7 +44,7 @@ namespace emulator {
 
         ImGui::BeginTable("##table", 2);
         ImGui::TableNextColumn();
-        StringBuffer<g_instruction_string_buf_size> buf;
+        StaticStringBuffer<g_instruction_string_buf_size> buf;
         for (size_t i = 0; i < recent_instructions_.size(); ++i) {
             printInstruction(buf, i);
             if (ImGui::Selectable(buf.data())) {
@@ -86,6 +86,8 @@ namespace emulator {
         drawMemoryView();
 
         ImGui::End();
+
+        // ImGui::ShowDemoWindow();
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -288,19 +290,45 @@ namespace emulator {
             len = 0;
         }
         uint16_t i = 0;
-        StringBuffer<strlen(row_fmt.data())> row_buf;
+        size_t rows = info.size / 16 + (info.size % 16 != 0);
+        buffer_.reserveAndClear(rows * (16 * 3 + 8));
         for (; i + 15 < len; i += 16) {
             uint16_t base = info.min_address + i;
-            int written = sprintf(row_buf.data(), row_fmt.data(), base, emulator_.peekMemory(base),
-                                  emulator_.peekMemory(base + 1), emulator_.peekMemory(base + 2),
-                                  emulator_.peekMemory(base + 3), emulator_.peekMemory(base + 4),
-                                  emulator_.peekMemory(base + 5), emulator_.peekMemory(base + 6),
-                                  emulator_.peekMemory(base + 7), emulator_.peekMemory(base + 8),
-                                  emulator_.peekMemory(base + 9), emulator_.peekMemory(base + 10),
-                                  emulator_.peekMemory(base + 11), emulator_.peekMemory(base + 12),
-                                  emulator_.peekMemory(base + 13), emulator_.peekMemory(base + 14),
-                                  emulator_.peekMemory(base + 15));
-            ImGui::TextUnformatted(row_buf.data(), row_buf.data() + written);
+            buffer_.putString("0x")
+                .putU16(base)
+                .putString(": ")
+                .putU8(emulator_.peekMemory(base))
+                .put(' ')
+                .putU8(emulator_.peekMemory(base + 1))
+                .put(' ')
+                .putU8(emulator_.peekMemory(base + 2))
+                .put(' ')
+                .putU8(emulator_.peekMemory(base + 3))
+                .put(' ')
+                .putU8(emulator_.peekMemory(base + 4))
+                .put(' ')
+                .putU8(emulator_.peekMemory(base + 5))
+                .put(' ')
+                .putU8(emulator_.peekMemory(base + 6))
+                .put(' ')
+                .putU8(emulator_.peekMemory(base + 7))
+                .put(' ')
+                .putU8(emulator_.peekMemory(base + 8))
+                .put(' ')
+                .putU8(emulator_.peekMemory(base + 9))
+                .put(' ')
+                .putU8(emulator_.peekMemory(base + 10))
+                .put(' ')
+                .putU8(emulator_.peekMemory(base + 11))
+                .put(' ')
+                .putU8(emulator_.peekMemory(base + 12))
+                .put(' ')
+                .putU8(emulator_.peekMemory(base + 13))
+                .put(' ')
+                .putU8(emulator_.peekMemory(base + 14))
+                .put(' ')
+                .putU8(emulator_.peekMemory(base + 15))
+                .put('\n');
         }
 
         if (i < len) {
@@ -308,12 +336,13 @@ namespace emulator {
             size_t last_row_len = strlen("0xffff:") + (len - i) * strlen(" ff") + 1;
             std::string buf(last_row_len, '\0');
             int written = sprintf(buf.data(), "0x%.4x:", info.min_address + i);
+            buffer_.putString("0x").putU16(info.min_address + i).put(':');
             for (; i < len; ++i) {
-                written += sprintf(buf.data() + written, " %.2x",
-                                   emulator_.peekMemory(info.min_address + i));
+                buffer_.put(' ').putU8(emulator_.peekMemory(info.min_address + i));
             }
-            ImGui::TextUnformatted(buf.data());
         }
+        buffer_.finish();
+        ImGui::TextUnformatted(buffer_.data(), buffer_.data() + buffer_.size());
     }
 
     Application::Application() {
@@ -375,7 +404,7 @@ namespace emulator {
         glfwInit();
         window_ = glfwCreateWindow(600, 600, "emulator", nullptr, nullptr);
         glfwMakeContextCurrent(window_);
-        if (gladLoadGL() == 0) {
+        if (gladLoadGL(glfwGetProcAddress) == 0) {
             std::cout << "failed to load OpenGL" << std::endl;
             is_running_ = false;
             return;
@@ -465,7 +494,7 @@ namespace emulator {
         memory_breakpoint_data_ = MemoryBreakpointData{};
     }
 
-    void Application::printInstruction(StringBuffer<g_instruction_string_buf_size> &buf,
+    void Application::printInstruction(StaticStringBuffer<g_instruction_string_buf_size> &buf,
                                        size_t idx) {
         using namespace gb::cpu;
         auto &instr = recent_instructions_[idx];

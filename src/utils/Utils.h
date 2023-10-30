@@ -75,14 +75,14 @@ class Variant : public std::variant<Args...> {
 };
 
 template <size_t CAPACITY>
-class StringBuffer {
+class StaticStringBuffer {
   public:
-    StringBuffer() { data_[0] = '\0'; }
+    StaticStringBuffer() { data_[0] = '\0'; }
 
-    ~StringBuffer() = default;
+    ~StaticStringBuffer() = default;
 
-    StringBuffer(const StringBuffer<CAPACITY> &) = delete;
-    StringBuffer<CAPACITY> &operator=(const StringBuffer<CAPACITY> &) = delete;
+    StaticStringBuffer(const StaticStringBuffer<CAPACITY> &) = delete;
+    StaticStringBuffer<CAPACITY> &operator=(const StaticStringBuffer<CAPACITY> &) = delete;
 
     size_t capacity() { return CAPACITY; }
     size_t capacityWithNullChar() { return CAPACITY + 1; }
@@ -178,3 +178,117 @@ class Queue {
 };
 
 constexpr inline uint8_t setBit(uint8_t bit) { return uint8_t(1) << bit; }
+
+class StringBuffer {
+  public:
+    StringBuffer() = default;
+    StringBuffer(size_t capacity) : data_(new char[capacity + 1]), capacity_(capacity + 1) {}
+    ~StringBuffer() { delete[] data_; }
+
+    StringBuffer(const StringBuffer &) = delete;
+    StringBuffer(StringBuffer &&other) noexcept {
+        delete[] data_;
+        data_ = other.data_;
+        size_ = other.size_;
+        capacity_ = other.capacity_;
+        other.data_ = nullptr;
+        other.capacity_ = 0;
+        other.size_ = 0;
+    }
+
+    StringBuffer &operator=(const StringBuffer &) = delete;
+    StringBuffer &operator=(StringBuffer &&other) noexcept {
+        delete[] data_;
+        data_ = other.data_;
+        size_ = other.size_;
+        capacity_ = other.capacity_;
+        other.data_ = nullptr;
+        other.size_ = 0;
+        other.capacity_ = 0;
+        return *this;
+    }
+
+    size_t size() const { return size_; }
+    size_t capacity() const { return capacity_; }
+    const char *data() const { return data_; }
+
+    void reserveAndClear(size_t size) {
+        if (capacity_ < (size + 1)) {
+            char *data = new char[size + 1];
+            delete[] data_;
+            data_ = data;
+            capacity_ = size + 1;
+        }
+        data_[0] = '\0';
+        size_ = 0;
+    }
+
+    StringBuffer &put(char c) {
+        ensure(1);
+        uncheckedPut(c);
+        return *this;
+    }
+
+    StringBuffer &putString(std::string_view str) {
+        ensure(str.size());
+        // TODO: memcpy might be faster
+        for (char c : str) {
+            uncheckedPut(c);
+        }
+        return *this;
+    }
+
+    StringBuffer &putU8(uint8_t val) {
+        ensure(2);
+        putHexDigit(val / 0x10);
+        putHexDigit(val % 0x10);
+        return *this;
+    }
+
+    StringBuffer &putU16(uint16_t val) {
+        ensure(4);
+        putHexDigit(uint8_t(val >> 12));
+        putHexDigit(uint8_t((val & 0x0F00) >> 8));
+        putHexDigit(uint8_t((val & 0x00F0) >> 4));
+        putHexDigit(uint8_t(val % 0x10));
+        return *this;
+    }
+
+    StringBuffer &putSigned(int8_t val) {
+        ensure(4);
+        if (val < 0) {
+            uncheckedPut('-');
+            val = int8_t(-val);
+        }
+        uncheckedPut('0' + val / 100);
+        uncheckedPut('0' + val / 10);
+        uncheckedPut('0' + val % 10);
+        return *this;
+    }
+
+    void finish() { data_[size_] = '\0'; }
+
+  private:
+    void ensure(size_t length) {
+        if (capacity_ - size_ < length + 1) {
+            throw std::runtime_error("not enough space in the buffer");
+        }
+    }
+
+    void uncheckedPut(char c) {
+        data_[size_] = c;
+        ++size_;
+    }
+
+    void putHexDigit(uint8_t digit) {
+        if (digit < 10) {
+            uncheckedPut('0' + digit);
+        } else {
+            uncheckedPut('a' + (digit - 10));
+        }
+    }
+
+    char *data_ = nullptr;
+    size_t size_ = 0;
+    size_t capacity_ = 0;
+};

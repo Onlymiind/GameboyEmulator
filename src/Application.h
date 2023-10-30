@@ -11,7 +11,7 @@
 #include "utils/Utils.h"
 
 // clang-format off
-#include "glad/glad.h"
+#include "glad/gl.h"
 #include "GLFW/glfw3.h"
 // clang-format on
 
@@ -75,7 +75,8 @@ SP: 0x%.4x, PC: 0x%.4x)";
 
         void drawMemoryRegion(gb::MemoryObjectType region);
 
-        template <typename Element> void pushRecent(std::list<Element> &cont, const Element &elem) {
+        template <typename Element>
+        void pushRecent(std::list<Element> &cont, const Element &elem) {
             cont.push_back(elem);
             if (cont.size() > g_recent_cache_size) {
                 cont.pop_front();
@@ -85,7 +86,7 @@ SP: 0x%.4x, PC: 0x%.4x)";
         void addPCBreakpoint(uint16_t address);
         void addMemoryBreakpoint();
 
-        void printInstruction(StringBuffer<g_instruction_string_buf_size> &buf, size_t idx);
+        void printInstruction(StaticStringBuffer<g_instruction_string_buf_size> &buf, size_t idx);
 
       private:
         gb::Emulator emulator_;
@@ -103,6 +104,7 @@ SP: 0x%.4x, PC: 0x%.4x)";
         MemoryBreakpointData memory_breakpoint_data_;
         std::string new_romdir_;
         std::optional<gb::cpu::RegisterFile> registers_to_print_;
+        StringBuffer buffer_;
 
         bool is_running_ = true;
         bool gui_init_ = false;

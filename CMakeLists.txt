@@ -58,8 +58,8 @@ set(IMGUI_BACKEND
 )
 
 set(GLAD
-    glad/src/glad.c
-    glad/include/glad/glad.h
+    glad/src/gl.c
+    glad/include/glad/gl.h
     glad/include/KHR/khrplatform.h
 )
 

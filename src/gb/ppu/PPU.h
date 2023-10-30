@@ -94,17 +94,16 @@ namespace gb {
     };
 
     enum class GBColor : uint8_t { WHITE, LIGHT_GRAY, DARK_GRAY, BLACK };
-    enum class PixelType : uint8_t { BG, WINDOW, SPRITE };
+    enum class Palette : uint8_t { BG, OBP0, OBP1 };
 
     struct PixelInfo {
         GBColor color_idx = GBColor::WHITE;
-        PixelType type = PixelType::BG;
+        Palette palette = Palette::BG;
         GBColor default_color = GBColor::WHITE;
     };
 
     class IRenderer {
       public:
-        virtual void drawPixel(size_t x, size_t y, GBColor color) noexcept = 0;
         virtual void drawPixels(size_t x, size_t y, std::span<PixelInfo> color) noexcept = 0;
         virtual void finishFrame() noexcept = 0;
 

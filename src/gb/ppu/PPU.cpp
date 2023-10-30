@@ -231,7 +231,6 @@ namespace gb {
             for (size_t i = pixel_offset; i < 8; ++i) {
                 pixels.push_back(PixelInfo{
                     .color_idx = row[i],
-                    .type = PixelType::BG,
                     .default_color = getBGColor(row[i]),
                 });
             }
@@ -248,7 +247,6 @@ namespace gb {
                 for (uint8_t i = tile_column; i < std::min(size_t(8), pixels.size()); ++i) {
                     pixels[i] = PixelInfo{
                         .color_idx = window_row[i - tile_column],
-                        .type = PixelType::WINDOW,
                         .default_color = getBGColor(window_row[i - tile_column]),
                     };
                 }
@@ -284,11 +282,12 @@ namespace gb {
                     if (obj_pixels[pixels_start + i] == GBColor::WHITE) {
                         // transparent pixel
                         continue;
-                    } else if (pixels[i].type == PixelType::SPRITE &&
+                    } else if ((pixels[i].palette == Palette::OBP0 ||
+                                pixels[i].palette == Palette::OBP1) &&
                                pixels[i].color_idx != GBColor::WHITE) {
                         // do not overwrite already drawn objs
                         continue;
-                    } else if (pixels[i].type != PixelType::SPRITE && obj.priority &&
+                    } else if (pixels[i].palette == Palette::BG && obj.priority &&
                                pixels[i].color_idx != GBColor::WHITE) {
                         // handle ObjectAttributes.priority flag
                         continue;
@@ -296,7 +295,7 @@ namespace gb {
 
                     pixels[i] = PixelInfo{
                         .color_idx = obj_pixels[pixels_start + i],
-                        .type = PixelType::SPRITE,
+                        .palette = obj.use_object_palette1 ? Palette::OBP1 : Palette::OBP0,
                         .default_color =
                             getSpriteColor(obj_pixels[pixels_start + i], obj.use_object_palette1),
                     };
