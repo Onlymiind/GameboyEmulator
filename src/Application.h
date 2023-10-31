@@ -22,26 +22,19 @@
 #include <string_view>
 
 namespace emulator {
-    inline consteval size_t strlen(const char *str) {
-        if (!str || str[0] == '\0') {
-            return 0;
-        } else {
-            return 1 + strlen(++str);
-        }
-    }
 
     constexpr size_t g_cycles_per_second = size_t(1) << 22;
-    constexpr const char *g_regs_fmt =
-        R"(Carry: %d, Half carry: %d
-Negative: %d, Zero: %d
-A: 0x%.2x, AF: 0x%.4x
-C: 0x%.2x, B: 0x%.2x, BC: 0x%.4x
-E: 0x%.2x, D: 0x%.2x, DE: 0x%.4x,
-H: 0x%.2x, L: 0x%.2x, HL: 0x%.4x,
-SP: 0x%.4x, PC: 0x%.4x)";
+
+    constexpr size_t g_registers_buffer_size = sizeof("Carry: 1, Half carry: 1\n"
+                                                      "Negative: 1, Zero: 1\n"
+                                                      "A: ff, AF: ffff\n"
+                                                      "C: ff, B: ff, BC: ffff\n"
+                                                      "E: ff, D: ff, DE: ffff\n"
+                                                      "H: ff, L: ff, HL: ffff\n"
+                                                      "SP: ffff, PC: ffff");
 
     constexpr size_t g_instruction_string_buf_size =
-        strlen("ffff CALL nz, ffff##111"); // ##111 is needed to accomodate for
+        sizeof("ffff CALL nz, ffff##111"); // ##111 is needed to accomodate for
                                            // Dear ImGui ids
 
     constexpr std::string_view g_rom_extension = ".gb";

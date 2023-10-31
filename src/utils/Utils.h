@@ -266,6 +266,12 @@ class StringBuffer {
         return *this;
     }
 
+    StringBuffer &putBool(bool b) {
+        ensure(1);
+        uncheckedPut('0' + uint8_t(b));
+        return *this;
+    }
+
     void finish() { data_[size_] = '\0'; }
 
   private:

@@ -55,11 +55,42 @@ namespace emulator {
         if (registers_to_print_) {
             ImGui::NewLine();
             auto &regs = *registers_to_print_;
-            ImGui::Text(g_regs_fmt, regs.getFlag(gb::cpu::Flags::CARRY),
-                        regs.getFlag(gb::cpu::Flags::HALF_CARRY),
-                        regs.getFlag(gb::cpu::Flags::NEGATIVE), regs.getFlag(gb::cpu::Flags::ZERO),
-                        regs.A(), regs.AF(), regs.C(), regs.B(), regs.BC(), regs.E(), regs.D(),
-                        regs.DE(), regs.H(), regs.L(), regs.HL(), regs.sp, regs.pc);
+            buffer_.reserveAndClear(g_registers_buffer_size);
+            buffer_.putString("Carry: ")
+                .putBool(regs.getFlag(gb::cpu::Flags::CARRY))
+                .putString(", Half carry: ")
+                .putBool(regs.getFlag(gb::cpu::Flags::HALF_CARRY))
+                .putString("\nNegative: ")
+                .putBool(regs.getFlag(gb::cpu::Flags::NEGATIVE))
+                .putString(", Zero: ")
+                .putBool(regs.getFlag(gb::cpu::Flags::ZERO))
+                .putString("\nA: ")
+                .putU8(regs.A())
+                .putString(", AF: ")
+                .putU16(regs.AF())
+                .putString("\nC: ")
+                .putU8(regs.C())
+                .putString(", B: ")
+                .putU8(regs.B())
+                .putString(", BC: ")
+                .putU16(regs.BC())
+                .putString("\nE: ")
+                .putU8(regs.E())
+                .putString(", D: ")
+                .putU8(regs.D())
+                .putString(", DE: ")
+                .putU16(regs.DE())
+                .putString("\nH: ")
+                .putU8(regs.H())
+                .putString(", L: ")
+                .putU8(regs.L())
+                .putString(", HL: ")
+                .putU16(regs.HL())
+                .putString("\nSP: ")
+                .putU16(regs.sp)
+                .putString(", PC: ")
+                .putU16(regs.pc);
+            ImGui::TextUnformatted(buffer_.data(), buffer_.data() + buffer_.size());
         }
 
         ImGui::NewLine();
@@ -173,10 +204,10 @@ namespace emulator {
         {
             ImGui::Text("PC breakpoints: ");
             auto delete_it = pc_breakpoints_.end();
-            std::string buf(6, '0');
             for (auto it = pc_breakpoints_.begin(); it != pc_breakpoints_.end(); ++it) {
-                sprintf(buf.data(), "0x%.4x", *it);
-                ImGui::Selectable(buf.c_str());
+                buffer_.reserveAndClear(6);
+                buffer_.putString("0x").putU16(*it);
+                ImGui::Selectable(buffer_.data());
                 if (ImGui::IsItemHovered() && ImGui::IsKeyPressed(ImGuiKey_Backspace)) {
                     delete_it = it;
                 }
@@ -216,16 +247,17 @@ namespace emulator {
         {
             ImGui::Text("Memory breakpoints: ");
             std::optional<MemoryBreakpointData> delete_val;
-            std::string buf(strlen("Address: 0xffff\nBreak on: ALWAYS, value: 0xff"), '\0');
             for (auto br : memory_breakpoints_.getBreakpoints()) {
-
-                // it is fine to use %s to print to_string(br.break_on) since it is a string literal
-                int written = sprintf(buf.data(), "Address: 0x%.4x\nBreak on: %s", br.address,
-                                      to_string(br.break_on).data());
+                buffer_.reserveAndClear(sizeof("Address: 0xffff\nBreak on: ALWAYS, value: 0xff"));
+                buffer_.putString("Address: 0x")
+                    .putU16(br.address)
+                    .putString("\nbreak on: ")
+                    .putString(to_string(br.break_on));
                 if (br.value) {
-                    sprintf(buf.data() + written, ", value: 0x%.2x", *br.value);
+                    buffer_.putString(", value: 0x").putU8(*br.value);
                 }
-                ImGui::Selectable(buf.c_str());
+                buffer_.finish();
+                ImGui::Selectable(buffer_.data());
                 if (ImGui::IsItemHovered() && ImGui::IsKeyPressed(ImGuiKey_Backspace)) {
                     delete_val = br;
                 }
@@ -332,10 +364,6 @@ namespace emulator {
         }
 
         if (i < len) {
-            // account for null char!!
-            size_t last_row_len = strlen("0xffff:") + (len - i) * strlen(" ff") + 1;
-            std::string buf(last_row_len, '\0');
-            int written = sprintf(buf.data(), "0x%.4x:", info.min_address + i);
             buffer_.putString("0x").putU16(info.min_address + i).put(':');
             for (; i < len; ++i) {
                 buffer_.put(' ').putU8(emulator_.peekMemory(info.min_address + i));
