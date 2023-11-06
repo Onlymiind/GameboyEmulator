@@ -23,30 +23,18 @@ namespace gb {
         }
 
         switch (address) {
-        case g_lcd_control_address:
-            return lcd_control_;
-        case g_lcd_status:
-            return status_ | (uint8_t(current_y_ == y_compare_) << 2) | uint8_t(mode_);
-        case g_scroll_x_address:
-            return scroll_x_;
-        case g_scroll_y_address:
-            return scroll_y_;
-        case g_lcd_y_address:
-            return current_y_;
-        case g_y_compare_address:
-            return y_compare_;
-        case g_dma_src_address:
-            return dma_src_;
-        case g_background_palette_address:
-            return bg_palette_;
-        case g_object_palette0_address:
-            return obj_palette0_;
-        case g_object_palette1_address:
-            return obj_palette1_;
-        case g_window_y_address:
-            return window_y_;
-        case g_window_x_address:
-            return window_x_;
+        case g_lcd_control_address: return lcd_control_;
+        case g_lcd_status: return status_ | (uint8_t(current_y_ == y_compare_) << 2) | uint8_t(mode_);
+        case g_scroll_x_address: return scroll_x_;
+        case g_scroll_y_address: return scroll_y_;
+        case g_lcd_y_address: return current_y_;
+        case g_y_compare_address: return y_compare_;
+        case g_dma_src_address: return dma_src_;
+        case g_background_palette_address: return bg_palette_;
+        case g_object_palette0_address: return obj_palette0_;
+        case g_object_palette1_address: return obj_palette1_;
+        case g_window_y_address: return window_y_;
+        case g_window_x_address: return window_x_;
         }
 
         throw std::invalid_argument("unreachable");
@@ -67,44 +55,24 @@ namespace gb {
         }
 
         switch (address) {
-        case g_lcd_control_address:
-            lcd_control_ = data;
-            break;
-        case g_lcd_status:
-            status_ = data & ~0b111;
-            break;
-        case g_scroll_x_address:
-            scroll_x_ = data;
-            break;
-        case g_scroll_y_address:
-            scroll_y_ = data;
-            break;
+        case g_lcd_control_address: lcd_control_ = data; break;
+        case g_lcd_status: status_ = data & ~0b111; break;
+        case g_scroll_x_address: scroll_x_ = data; break;
+        case g_scroll_y_address: scroll_y_ = data; break;
         case g_lcd_y_address: // read only
             break;
-        case g_y_compare_address:
-            y_compare_ = data;
+        case g_y_compare_address: y_compare_ = data;
         case g_dma_src_address:
             dma_src_ = data;
             dma_running_ = true;
             // TODO: set DMA start address, implement DMA
             break;
-        case g_background_palette_address:
-            bg_palette_ = data;
-            break;
-        case g_object_palette0_address:
-            obj_palette0_ = data;
-            break;
-        case g_object_palette1_address:
-            obj_palette1_ = data;
-            break;
-        case g_window_y_address:
-            window_y_ = data;
-            break;
-        case g_window_x_address:
-            window_x_ = data;
-            break;
-        default:
-            throw std::invalid_argument("unreachable");
+        case g_background_palette_address: bg_palette_ = data; break;
+        case g_object_palette0_address: obj_palette0_ = data; break;
+        case g_object_palette1_address: obj_palette1_ = data; break;
+        case g_window_y_address: window_y_ = data; break;
+        case g_window_x_address: window_x_ = data; break;
+        default: throw std::invalid_argument("unreachable");
         }
     }
 
@@ -126,15 +94,13 @@ namespace gb {
                 uint8_t height = 8 * (((lcd_control_ & LCDControlFlags::OBJ_SIZE) != 0) + 1);
 
                 if (current_y_ >= y_coord && current_y_ < y_coord + height) {
-                    ObjectAttributes attrs =
-                        decodeObjectAttributes(std::span<uint8_t, 4>{&oam_[idx], 4},
-                                               (lcd_control_ & LCDControlFlags::OBJ_SIZE) != 0);
+                    ObjectAttributes attrs = decodeObjectAttributes(std::span<uint8_t, 4>{&oam_[idx], 4},
+                                                                    (lcd_control_ & LCDControlFlags::OBJ_SIZE) != 0);
                     // discard objs that are not visible
                     if (attrs.x == 0) {
                         break;
                     }
-                    auto it = std::upper_bound(objects_on_current_line_.begin(),
-                                               objects_on_current_line_.end(), attrs,
+                    auto it = std::upper_bound(objects_on_current_line_.begin(), objects_on_current_line_.end(), attrs,
                                                [](auto lhs, auto rhs) { return lhs.x < rhs.x; });
 
                     // if two objs have the same x coordinate, the obj with lower attributes address
@@ -147,18 +113,14 @@ namespace gb {
             }
             break;
         }
-        case PPUMode::RENDER:
-            renderPixelRow();
-            break;
-        case PPUMode::HBLANK:
-            break;
+        case PPUMode::RENDER: renderPixelRow(); break;
+        case PPUMode::HBLANK: break;
         case PPUMode::VBLANK:
             if (cycles_to_finish_ % g_scanline_duration == g_scanline_duration - 1) {
                 ++current_y_;
             }
             break;
-        default:
-            throw std::runtime_error("unexpected PPU mode");
+        default: throw std::runtime_error("unexpected PPU mode");
         }
 
         --cycles_to_finish_;
@@ -201,12 +163,10 @@ namespace gb {
                     renderer_->finishFrame();
                 }
                 break;
-            default:
-                throw std::runtime_error("unexpected PPU mode");
+            default: throw std::runtime_error("unexpected PPU mode");
             }
         }
-        set_interrupt = set_interrupt || (current_y_ == y_compare_ &&
-                                          (status_ & PPUInterruptSelectFlags::Y_COMPARE));
+        set_interrupt = set_interrupt || (current_y_ == y_compare_ && (status_ & PPUInterruptSelectFlags::Y_COMPARE));
         if (set_interrupt) {
             interrupt_flags_.setFlag(InterruptFlags::LCD_STAT);
         }
@@ -241,8 +201,7 @@ namespace gb {
                     tilemap_base = g_second_tilemap_offset;
                 }
 
-                auto window_row =
-                    getTileRow(tilemap_base, current_x_ - window_x_ + 7, current_y_ - window_y_);
+                auto window_row = getTileRow(tilemap_base, current_x_ - window_x_ + 7, current_y_ - window_y_);
                 uint8_t tile_column = (current_x_ - window_x_) % 8;
                 for (uint8_t i = tile_column; i < std::min(size_t(8), pixels.size()); ++i) {
                     pixels[i] = PixelInfo{
@@ -255,19 +214,16 @@ namespace gb {
 
         if ((lcd_control_ & LCDControlFlags::OBJ_ENABLE) && !objects_to_draw_.empty()) {
             size_t discarded_start = 0;
-            for (size_t i = 0;
-                 i < objects_to_draw_.size() && objects_to_draw_[i].x <= current_x_ + 8; ++i) {
+            for (size_t i = 0; i < objects_to_draw_.size() && objects_to_draw_[i].x <= current_x_ + 8; ++i) {
 
                 ObjectAttributes obj = objects_to_draw_[i];
 
                 uint8_t size = lcd_control_ & LCDControlFlags::OBJ_SIZE ? 16 : 8;
-                uint8_t row =
-                    obj.flip_y ? size - (current_y_ + 16 - obj.y) : (current_y_ + 16 - obj.y);
+                uint8_t row = obj.flip_y ? size - (current_y_ + 16 - obj.y) : (current_y_ + 16 - obj.y);
                 // address can overflow into the next tile since sprites can be two tiles tall
                 // current_y_ >= obj.y
                 uint16_t tile_addr = uint16_t(obj.tile_idx) * 0x10 + row * 2;
-                std::array<GBColor, 8> obj_pixels =
-                    decodeTileRow(vram_[tile_addr], vram_[tile_addr + 1]);
+                std::array<GBColor, 8> obj_pixels = decodeTileRow(vram_[tile_addr], vram_[tile_addr + 1]);
 
                 if (obj.flip_x) {
                     // reverse the array
@@ -282,8 +238,7 @@ namespace gb {
                     if (obj_pixels[pixels_start + i] == GBColor::WHITE) {
                         // transparent pixel
                         continue;
-                    } else if ((pixels[i].palette == Palette::OBP0 ||
-                                pixels[i].palette == Palette::OBP1) &&
+                    } else if ((pixels[i].palette == Palette::OBP0 || pixels[i].palette == Palette::OBP1) &&
                                pixels[i].color_idx != GBColor::WHITE) {
                         // do not overwrite already drawn objs
                         continue;
@@ -296,8 +251,7 @@ namespace gb {
                     pixels[i] = PixelInfo{
                         .color_idx = obj_pixels[pixels_start + i],
                         .palette = obj.use_object_palette1 ? Palette::OBP1 : Palette::OBP0,
-                        .default_color =
-                            getSpriteColor(obj_pixels[pixels_start + i], obj.use_object_palette1),
+                        .default_color = getSpriteColor(obj_pixels[pixels_start + i], obj.use_object_palette1),
                     };
                 }
 
@@ -321,13 +275,11 @@ namespace gb {
     std::array<GBColor, 8> PPU::getTileRow(uint16_t tilemap_base, uint8_t x, uint8_t y) {
         uint16_t tile_y = y / 8;
         uint16_t tile_x = x / 8;
-        uint8_t tile_id =
-            vram_[(tilemap_base + (tile_y * 32 + tile_x)) - g_memory_vram.min_address];
+        uint8_t tile_id = vram_[(tilemap_base + (tile_y * 32 + tile_x)) - g_memory_vram.min_address];
 
         uint16_t tile_address = 0;
         if (lcd_control_ & LCDControlFlags::BG_TILE_AREA) {
-            tile_address =
-                uint16_t(int(g_second_tile_data_block_offset) + int(int8_t(tile_id)) * 0x10);
+            tile_address = uint16_t(int(g_second_tile_data_block_offset) + int(int8_t(tile_id)) * 0x10);
         } else {
             tile_address = g_memory_vram.min_address + uint16_t(tile_id) * 0x10;
         }
@@ -337,9 +289,7 @@ namespace gb {
                              vram_[tile_address + 1 - g_memory_vram.min_address]);
     }
 
-    GBColor PPU ::getBGColor(GBColor color_idx) {
-        return GBColor((bg_palette_ >> uint8_t(color_idx) * 2) & 0b11);
-    }
+    GBColor PPU ::getBGColor(GBColor color_idx) { return GBColor((bg_palette_ >> uint8_t(color_idx) * 2) & 0b11); }
 
     GBColor PPU ::getSpriteColor(GBColor color_idx, bool use_obp1) {
         if (use_obp1) {

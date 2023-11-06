@@ -33,9 +33,8 @@ namespace emulator {
                                                       "H: ff, L: ff, HL: ffff\n"
                                                       "SP: ffff, PC: ffff");
 
-    constexpr size_t g_instruction_string_buf_size =
-        sizeof("ffff CALL nz, ffff##111"); // ##111 is needed to accomodate for
-                                           // Dear ImGui ids
+    constexpr size_t g_instruction_string_buf_size = sizeof("ffff CALL nz, ffff##111"); // ##111 is needed to accomodate
+                                                                                        // for Dear ImGui ids
 
     constexpr std::string_view g_rom_extension = ".gb";
 
@@ -102,6 +101,7 @@ namespace emulator {
         bool is_running_ = true;
         bool gui_init_ = false;
         bool single_step_ = true;
+        bool frame_finished_ = false;
 
         int refresh_rate_ = 60;
     };

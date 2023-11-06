@@ -15,12 +15,11 @@
 
 namespace gb::cpu {
 
-    inline const std::unordered_map<InterruptFlags, uint16_t> g_interrupt_vectors = {
-        {InterruptFlags::VBLANK, 0x0040},
-        {InterruptFlags::LCD_STAT, 0x0048},
-        {InterruptFlags::TIMER, 0x0050},
-        {InterruptFlags::SERIAL, 0x0058},
-        {InterruptFlags::JOYPAD, 0x0060}};
+    inline const std::unordered_map<InterruptFlags, uint16_t> g_interrupt_vectors = {{InterruptFlags::VBLANK, 0x0040},
+                                                                                     {InterruptFlags::LCD_STAT, 0x0048},
+                                                                                     {InterruptFlags::TIMER, 0x0050},
+                                                                                     {InterruptFlags::SERIAL, 0x0058},
+                                                                                     {InterruptFlags::JOYPAD, 0x0060}};
 
     struct Instruction {
         using Argument = Variant<std::monostate, Registers, int8_t, uint8_t, uint16_t>;
@@ -90,7 +89,7 @@ namespace gb::cpu {
     };
     class SharpSM83 {
       public:
-        SharpSM83(AddressBus &bus);
+        SharpSM83(AddressBus &bus, InterruptRegister &interrupt_enable, InterruptRegister &interrupt_flags);
 
         void tick();
 
@@ -200,6 +199,8 @@ namespace gb::cpu {
 
       private:
         AddressBus &bus_;
+        InterruptRegister &ie_;
+        InterruptRegister &if_;
 
         RegisterFile reg_;
         uint8_t cycles_to_finish_ = 0;

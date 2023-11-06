@@ -4,6 +4,8 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
+
 namespace renderer {
 
     constexpr size_t g_bytes_per_pixel = 3;
@@ -27,7 +29,7 @@ namespace renderer {
 
     class Renderer : public gb::IRenderer {
       public:
-        Renderer();
+        Renderer(std::function<void()> &&callback);
 
         void drawPixels(size_t x, size_t y, std::span<gb::PixelInfo> color) noexcept override;
         void finishFrame() noexcept override;
@@ -36,7 +38,8 @@ namespace renderer {
         void setPixel(size_t base_idx, Color color);
 
         std::optional<Palette> palette_;
-        std::array<uint8_t, gb::g_screen_width * gb::g_screen_height * g_bytes_per_pixel> image_;
+        std::function<void()> callback_;
+        std::array<uint8_t, gb::g_screen_width * gb::g_screen_height * g_bytes_per_pixel> image_{};
         uint64_t texture_id_ = 0;
     };
 } // namespace renderer

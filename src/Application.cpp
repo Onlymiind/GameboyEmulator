@@ -38,8 +38,8 @@ namespace emulator {
         ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize);
 
         ImGui::Begin("name", nullptr,
-                     ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar |
-                         ImGuiWindowFlags_NoMove | ImGuiWindowFlags_MenuBar);
+                     ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove |
+                         ImGuiWindowFlags_MenuBar);
         drawMainMenu();
 
         ImGui::BeginTable("##table", 2);
@@ -99,7 +99,7 @@ namespace emulator {
                                ImGuiInputTextFlags_EnterReturnsTrue)) {
             for (uint64_t i = 0; i < instr; ++i) {
                 update();
-                while (!emulator_.terminated() && !emulator_.instructionFinished()) {
+                while (!emulator_.terminated() && !emulator_.getCPU().isFinished()) {
                     update();
                 }
             }
@@ -135,8 +135,7 @@ namespace emulator {
 
             if (ImGui::BeginMenu("Change ROM Directory")) {
 
-                if (ImGui::InputText("###newdir", &new_romdir_,
-                                     ImGuiInputTextFlags_EnterReturnsTrue)) {
+                if (ImGui::InputText("###newdir", &new_romdir_, ImGuiInputTextFlags_EnterReturnsTrue)) {
                     if (!setROMDirectory()) {
                         std::cout << "failed to change ROM directory\n";
                     }
@@ -196,9 +195,8 @@ namespace emulator {
     void Application::drawBreakpointMenu() {
         uint16_t pc_break = 0;
         ImGui::TextUnformatted("Add PC breakpoint:");
-        if (ImGui::InputScalar(
-                "##Add PC breakpoint input", ImGuiDataType_U16, &pc_break, nullptr, nullptr, "%.4x",
-                ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_EnterReturnsTrue)) {
+        if (ImGui::InputScalar("##Add PC breakpoint input", ImGuiDataType_U16, &pc_break, nullptr, nullptr, "%.4x",
+                               ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_EnterReturnsTrue)) {
             addPCBreakpoint(pc_break);
         }
         {
@@ -218,8 +216,8 @@ namespace emulator {
         }
 
         ImGui::TextUnformatted("Add memory breakpoint:");
-        ImGui::InputScalar("##address", ImGuiDataType_U16, &memory_breakpoint_data_.address,
-                           nullptr, nullptr, "%.4x", ImGuiInputTextFlags_CharsHexadecimal);
+        ImGui::InputScalar("##address", ImGuiDataType_U16, &memory_breakpoint_data_.address, nullptr, nullptr, "%.4x",
+                           ImGuiInputTextFlags_CharsHexadecimal);
         if (ImGui::BeginCombo("Break on:", to_string(memory_breakpoint_data_.break_on).data())) {
             if (ImGui::Selectable(to_string(MemoryBreakpointData::BreakOn::ALWAYS).data())) {
                 memory_breakpoint_data_.break_on = MemoryBreakpointData::BreakOn::ALWAYS;
@@ -311,14 +309,13 @@ namespace emulator {
     }
 
     void Application::drawMemoryRegion(gb::MemoryObjectType region) {
-        constexpr std::string_view row_fmt =
-            "0x%.4x: %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x "
-            "%.2x %.2x %.2x %.2x %.2x";
+        constexpr std::string_view row_fmt = "0x%.4x: %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x "
+                                             "%.2x %.2x %.2x %.2x %.2x";
 
         gb::MemoryObjectInfo info = gb::objectTypeToInfo(region);
         uint16_t len = info.max_address - info.min_address + 1;
-        if ((region == gb::MemoryObjectType::ROM && !emulator_.hasROM()) ||
-            (region == gb::MemoryObjectType::CARTRIDGE_RAM && !emulator_.hasCartridgeRAM())) {
+        if ((region == gb::MemoryObjectType::ROM && !emulator_.getCartridge().hasROM()) ||
+            (region == gb::MemoryObjectType::CARTRIDGE_RAM && !emulator_.getCartridge().hasRAM())) {
             len = 0;
         }
         uint16_t i = 0;
@@ -375,7 +372,7 @@ namespace emulator {
 
     Application::Application() {
         initGUI();
-        emulator_.setMemoryObserver(memory_breakpoints_);
+        emulator_.getBus().setObserver(memory_breakpoints_);
     }
 
     void Application::run() {
@@ -390,7 +387,7 @@ namespace emulator {
 
             if (single_step_ && ImGui::IsKeyPressed(ImGuiKey_S)) {
                 update();
-                while (!emulator_.instructionFinished()) {
+                while (!emulator_.getCPU().isFinished()) {
                     update();
                 }
             } else if (!single_step_) {
@@ -398,7 +395,7 @@ namespace emulator {
                     update();
                     if (single_step_) {
                         // run current instruction until completion
-                        while (!emulator_.instructionFinished()) {
+                        while (!emulator_.getCPU().isFinished()) {
                             update();
                         }
                         break;
@@ -408,8 +405,7 @@ namespace emulator {
                 ++frame;
                 if (frame == refresh_rate_) {
                     frame = 0;
-                    size_t leftover_updates =
-                        g_cycles_per_second - updates_per_frame * size_t(refresh_rate_);
+                    size_t leftover_updates = g_cycles_per_second - updates_per_frame * size_t(refresh_rate_);
                     for (int i = 0; !emulator_.terminated() && i < leftover_updates; ++i) {
                         update();
                     }
@@ -460,15 +456,14 @@ namespace emulator {
     void Application::update() {
         try {
             emulator_.tick();
-            if (emulator_.instructionFinished()) {
-                gb::cpu::Instruction instr = emulator_.getLastInstruction();
+            if (emulator_.getCPU().isFinished()) {
+                gb::cpu::Instruction instr = emulator_.getCPU().getLastInstruction();
                 recent_instructions_.push_back(instr);
                 // StringBuffer<g_instruction_string_buf_size> buf;
                 // printInstruction(buf, recent_instructions_.size() - 1);
                 // std::cout << buf.data() << '\n';
                 if (!single_step_ &&
-                    std::binary_search(pc_breakpoints_.begin(), pc_breakpoints_.end(),
-                                       instr.registers.pc)) {
+                    std::binary_search(pc_breakpoints_.begin(), pc_breakpoints_.end(), instr.registers.pc)) {
                     single_step_ = true;
                 }
             }
@@ -505,7 +500,7 @@ namespace emulator {
 
         pushRecent(recent_roms_, path);
 
-        emulator_.setROM(std::move(data));
+        emulator_.getCartridge().setROM(std::move(data));
         emulator_.reset();
         emulator_.start();
 
@@ -522,8 +517,7 @@ namespace emulator {
         memory_breakpoint_data_ = MemoryBreakpointData{};
     }
 
-    void Application::printInstruction(StaticStringBuffer<g_instruction_string_buf_size> &buf,
-                                       size_t idx) {
+    void Application::printInstruction(StaticStringBuffer<g_instruction_string_buf_size> &buf, size_t idx) {
         using namespace gb::cpu;
         auto &instr = recent_instructions_[idx];
         std::stringstream out;
@@ -540,14 +534,11 @@ namespace emulator {
             } else if (arg.is<Registers>()) {
                 out << ' ' << to_string(arg.get<Registers>());
             } else if (arg.is<int8_t>()) {
-                out << std::setw(0) << std::dec << ' ' << (arg.get<int8_t>() > 0 ? "+" : "")
-                    << +arg.get<int8_t>();
+                out << std::setw(0) << std::dec << ' ' << (arg.get<int8_t>() > 0 ? "+" : "") << +arg.get<int8_t>();
             } else if (arg.is<uint8_t>()) {
-                out << ' ' << std::setw(2) << std::setfill('0') << std::hex
-                    << int(arg.get<uint8_t>());
+                out << ' ' << std::setw(2) << std::setfill('0') << std::hex << int(arg.get<uint8_t>());
             } else if (arg.is<uint16_t>()) {
-                out << ' ' << std::setw(4) << std::setfill('0') << std::hex
-                    << int(arg.get<uint16_t>());
+                out << ' ' << std::setw(4) << std::setfill('0') << std::hex << int(arg.get<uint16_t>());
             }
         };
 

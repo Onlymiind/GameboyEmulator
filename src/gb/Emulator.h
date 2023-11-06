@@ -6,6 +6,7 @@
 #include "gb/cpu/CPUUtils.h"
 #include "gb/cpu/Decoder.h"
 #include "gb/memory/BasicComponents.h"
+#include "gb/ppu/PPU.h"
 #include "utils/Utils.h"
 
 #include <cstdint>
@@ -19,38 +20,34 @@ namespace gb {
       public:
         Emulator() = default;
 
-        cpu::RegisterFile getRegisters() const { return cpu_.getRegisters(); }
-
-        uint16_t getPC() const { return cpu_.getProgramCounter(); }
-
-        void setMemoryObserver(IMemoryObserver &observer) { bus_.setObserver(observer); }
-        void removeMemoryObserver() { bus_.removeObserver(); }
-
         void tick();
 
         bool terminated() const { return !is_running_; }
 
         void reset() { cpu_.reset(); }
 
-        void setROM(std::vector<uint8_t> rom) { bus_.setROMData(std::move(rom)); }
-
         void start() { is_running_ = true; }
 
         void stop() { is_running_ = false; }
 
-        bool instructionFinished() const { return cpu_.isFinished(); }
-        bool isHalted() const { return cpu_.isHalted(); }
-
-        cpu::Instruction getLastInstruction() const { return cpu_.getLastInstruction(); }
-
         uint8_t peekMemory(uint16_t address) { return bus_.read(address); }
 
-        bool hasROM() const { return bus_.hasROM(); }
-        bool hasCartridgeRAM() const { return bus_.hasCartridgeRAM(); }
+        cpu::SharpSM83 &getCPU() { return cpu_; }
+        AddressBus &getBus() { return bus_; }
+        Timer &getTimer() { return timer_; }
+        Cartridge &getCartridge() { return cartridge_; }
+        PPU &getPPU() { return ppu_; }
+        InterruptRegister &getIE() { return ie_; }
+        InterruptRegister &getIF() { return if_; }
 
       private:
-        AddressBus bus_;
-        cpu::SharpSM83 cpu_{bus_};
+        Cartridge cartridge_;
+        InterruptRegister ie_;
+        InterruptRegister if_;
+        Timer timer_{if_};
+        PPU ppu_{if_};
+        AddressBus bus_{cartridge_, ppu_, timer_, ie_, if_};
+        cpu::SharpSM83 cpu_{bus_, ie_, if_};
 
         bool is_running_ = false;
     };

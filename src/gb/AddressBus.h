@@ -2,6 +2,7 @@
 #include "gb/InterruptRegister.h"
 #include "gb/Timer.h"
 #include "gb/memory/BasicComponents.h"
+#include "gb/ppu/PPU.h"
 
 #include <cstdint>
 #include <string>
@@ -15,21 +16,16 @@ namespace gb {
         virtual uint16_t minAddress() const noexcept = 0;
         virtual uint16_t maxAddress() const noexcept = 0;
 
-        bool isInRange(uint16_t address) const {
-            return address >= minAddress() && address <= maxAddress();
-        }
+        bool isInRange(uint16_t address) const { return address >= minAddress() && address <= maxAddress(); }
 
       protected:
         ~IMemoryObserver() = default;
     };
 
     constexpr MemoryObjectInfo g_memory_rom = {.min_address = 0x0000, .max_address = 0x7FFF};
-    constexpr MemoryObjectInfo g_memory_vram = {.min_address = 0x8000, .max_address = 0x9fff};
-    constexpr MemoryObjectInfo g_memory_cartridge_ram = {.min_address = 0xa000,
-                                                         .max_address = 0xbfff};
+    constexpr MemoryObjectInfo g_memory_cartridge_ram = {.min_address = 0xa000, .max_address = 0xbfff};
     constexpr MemoryObjectInfo g_memory_wram = {.min_address = 0xc000, .max_address = 0xdfff};
     constexpr MemoryObjectInfo g_memory_mirror = {.min_address = 0xe000, .max_address = 0xfdff};
-    constexpr MemoryObjectInfo g_memory_oam = {.min_address = 0xe000, .max_address = 0xfe9f};
     constexpr MemoryObjectInfo g_memory_forbidden = {.min_address = 0xfea0, .max_address = 0xfeff};
     constexpr MemoryObjectInfo g_memory_io_unused = {.min_address = 0xff00, .max_address = 0xff03};
     constexpr MemoryObjectInfo g_memory_timer = {.min_address = 0xFF04, .max_address = 0xFF07};
@@ -42,49 +38,35 @@ namespace gb {
     constexpr MemoryObjectInfo objectTypeToInfo(MemoryObjectType type) {
         using enum MemoryObjectType;
         switch (type) {
-        case ROM:
-            return g_memory_rom;
-        case VRAM:
-            return g_memory_vram;
-        case CARTRIDGE_RAM:
-            return g_memory_cartridge_ram;
-        case WRAM:
-            return g_memory_wram;
-        case OAM:
-            return g_memory_oam;
+        case ROM: return g_memory_rom;
+        case VRAM: return g_memory_vram;
+        case CARTRIDGE_RAM: return g_memory_cartridge_ram;
+        case WRAM: return g_memory_wram;
+        case OAM: return g_memory_oam;
         case IO:
             return MemoryObjectInfo{.min_address = g_memory_io_unused.min_address,
                                     .max_address = g_memory_io_unused3.max_address};
-        case HRAM:
-            return g_memory_hram;
-        case IE:
-            return MemoryObjectInfo{g_interrupt_enable_address, g_interrupt_enable_address};
-        default:
-            return MemoryObjectInfo{};
+        case HRAM: return g_memory_hram;
+        case IE: return MemoryObjectInfo{g_interrupt_enable_address, g_interrupt_enable_address};
+        default: return MemoryObjectInfo{};
         }
     }
 
     class AddressBus {
       public:
-        AddressBus() = default;
+        AddressBus(Cartridge &cartridge, PPU &ppu, Timer &timer, InterruptRegister &interrupt_enable,
+                   InterruptRegister &interrupt_flags)
+            : cartridge_(cartridge), interrupt_enable_(interrupt_enable), interrupt_flags_(interrupt_flags),
+              timer_(timer), ppu_(ppu) {}
 
         void setROMData(std::vector<uint8_t> data) { cartridge_.setROM(std::move(data)); }
         void update() { timer_.update(); }
-
-        bool hasROM() const { return cartridge_.hasROM(); };
-        bool hasCartridgeRAM() const { return cartridge_.hasRAM(); }
 
         void setObserver(IMemoryObserver &observer) { observer_ = &observer; }
         void removeObserver() { observer_ = nullptr; }
 
         uint8_t read(uint16_t address) const;
         void write(uint16_t address, uint8_t data);
-
-        InterruptRegister &getInterruptFlags() { return interrupt_flags_; }
-        InterruptRegister &getInterruptEnable() { return interrupt_enable_; }
-
-        const InterruptRegister &getInterruptFlags() const { return interrupt_flags_; }
-        const InterruptRegister &getInterruptEnable() const { return interrupt_enable_; }
 
       private:
         std::string getErrorDescription(uint16_t address, int value = -1) const;
@@ -100,10 +82,11 @@ namespace gb {
         RAM<g_memory_io_unused3.size> unused_io3_{};
 
         RAM<g_memory_hram.size> hram_{};
-        Cartridge cartridge_;
-        InterruptRegister interrupt_enable_;
-        InterruptRegister interrupt_flags_;
-        Timer timer_{interrupt_flags_};
+        Cartridge &cartridge_;
+        InterruptRegister &interrupt_enable_;
+        InterruptRegister &interrupt_flags_;
+        Timer &timer_;
+        PPU &ppu_;
 
         uint8_t data_ = 0;
     };
