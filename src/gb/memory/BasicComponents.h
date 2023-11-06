@@ -25,15 +25,14 @@ namespace gb {
         std::vector<uint8_t> ram_;
     };
 
-    template <size_t SIZE> using RAM = std::array<uint8_t, SIZE>;
+    template <size_t SIZE>
+    using RAM = std::array<uint8_t, SIZE>;
 
     struct MemoryObjectInfo {
         uint16_t min_address = 0;
         uint16_t max_address = 0;
         uint16_t size = static_cast<uint16_t>(max_address - min_address + 1);
 
-        constexpr bool isInRange(uint16_t address) const {
-            return address >= min_address && address <= max_address;
-        }
+        constexpr bool isInRange(uint16_t address) const { return address >= min_address && address <= max_address; }
     };
 } // namespace gb

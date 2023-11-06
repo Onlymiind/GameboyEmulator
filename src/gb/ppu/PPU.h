@@ -66,17 +66,11 @@ namespace gb {
         PRIORITY = setBit(7)
     };
 
-    constexpr inline uint8_t operator&(uint8_t value, LCDControlFlags flags) {
-        return value & uint8_t(flags);
-    }
+    constexpr inline uint8_t operator&(uint8_t value, LCDControlFlags flags) { return value & uint8_t(flags); }
 
-    constexpr inline uint8_t operator&(uint8_t value, PPUInterruptSelectFlags flags) {
-        return value & uint8_t(flags);
-    }
+    constexpr inline uint8_t operator&(uint8_t value, PPUInterruptSelectFlags flags) { return value & uint8_t(flags); }
 
-    constexpr inline uint8_t operator&(uint8_t value, ObjectAttribbutesFlags flags) {
-        return value & uint8_t(flags);
-    }
+    constexpr inline uint8_t operator&(uint8_t value, ObjectAttribbutesFlags flags) { return value & uint8_t(flags); }
 
     struct ObjectAttributes {
         // y posiytion + 16
@@ -176,8 +170,7 @@ namespace gb {
         return result;
     }
 
-    constexpr inline ObjectAttributes decodeObjectAttributes(std::span<uint8_t, 4> raw,
-                                                             bool double_height) {
+    constexpr inline ObjectAttributes decodeObjectAttributes(std::span<uint8_t, 4> raw, bool double_height) {
         ObjectAttributes result{.y = raw[1], .x = raw[0], .tile_idx = raw[2]};
         if (double_height) {
             result.tile_idx &= 0xFE;

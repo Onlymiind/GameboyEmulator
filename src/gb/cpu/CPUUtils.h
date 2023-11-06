@@ -72,18 +72,10 @@ namespace gb::cpu {
         uint16_t &DE() { return *(std::bit_cast<uint16_t *>(&registers_[size_t(Registers::E)])); }
         uint16_t &HL() { return *(std::bit_cast<uint16_t *>(&registers_[size_t(Registers::L)])); }
 
-        const uint16_t &AF() const {
-            return *(std::bit_cast<const uint16_t *>(&registers_[g_flags]));
-        }
-        const uint16_t &BC() const {
-            return *(std::bit_cast<const uint16_t *>(&registers_[size_t(Registers::C)]));
-        }
-        const uint16_t &DE() const {
-            return *(std::bit_cast<const uint16_t *>(&registers_[size_t(Registers::E)]));
-        }
-        const uint16_t &HL() const {
-            return *(std::bit_cast<const uint16_t *>(&registers_[size_t(Registers::L)]));
-        }
+        const uint16_t &AF() const { return *(std::bit_cast<const uint16_t *>(&registers_[g_flags])); }
+        const uint16_t &BC() const { return *(std::bit_cast<const uint16_t *>(&registers_[size_t(Registers::C)])); }
+        const uint16_t &DE() const { return *(std::bit_cast<const uint16_t *>(&registers_[size_t(Registers::E)])); }
+        const uint16_t &HL() const { return *(std::bit_cast<const uint16_t *>(&registers_[size_t(Registers::L)])); }
 
         void setFlag(Flags flag, bool value) {
             registers_[g_flags] &= ~uint8_t(flag);
@@ -101,19 +93,11 @@ namespace gb::cpu {
         alignas(uint16_t) std::array<uint8_t, 8> registers_;
     };
 
-    inline bool carried(uint8_t lhs, uint8_t rhs) {
-        return (std::numeric_limits<uint8_t>::max() - rhs) < lhs;
-    }
+    inline bool carried(uint8_t lhs, uint8_t rhs) { return (std::numeric_limits<uint8_t>::max() - rhs) < lhs; }
     inline bool borrowed(uint8_t lhs, uint8_t rhs) { return lhs < rhs; }
-    inline bool carried(uint16_t lhs, uint16_t rhs) {
-        return (std::numeric_limits<uint16_t>::max() - rhs) < lhs;
-    }
+    inline bool carried(uint16_t lhs, uint16_t rhs) { return (std::numeric_limits<uint16_t>::max() - rhs) < lhs; }
 
-    inline bool halfCarried(uint8_t lhs, uint8_t rhs) {
-        return ((lhs & 0x0F) + (rhs & 0x0F)) > 0x0F;
-    }
+    inline bool halfCarried(uint8_t lhs, uint8_t rhs) { return ((lhs & 0x0F) + (rhs & 0x0F)) > 0x0F; }
     inline bool halfBorrowed(uint8_t lhs, uint8_t rhs) { return (lhs & 0x0F) < (rhs & 0x0F); }
-    inline bool halfCarried(uint16_t rhs, uint16_t lhs) {
-        return ((lhs & 0x0FFF) + (rhs & 0x0FFF)) > 0x0FFF;
-    }
+    inline bool halfCarried(uint16_t rhs, uint16_t lhs) { return ((lhs & 0x0FFF) + (rhs & 0x0FFF)) > 0x0FFF; }
 } // namespace gb::cpu

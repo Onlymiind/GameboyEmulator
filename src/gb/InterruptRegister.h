@@ -20,9 +20,7 @@ namespace gb {
 
         inline uint8_t read(uint16_t address) const { return interrupts_; }
 
-        inline void write(uint16_t address, uint8_t data) {
-            interrupts_ = (g_unused_interrupt_bits | (data & 0x1F));
-        }
+        inline void write(uint16_t address, uint8_t data) { interrupts_ = (g_unused_interrupt_bits | (data & 0x1F)); }
 
         uint8_t read() const { return interrupts_; }
 

@@ -3,9 +3,8 @@
 #include <iostream>
 
 namespace gb::cpu {
-#define CASE(x)                                                                                    \
-    case ENUM_NAME::x:                                                                             \
-        return #x
+#define CASE(x)                                                                                                        \
+    case ENUM_NAME::x: return #x
 
     std::string_view to_string(InstructionType type) {
 #define ENUM_NAME InstructionType
@@ -75,8 +74,7 @@ namespace gb::cpu {
             CASE(PC);
             CASE(HL);
             CASE(NONE);
-        default:
-            return "";
+        default: return "";
         }
 #undef ENUM_NAME
     }
@@ -84,16 +82,11 @@ namespace gb::cpu {
     std::string_view to_string(Conditions cond) {
         using enum Conditions;
         switch (cond) {
-        case NOT_ZERO:
-            return "nz";
-        case ZERO:
-            return "z";
-        case NOT_CARRY:
-            return "nc";
-        case CARRY:
-            return "c";
-        default:
-            return "";
+        case NOT_ZERO: return "nz";
+        case ZERO: return "z";
+        case NOT_CARRY: return "nc";
+        case CARRY: return "c";
+        default: return "";
         }
     }
 

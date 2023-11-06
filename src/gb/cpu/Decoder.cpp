@@ -16,8 +16,7 @@ namespace gb::cpu {
     using Reg = Registers;
 
     static constexpr void setRegisterInfo(uint8_t register_index, ArgumentInfo &register_info);
-    static constexpr void setALUInfo(Opcode code, DecodedInstruction &instruction,
-                                     bool has_immediate);
+    static constexpr void setALUInfo(Opcode code, DecodedInstruction &instruction, bool has_immediate);
 
     consteval DecodedInstruction dec(Registers reg, bool double_reg = false) {
         DecodedInstruction instr{.type = Type::DEC};
@@ -74,13 +73,11 @@ namespace gb::cpu {
     }
 
     consteval DecodedInstruction push(Registers reg) {
-        return DecodedInstruction{.src = ArgumentInfo{.src = ArgSrc::DOUBLE_REGISTER, .reg = reg},
-                                  .type = Type::PUSH};
+        return DecodedInstruction{.src = ArgumentInfo{.src = ArgSrc::DOUBLE_REGISTER, .reg = reg}, .type = Type::PUSH};
     }
 
     consteval DecodedInstruction pop(Registers reg) {
-        return DecodedInstruction{.dst = ArgumentInfo{.src = ArgSrc::DOUBLE_REGISTER, .reg = reg},
-                                  .type = Type::POP};
+        return DecodedInstruction{.dst = ArgumentInfo{.src = ArgSrc::DOUBLE_REGISTER, .reg = reg}, .type = Type::POP};
     }
 
     consteval DecodedInstruction add16(Registers reg, bool add_to_sp = false) {
@@ -96,12 +93,11 @@ namespace gb::cpu {
     }
 
     consteval DecodedInstruction ldImm8(Registers reg) {
-        return DecodedInstruction{
-            .ld_subtype = LoadSubtype::TYPICAL,
-            .src = ArgumentInfo{.src = ArgSrc::IMMEDIATE_U8},
-            .dst = ArgumentInfo{.src = reg == Registers::HL ? ArgSrc::INDIRECT : ArgSrc::REGISTER,
-                                .reg = reg},
-            .type = Type::LD};
+        return DecodedInstruction{.ld_subtype = LoadSubtype::TYPICAL,
+                                  .src = ArgumentInfo{.src = ArgSrc::IMMEDIATE_U8},
+                                  .dst = ArgumentInfo{.src = reg == Registers::HL ? ArgSrc::INDIRECT : ArgSrc::REGISTER,
+                                                      .reg = reg},
+                                  .type = Type::LD};
     }
 
     consteval DecodedInstruction ldIndirectA(Registers reg, bool load_from_a, bool dec_hl = false,
@@ -141,8 +137,8 @@ namespace gb::cpu {
         return instr;
     }
 
-    consteval DecodedInstruction ld16(Registers reg, bool ld_sp_hl = false,
-                                      bool ld_offset_sp = false, bool ld_sp_indirect = false) {
+    consteval DecodedInstruction ld16(Registers reg, bool ld_sp_hl = false, bool ld_offset_sp = false,
+                                      bool ld_sp_indirect = false) {
         DecodedInstruction instr{.ld_subtype = LoadSubtype::TYPICAL, .type = Type::LD};
         if (ld_sp_hl) {
             instr.dst = ArgumentInfo{.src = ArgSrc::DOUBLE_REGISTER, .reg = Registers::SP};
@@ -163,8 +159,7 @@ namespace gb::cpu {
         return instr;
     }
 
-    consteval DecodedInstruction ret(std::optional<Conditions> condition = {},
-                                     bool is_reti = false) {
+    consteval DecodedInstruction ret(std::optional<Conditions> condition = {}, bool is_reti = false) {
         DecodedInstruction instr{.type = is_reti ? Type::RETI : Type::RET};
         instr.condition = condition;
         return instr;
@@ -313,41 +308,37 @@ namespace gb::cpu {
 
     constexpr size_t i = sizeof(g_bottom_instructions);
 
-    constexpr std::array<Registers, 8> g_byte_registers = {
-        Registers::B, Registers::C, Registers::D,  Registers::E,
-        Registers::H, Registers::L, Registers::HL, Registers::A};
+    constexpr std::array<Registers, 8> g_byte_registers = {Registers::B, Registers::C, Registers::D,  Registers::E,
+                                                           Registers::H, Registers::L, Registers::HL, Registers::A};
 
     // Register pair lookup with SP
-    constexpr std::array<Registers, 4> g_word_registers_sp = {Registers::BC, Registers::DE,
-                                                              Registers::HL, Registers::SP};
+    constexpr std::array<Registers, 4> g_word_registers_sp = {Registers::BC, Registers::DE, Registers::HL,
+                                                              Registers::SP};
 
     // Register pair lookup with AF
-    constexpr std::array<Registers, 4> g_word_registers_af = {Registers::BC, Registers::DE,
-                                                              Registers::HL, Registers::AF};
+    constexpr std::array<Registers, 4> g_word_registers_af = {Registers::BC, Registers::DE, Registers::HL,
+                                                              Registers::AF};
 
     // Conditions lookup
-    constexpr std::array<Conditions, 4> g_conditions = {Conditions::NOT_ZERO, Conditions::ZERO,
-                                                        Conditions::NOT_CARRY, Conditions::CARRY};
+    constexpr std::array<Conditions, 4> g_conditions = {Conditions::NOT_ZERO, Conditions::ZERO, Conditions::NOT_CARRY,
+                                                        Conditions::CARRY};
 
-    constexpr std::array<InstructionType, 8> g_alu = {
-        InstructionType::ADD, InstructionType::ADC, InstructionType::SUB, InstructionType::SBC,
-        InstructionType::AND, InstructionType::XOR, InstructionType::OR,  InstructionType::CP};
+    constexpr std::array<InstructionType, 8> g_alu = {InstructionType::ADD, InstructionType::ADC, InstructionType::SUB,
+                                                      InstructionType::SBC, InstructionType::AND, InstructionType::XOR,
+                                                      InstructionType::OR,  InstructionType::CP};
 
-    constexpr std::array<InstructionType, 8> g_bit_operations = {
-        InstructionType::RLC, InstructionType::RRC, InstructionType::RL,   InstructionType::RR,
-        InstructionType::SLA, InstructionType::SRA, InstructionType::SWAP, InstructionType::SRL};
+    constexpr std::array<InstructionType, 8> g_bit_operations = {InstructionType::RLC,  InstructionType::RRC,
+                                                                 InstructionType::RL,   InstructionType::RR,
+                                                                 InstructionType::SLA,  InstructionType::SRA,
+                                                                 InstructionType::SWAP, InstructionType::SRL};
 
-    consteval uint8_t getColumnID(uint8_t quarter, uint8_t column) {
-        return (quarter << 6) | column;
-    }
+    consteval uint8_t getColumnID(uint8_t quarter, uint8_t column) { return (quarter << 6) | column; }
 
     DecodedInstruction decodeUnprefixed(Opcode code) {
         DecodedInstruction result;
 
         switch (code.getX()) {
-        case 0:
-            result = g_top_instructions[code.code];
-            break;
+        case 0: result = g_top_instructions[code.code]; break;
         case 1:
             if (code.getZ() == 6 && code.getY() == 6) {
                 result.type = Type::HALT;
@@ -358,9 +349,7 @@ namespace gb::cpu {
                 setRegisterInfo(code.getZ(), result.src);
             }
             break;
-        case 2:
-            setALUInfo(code, result, false);
-            break;
+        case 2: setALUInfo(code, result, false); break;
         case 3:
             if (code.getZ() == 6) {
                 setALUInfo(code, result, true);
@@ -381,9 +370,7 @@ namespace gb::cpu {
         DecodedInstruction result;
 
         switch (code.getX()) {
-        case 0:
-            result.type = g_bit_operations[code.getY()];
-            break;
+        case 0: result.type = g_bit_operations[code.getY()]; break;
         case 1:
             result.type = Type::BIT;
             result.bit = code.getY();
@@ -405,8 +392,7 @@ namespace gb::cpu {
 
     constexpr void setRegisterInfo(uint8_t register_index, ArgumentInfo &register_info) {
         register_info.reg = g_byte_registers[register_index];
-        register_info.src = register_info.reg == Registers::HL ? ArgumentSource::INDIRECT
-                                                               : ArgumentSource::REGISTER;
+        register_info.src = register_info.reg == Registers::HL ? ArgumentSource::INDIRECT : ArgumentSource::REGISTER;
     }
 
     constexpr void setALUInfo(Opcode code, DecodedInstruction &instruction, bool has_immediate) {

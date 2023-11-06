@@ -92,9 +92,7 @@ namespace gb::cpu {
         HIGH_REG_MASK = 0xF0
     };
 
-    constexpr inline uint8_t operator&(Registers lhs, Registers rhs) {
-        return uint8_t(lhs) & uint8_t(rhs);
-    }
+    constexpr inline uint8_t operator&(Registers lhs, Registers rhs) { return uint8_t(lhs) & uint8_t(rhs); }
 
     enum class Conditions : uint8_t { NOT_ZERO, ZERO, NOT_CARRY, CARRY };
 
@@ -102,9 +100,7 @@ namespace gb::cpu {
         ArgumentSource src = ArgumentSource::NONE;
         Registers reg = Registers::NONE;
 
-        inline bool operator==(ArgumentInfo other) const {
-            return src == other.src && reg == other.reg;
-        }
+        inline bool operator==(ArgumentInfo other) const { return src == other.src && reg == other.reg; }
     };
 
     struct DecodedInstruction {
@@ -122,9 +118,8 @@ namespace gb::cpu {
 
         // For Debugging
         inline bool operator==(DecodedInstruction other) const {
-            return type == other.type && src == other.src && dst == other.dst &&
-                   condition == other.condition && reset_vector == other.reset_vector &&
-                   ld_subtype == other.ld_subtype && bit == other.bit;
+            return type == other.type && src == other.src && dst == other.dst && condition == other.condition &&
+                   reset_vector == other.reset_vector && ld_subtype == other.ld_subtype && bit == other.bit;
         }
 
         constexpr ArgumentInfo &arg() { return src; }

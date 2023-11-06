@@ -39,9 +39,7 @@ namespace gb::cpu {
                 last_instruction_.dst = dst.reg;
                 return dst.src == ArgumentSource::INDIRECT ? 2 : 1;
             }
-        default:
-            throw std::runtime_error("unreachable");
-            return 0;
+        default: throw std::runtime_error("unreachable"); return 0;
         }
     }
 
@@ -77,8 +75,7 @@ namespace gb::cpu {
             // true if loading from register A, false otherwise
             bool direction = instr.src.reg == Registers::A;
             uint8_t byte = 0;
-            if (instr.src.src == ArgumentSource::IMMEDIATE_U8 ||
-                instr.dst.src == ArgumentSource::IMMEDIATE_U8) {
+            if (instr.src.src == ArgumentSource::IMMEDIATE_U8 || instr.dst.src == ArgumentSource::IMMEDIATE_U8) {
                 // LDH [n], A, LDH A, [n]
                 byte = data_buffer_.get();
             } else { // LDH [C], A, LDH A, [C]
@@ -117,8 +114,7 @@ namespace gb::cpu {
             sheduleWriteWord(address, reg_.sp);
             return 5;
         }
-        default:
-            throw std::invalid_argument("Unknown LD instruction");
+        default: throw std::invalid_argument("Unknown LD instruction");
         }
     }
 
@@ -204,14 +200,12 @@ namespace gb::cpu {
             reg_.setFlag(Z, reg_.A() == 0);
 
             uint8_t cycles = 1;
-            if (instr.src.src == ArgumentSource::IMMEDIATE_U8 ||
-                instr.src.src == ArgumentSource::INDIRECT) {
+            if (instr.src.src == ArgumentSource::IMMEDIATE_U8 || instr.src.src == ArgumentSource::INDIRECT) {
                 ++cycles;
             }
             return cycles;
         }
-        default:
-            throw std::invalid_argument("Unknown ADD instruction");
+        default: throw std::invalid_argument("Unknown ADD instruction");
         }
     }
 
@@ -535,8 +529,7 @@ namespace gb::cpu {
         uint8_t value = getByteRegister(reg);
 
         reg_.setFlag(C, (value & 0x80) != 0);
-        value = (value << 1) | (value >> (sizeof(uint8_t) * CHAR_BIT -
-                                          1)); // (value << n) | (value >> (BIT_COUNT - n))
+        value = (value << 1) | (value >> (sizeof(uint8_t) * CHAR_BIT - 1)); // (value << n) | (value >> (BIT_COUNT - n))
         reg_.setFlag(Z, value == 0);
         setByteRegister(reg, value);
         return reg == Registers::HL ? 4 : 2;
@@ -547,8 +540,7 @@ namespace gb::cpu {
         uint8_t value = getByteRegister(reg);
 
         reg_.setFlag(C, (value & 0x01) != 0);
-        value = (value >> 1) | (value << (sizeof(uint8_t) * CHAR_BIT -
-                                          1)); // (value >> n) | (value << (BIT_COUNT - n))
+        value = (value >> 1) | (value << (sizeof(uint8_t) * CHAR_BIT - 1)); // (value >> n) | (value << (BIT_COUNT - n))
         reg_.setFlag(Z, value == 0);
         setByteRegister(reg, value);
         return reg == Registers::HL ? 4 : 2;

@@ -12,20 +12,17 @@ TEST_CASE("interrupt register") {
 
     reg.setFlag(gb::InterruptFlags::LCD_STAT);
     REQUIRE(reg.read(0x0000) == reg.getFlags());
-    REQUIRE(reg.getFlags() ==
-            (gb::g_unused_interrupt_bits | static_cast<uint8_t>(gb::InterruptFlags::LCD_STAT)));
+    REQUIRE(reg.getFlags() == (gb::g_unused_interrupt_bits | static_cast<uint8_t>(gb::InterruptFlags::LCD_STAT)));
 
     reg.clearFlag(gb::InterruptFlags::LCD_STAT);
     REQUIRE(reg.getFlags() == gb::g_unused_interrupt_bits);
 
-    reg.clearFlag(gb::InterruptFlags::Joypad);
+    reg.clearFlag(gb::InterruptFlags::JOYPAD);
     REQUIRE(reg.getFlags() == gb::g_unused_interrupt_bits);
 
-    reg.write(0x0000,
-              gb::g_unused_interrupt_bits | static_cast<uint8_t>(gb::InterruptFlags::VBlank));
+    reg.write(0x0000, gb::g_unused_interrupt_bits | static_cast<uint8_t>(gb::InterruptFlags::VBLANK));
     REQUIRE(reg.read(0x0000) == reg.getFlags());
-    REQUIRE(reg.getFlags() ==
-            (gb::g_unused_interrupt_bits | static_cast<uint8_t>(gb::InterruptFlags::VBlank)));
+    REQUIRE(reg.getFlags() == (gb::g_unused_interrupt_bits | static_cast<uint8_t>(gb::InterruptFlags::VBLANK)));
 
     reg.write(0x0000, 0x00);
     REQUIRE(reg.getFlags() == gb::g_unused_interrupt_bits);

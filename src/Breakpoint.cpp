@@ -25,12 +25,11 @@ namespace emulator {
             return;
         }
         bool found = false;
-        auto it =
-            std::lower_bound(breakpoints_.begin(), breakpoints_.end(),
-                             MemoryBreakpointData{.address = address,
-                                                  .break_on = MemoryBreakpointData::BreakOn::READ});
-        for (; it != breakpoints_.end() && address == it->address &&
-               it->break_on != MemoryBreakpointData::BreakOn::WRITE;
+        auto it = std::lower_bound(breakpoints_.begin(), breakpoints_.end(),
+                                   MemoryBreakpointData{.address = address,
+                                                        .break_on = MemoryBreakpointData::BreakOn::READ});
+        for (;
+             it != breakpoints_.end() && address == it->address && it->break_on != MemoryBreakpointData::BreakOn::WRITE;
              ++it) {
             if (!it->value || *it->value == data) {
                 found = true;
@@ -48,10 +47,9 @@ namespace emulator {
             return;
         }
         bool found = false;
-        auto it = std::lower_bound(
-            breakpoints_.begin(), breakpoints_.end(),
-            MemoryBreakpointData{.address = address,
-                                 .break_on = MemoryBreakpointData::BreakOn::ALWAYS});
+        auto it = std::lower_bound(breakpoints_.begin(), breakpoints_.end(),
+                                   MemoryBreakpointData{.address = address,
+                                                        .break_on = MemoryBreakpointData::BreakOn::ALWAYS});
         for (; it != breakpoints_.end() && address == it->address; ++it) {
             if (!it->value || *it->value == data) {
                 found = true;

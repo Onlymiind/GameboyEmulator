@@ -34,14 +34,10 @@ namespace emulator {
     constexpr std::string_view to_string(MemoryBreakpointData::BreakOn mode) {
         using enum MemoryBreakpointData::BreakOn;
         switch (mode) {
-        case ALWAYS:
-            return "Always";
-        case READ:
-            return "Read";
-        case WRITE:
-            return "Write";
-        default:
-            return "";
+        case ALWAYS: return "Always";
+        case READ: return "Read";
+        case WRITE: return "Write";
+        default: return "";
         }
     }
 
@@ -50,8 +46,7 @@ namespace emulator {
         MemoryBreakpoints(std::function<void()> &&callback) : callback_(std::move(callback)) {}
 
         void addBreakpoint(MemoryBreakpointData breakpoint) {
-            breakpoints_.insert(
-                std::lower_bound(breakpoints_.begin(), breakpoints_.end(), breakpoint), breakpoint);
+            breakpoints_.insert(std::lower_bound(breakpoints_.begin(), breakpoints_.end(), breakpoint), breakpoint);
         }
 
         void removeBreakpoint(MemoryBreakpointData breakpoint);
