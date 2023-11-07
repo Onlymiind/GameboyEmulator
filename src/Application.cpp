@@ -102,6 +102,7 @@ namespace emulator {
 
         ImGui::NewLine();
         uint64_t instr = 0;
+        ImGui::TextUnformatted("Fast forward (in number of instructions):");
         if (ImGui::InputScalar("##run_instr", ImGuiDataType_U64, &instr, nullptr, nullptr, "%d",
                                ImGuiInputTextFlags_EnterReturnsTrue)) {
             for (uint64_t i = 0; i < instr; ++i) {
