@@ -283,7 +283,7 @@ namespace gb {
         uint8_t tile_id = vram_[(tilemap_base + (tile_y * 32 + tile_x)) - g_memory_vram.min_address];
 
         uint16_t tile_address = 0;
-        if (lcd_control_ & LCDControlFlags::BG_TILE_AREA) {
+        if ((lcd_control_ & LCDControlFlags::BG_TILE_AREA) == 0) {
             tile_address = uint16_t(int(g_second_tile_data_block_offset) + int(int8_t(tile_id)) * 0x10);
         } else {
             tile_address = g_memory_vram.min_address + uint16_t(tile_id) * 0x10;

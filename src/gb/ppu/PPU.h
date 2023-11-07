@@ -14,8 +14,8 @@ namespace gb {
     constexpr MemoryObjectInfo g_memory_ppu_registers = {.min_address = 0xFF40, .max_address = 0xFF4B};
     constexpr uint16_t g_lcd_control_address = 0xFF40;
     constexpr uint16_t g_lcd_status = 0xFF41;
-    constexpr uint16_t g_scroll_x_address = 0xFF42;
-    constexpr uint16_t g_scroll_y_address = 0xFF43;
+    constexpr uint16_t g_scroll_y_address = 0xFF42;
+    constexpr uint16_t g_scroll_x_address = 0xFF43;
     constexpr uint16_t g_lcd_y_address = 0xFF44;
     constexpr uint16_t g_y_compare_address = 0xFF45;
     constexpr uint16_t g_dma_src_address = 0xFF46;
@@ -52,6 +52,9 @@ namespace gb {
         WINDOW_TILE_MAP = setBit(6),
         ENABLE = setBit(7)
     };
+
+    constexpr inline uint8_t operator|(LCDControlFlags lhs, LCDControlFlags rhs) { return uint8_t(lhs) | uint8_t(rhs); }
+    constexpr inline uint8_t operator|(uint8_t lhs, LCDControlFlags rhs) { return lhs | uint8_t(rhs); }
 
     enum class PPUInterruptSelectFlags : uint8_t {
         HBLANK = setBit(3),
@@ -147,7 +150,8 @@ namespace gb {
 
         // memory-mapped registers
         // FIXME: LCD probably should be turned off at startup
-        uint8_t lcd_control_ = uint8_t(LCDControlFlags::ENABLE);
+        uint8_t lcd_control_ = LCDControlFlags::ENABLE | LCDControlFlags::BG_ENABLE | LCDControlFlags::WINDOW_ENABLE |
+                               LCDControlFlags::OBJ_ENABLE;
         uint8_t status_ = 0;
         uint8_t scroll_x_ = 0;
         uint8_t scroll_y_ = 0;
