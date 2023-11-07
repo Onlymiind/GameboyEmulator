@@ -30,20 +30,21 @@ namespace renderer {
         size_t pixel_idx = 0;
         for (size_t i = (y * gb::g_screen_width + x) * 3; pixel_idx < pixels.size() && i + 2 < image_.size();
              i += 3, ++pixel_idx) {
-            switch (pixels[i].palette) {
-            case gb::Palette::BG:
-                setPixel(i, palette_ ? palette_->bg_palette[size_t(pixels[i].color_idx)]
-                                     : g_default_palette[size_t(pixels[i].default_color)]);
-                break;
-            case gb::Palette::OBP0:
-                setPixel(i, palette_ ? palette_->obj_palette0[size_t(pixels[i].color_idx)]
-                                     : g_default_palette[size_t(pixels[i].default_color)]);
-                break;
-            case gb::Palette::OBP1:
-                setPixel(i, palette_ ? palette_->obj_palette1[size_t(pixels[i].color_idx)]
-                                     : g_default_palette[size_t(pixels[i].default_color)]);
-                break;
-            }
+            setPixel(i, g_default_palette[size_t(pixels[pixel_idx].default_color)]);
+            // switch (pixels[i].palette) {
+            // case gb::Palette::BG:
+            //     setPixel(i, palette_ ? palette_->bg_palette[size_t(pixels[i].color_idx)]
+            //                          : g_default_palette[size_t(pixels[i].default_color)]);
+            //     break;
+            // case gb::Palette::OBP0:
+            //     setPixel(i, palette_ ? palette_->obj_palette0[size_t(pixels[i].color_idx)]
+            //                          : g_default_palette[size_t(pixels[i].default_color)]);
+            //     break;
+            // case gb::Palette::OBP1:
+            //     setPixel(i, palette_ ? palette_->obj_palette1[size_t(pixels[i].color_idx)]
+            //                          : g_default_palette[size_t(pixels[i].default_color)]);
+            //     break;
+            // }
         }
     }
 
