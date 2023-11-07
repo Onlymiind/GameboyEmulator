@@ -42,7 +42,7 @@ Tests' source code is located under src/tests directory. To build tests add `-DB
 
 ## Screenshots
 
-![alt text](./screenshot.png)
+![screenshot](screenshot.png)
 
 ## TODO list
 - instr_timing test is currently failing
