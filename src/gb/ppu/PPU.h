@@ -11,6 +11,7 @@ namespace gb {
 
     constexpr MemoryObjectInfo g_memory_vram = {.min_address = 0x8000, .max_address = 0x9fff};
     constexpr MemoryObjectInfo g_memory_oam = {.min_address = 0xe000, .max_address = 0xfe9f};
+    constexpr MemoryObjectInfo g_memory_ppu_registers = {.min_address = 0xFF40, .max_address = 0xFF4B};
     constexpr uint16_t g_lcd_control_address = 0xFF40;
     constexpr uint16_t g_lcd_status = 0xFF41;
     constexpr uint16_t g_scroll_x_address = 0xFF42;
@@ -120,11 +121,13 @@ namespace gb {
         uint8_t read(uint16_t address) const;
         void write(uint16_t address, uint8_t data);
 
-        void tick();
+        void update();
 
         void setRenderer(IRenderer &renderer) { renderer_ = &renderer; }
         void removeRenderer() { renderer_ = nullptr; }
         void renderPixelRow();
+
+        PPUMode getMode() const { return mode_; }
 
       private:
         std::array<GBColor, 8> getTileRow(uint16_t tilemap_base, uint8_t x, uint8_t y);
@@ -144,7 +147,7 @@ namespace gb {
 
         // memory-mapped registers
         // FIXME: LCD probably should be turned off at startup
-        uint8_t lcd_control_ = 0;
+        uint8_t lcd_control_ = uint8_t(LCDControlFlags::ENABLE);
         uint8_t status_ = 0;
         uint8_t scroll_x_ = 0;
         uint8_t scroll_y_ = 0;

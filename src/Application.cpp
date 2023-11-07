@@ -1,5 +1,6 @@
 #include "Application.h"
 #include "Breakpoint.h"
+#include "Renderer.h"
 #include "gb/AddressBus.h"
 #include "gb/Emulator.h"
 #include "gb/Timer.h"
@@ -8,6 +9,7 @@
 #include "gb/cpu/Decoder.h"
 #include "gb/cpu/Operation.h"
 #include "gb/memory/BasicComponents.h"
+#include "gb/ppu/PPU.h"
 #include "utils/Utils.h"
 
 #include "GLFW/glfw3.h"
@@ -24,6 +26,7 @@
 #include <filesystem>
 #include <iomanip>
 #include <ios>
+#include <memory>
 #include <sstream>
 #include <string>
 
@@ -42,7 +45,9 @@ namespace emulator {
                          ImGuiWindowFlags_MenuBar);
         drawMainMenu();
 
-        ImGui::BeginTable("##table", 2);
+        ImGui::BeginTable("##table", 3);
+        ImGui::TableNextColumn();
+        ImGui::Image((void *)emulator_renderer_->getTextureID(), ImVec2{gb::g_screen_width, gb::g_screen_height});
         ImGui::TableNextColumn();
         StaticStringBuffer<g_instruction_string_buf_size> buf;
         for (size_t i = 0; i < recent_instructions_.size(); ++i) {
@@ -426,7 +431,7 @@ namespace emulator {
         }
 
         glfwInit();
-        window_ = glfwCreateWindow(600, 600, "emulator", nullptr, nullptr);
+        window_ = glfwCreateWindow(1000, 1000, "emulator", nullptr, nullptr);
         glfwMakeContextCurrent(window_);
         if (gladLoadGL(glfwGetProcAddress) == 0) {
             std::cout << "failed to load OpenGL" << std::endl;
@@ -441,6 +446,8 @@ namespace emulator {
         ImGui_ImplOpenGL3_Init();
         // TODO: no support for multiple monitors
         refresh_rate_ = glfwGetVideoMode(glfwGetPrimaryMonitor())->refreshRate;
+        emulator_renderer_ = std::make_unique<renderer::Renderer>();
+        emulator_.getPPU().setRenderer(*emulator_renderer_);
         gui_init_ = true;
     }
 

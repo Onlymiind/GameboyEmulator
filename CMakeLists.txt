@@ -76,9 +76,11 @@ if(NOT TESTS_ONLY)
         
         src/Breakpoint.h
         src/Breakpoint.cpp
+        src/Renderer.h
+        src/Renderer.cpp
         src/Application.h
         src/Application.cpp
-        src/Source.cpp
+        src/Main.cpp
     )
 
 

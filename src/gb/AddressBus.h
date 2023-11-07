@@ -27,11 +27,13 @@ namespace gb {
     constexpr MemoryObjectInfo g_memory_wram = {.min_address = 0xc000, .max_address = 0xdfff};
     constexpr MemoryObjectInfo g_memory_mirror = {.min_address = 0xe000, .max_address = 0xfdff};
     constexpr MemoryObjectInfo g_memory_forbidden = {.min_address = 0xfea0, .max_address = 0xfeff};
-    constexpr MemoryObjectInfo g_memory_io_unused = {.min_address = 0xff00, .max_address = 0xff03};
     constexpr MemoryObjectInfo g_memory_timer = {.min_address = 0xFF04, .max_address = 0xFF07};
+    constexpr MemoryObjectInfo g_memory_hram = {.min_address = 0xff80, .max_address = 0xfffe};
+
+    // FIXME: this should eventually be properly mapped
+    constexpr MemoryObjectInfo g_memory_io_unused = {.min_address = 0xff00, .max_address = 0xff03};
     constexpr MemoryObjectInfo g_memory_io_unused2 = {.min_address = 0xff08, .max_address = 0xff0e};
     constexpr MemoryObjectInfo g_memory_io_unused3 = {.min_address = 0xff10, .max_address = 0xff7f};
-    constexpr MemoryObjectInfo g_memory_hram = {.min_address = 0xff80, .max_address = 0xfffe};
 
     enum class MemoryObjectType { ROM, VRAM, CARTRIDGE_RAM, WRAM, OAM, IO, HRAM, IE };
 
@@ -58,9 +60,6 @@ namespace gb {
                    InterruptRegister &interrupt_flags)
             : cartridge_(cartridge), interrupt_enable_(interrupt_enable), interrupt_flags_(interrupt_flags),
               timer_(timer), ppu_(ppu) {}
-
-        void setROMData(std::vector<uint8_t> data) { cartridge_.setROM(std::move(data)); }
-        void update() { timer_.update(); }
 
         void setObserver(IMemoryObserver &observer) { observer_ = &observer; }
         void removeObserver() { observer_ = nullptr; }

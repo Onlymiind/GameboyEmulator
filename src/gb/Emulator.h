@@ -60,7 +60,8 @@ namespace gb {
         try {
             cpu_.tick();
             for (int i = 0; i < 4; ++i) {
-                bus_.update();
+                timer_.update();
+                ppu_.update();
             }
             is_running_ = !cpu_.isStopped();
         } catch (...) {

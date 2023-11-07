@@ -1,6 +1,7 @@
 #include "gb/AddressBus.h"
 #include "gb/InterruptRegister.h"
 #include "gb/memory/BasicComponents.h"
+#include "gb/ppu/PPU.h"
 #include "utils/Utils.h"
 
 #include <algorithm>
@@ -19,7 +20,7 @@ namespace gb {
         if (g_memory_rom.isInRange(address) && cartridge_.hasROM()) {
             data = cartridge_.read(address);
         } else if (g_memory_vram.isInRange(address)) {
-            data = vram_[address - g_memory_vram.min_address];
+            data = ppu_.read(address);
         } else if (g_memory_cartridge_ram.isInRange(address) && cartridge_.hasRAM()) {
             data = cartridge_.read(address);
         } else if (g_memory_wram.isInRange(address)) {
@@ -28,24 +29,26 @@ namespace gb {
             // only lower 13 bits of the address are used
             data = wram_[address & 0x1fff];
         } else if (g_memory_oam.isInRange(address)) {
-            data = oam_[address - g_memory_oam.min_address];
+            data = ppu_.read(address);
         } else if (g_memory_forbidden.isInRange(address)) {
             // TODO: value depends on PPU behaviour
             data = 0xff;
-        } else if (g_memory_io_unused.isInRange(address)) {
-            data = unused_io_[address - g_memory_io_unused.min_address];
-        } else if (g_memory_io_unused2.isInRange(address)) {
-            data = unused_io2_[address - g_memory_io_unused2.min_address];
         } else if (g_memory_timer.isInRange(address)) {
             data = timer_.read(address);
-        } else if (g_memory_io_unused3.isInRange(address)) {
-            data = unused_io3_[address - g_memory_io_unused3.min_address];
+        } else if (g_memory_ppu_registers.isInRange(address)) {
+            data = ppu_.read(address);
         } else if (g_memory_hram.isInRange(address)) {
             data = hram_[address - g_memory_hram.min_address];
         } else if (address == g_interrupt_enable_address) {
             data = interrupt_enable_.read();
         } else if (address == g_interrupt_flags_address) {
             data = interrupt_flags_.read();
+        } else if (g_memory_io_unused.isInRange(address)) {
+            data = unused_io_[address - g_memory_io_unused.min_address];
+        } else if (g_memory_io_unused2.isInRange(address)) {
+            data = unused_io2_[address - g_memory_io_unused2.min_address];
+        } else if (g_memory_io_unused3.isInRange(address)) {
+            data = unused_io3_[address - g_memory_io_unused3.min_address];
         } else {
             throw std::invalid_argument("trying to access invalid memory");
         }
@@ -61,7 +64,7 @@ namespace gb {
         if (g_memory_rom.isInRange(address) && cartridge_.hasROM()) {
             cartridge_.write(address, data);
         } else if (g_memory_vram.isInRange(address)) {
-            vram_[address - g_memory_vram.min_address] = data;
+            ppu_.write(address, data);
         } else if (g_memory_cartridge_ram.isInRange(address) && cartridge_.hasRAM()) {
             cartridge_.write(address, data);
         } else if (g_memory_wram.isInRange(address)) {
@@ -70,21 +73,23 @@ namespace gb {
             // only lower 13 bits of the address are used
             wram_[address & 0x1fff] = data;
         } else if (g_memory_oam.isInRange(address)) {
-            oam_[address - g_memory_oam.min_address] = data;
-        } else if (g_memory_io_unused.isInRange(address)) {
-            unused_io_[address - g_memory_io_unused.min_address] = data;
-        } else if (g_memory_io_unused2.isInRange(address)) {
-            unused_io2_[address - g_memory_io_unused2.min_address] = data;
+            ppu_.write(address, data);
         } else if (g_memory_timer.isInRange(address)) {
             timer_.write(address, data);
-        } else if (g_memory_io_unused3.isInRange(address)) {
-            unused_io3_[address - g_memory_io_unused3.min_address] = data;
+        } else if (g_memory_ppu_registers.isInRange(address)) {
+            ppu_.write(address, data);
         } else if (g_memory_hram.isInRange(address)) {
             hram_[address - g_memory_hram.min_address] = data;
         } else if (address == g_interrupt_enable_address) {
             interrupt_enable_.write(data);
         } else if (address == g_interrupt_flags_address) {
             interrupt_flags_.write(data);
+        } else if (g_memory_io_unused.isInRange(address)) {
+            unused_io_[address - g_memory_io_unused.min_address] = data;
+        } else if (g_memory_io_unused2.isInRange(address)) {
+            unused_io2_[address - g_memory_io_unused2.min_address] = data;
+        } else if (g_memory_io_unused3.isInRange(address)) {
+            unused_io3_[address - g_memory_io_unused3.min_address] = data;
         } else if (g_memory_forbidden.isInRange(address)) {
             // ignore
         } else {

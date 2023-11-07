@@ -47,11 +47,13 @@ namespace gb {
                 return;
             }
             vram_[address - g_memory_vram.min_address] = data;
+            return;
         } else if (g_memory_oam.isInRange(address)) {
             if (mode_ == PPUMode::OAM_SCAN || mode_ == PPUMode::RENDER) {
                 return;
             }
             oam_[address - g_memory_oam.min_address] = data;
+            return;
         }
 
         switch (address) {
@@ -61,7 +63,7 @@ namespace gb {
         case g_scroll_y_address: scroll_y_ = data; break;
         case g_lcd_y_address: // read only
             break;
-        case g_y_compare_address: y_compare_ = data;
+        case g_y_compare_address: y_compare_ = data; break;
         case g_dma_src_address:
             dma_src_ = data;
             dma_running_ = true;
@@ -76,10 +78,8 @@ namespace gb {
         }
     }
 
-    void PPU::tick() {
+    void PPU::update() {
         if (!(lcd_control_ & LCDControlFlags::ENABLE)) {
-            return;
-        } else if (mode_ == PPUMode::RENDER && cycles_to_finish_ <= g_rener_extra_duration) {
             return;
         }
 
@@ -116,7 +116,7 @@ namespace gb {
         case PPUMode::RENDER: renderPixelRow(); break;
         case PPUMode::HBLANK: break;
         case PPUMode::VBLANK:
-            if (cycles_to_finish_ % g_scanline_duration == g_scanline_duration - 1) {
+            if (cycles_to_finish_ % g_scanline_duration == 1) {
                 ++current_y_;
             }
             break;
@@ -155,9 +155,11 @@ namespace gb {
                     set_interrupt = status_ & PPUInterruptSelectFlags::OAM_SCAN;
                 }
                 ++current_y_;
+                current_x_ = 0;
                 break;
             case PPUMode::VBLANK:
                 mode_ = PPUMode::OAM_SCAN;
+                cycles_to_finish_ = g_oam_fetch_duration;
                 current_y_ = 0;
                 if (renderer_) {
                     renderer_->finishFrame();
@@ -173,6 +175,9 @@ namespace gb {
     }
 
     void PPU::renderPixelRow() {
+        if (current_x_ >= g_screen_width) {
+            return;
+        }
         std::vector<PixelInfo> pixels;
         pixels.reserve(8);
 

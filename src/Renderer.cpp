@@ -8,7 +8,7 @@
 #include <functional>
 
 namespace renderer {
-    Renderer::Renderer(std::function<void()> &&callback) : callback_(std::move(callback)) {
+    Renderer::Renderer() {
         GLuint id{};
         glGenTextures(1, &id);
         texture_id_ = uint64_t(id);
@@ -17,6 +17,8 @@ namespace renderer {
         glBindTexture(GL_TEXTURE_2D, texture_id_);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, gb::g_screen_width, gb::g_screen_height, 0, GL_RGB, GL_UNSIGNED_BYTE,
+                     image_.data());
         glBindTexture(GL_TEXTURE_2D, last_active);
     }
 
@@ -25,7 +27,9 @@ namespace renderer {
             return;
         }
 
-        for (size_t i = y * gb::g_screen_width + x; i < pixels.size() && i + 2 < image_.size(); i += 3) {
+        size_t pixel_idx = 0;
+        for (size_t i = y * gb::g_screen_width + x; pixel_idx < pixels.size() && i + 2 < image_.size();
+             i += 3, ++pixel_idx) {
             switch (pixels[i].palette) {
             case gb::Palette::BG:
                 setPixel(i, palette_ ? palette_->bg_palette[size_t(pixels[i].color_idx)]
@@ -53,9 +57,8 @@ namespace renderer {
         GLint last_active;
         glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_active);
         glBindTexture(GL_TEXTURE_2D, texture_id_);
-        glTexImage2D(GLuint(texture_id_), 0, GL_RGB, gb::g_screen_width, gb::g_screen_height, 0, GL_RGB,
-                     GL_UNSIGNED_BYTE, image_.data());
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, gb::g_screen_width, gb::g_screen_height, 0, GL_RGB, GL_UNSIGNED_BYTE,
+                     image_.data());
         glBindTexture(GL_TEXTURE_2D, last_active);
-        callback_();
     }
 } // namespace renderer

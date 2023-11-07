@@ -1,5 +1,6 @@
 #pragma once
 #include "Breakpoint.h"
+#include "Renderer.h"
 #include "gb/AddressBus.h"
 #include "gb/Emulator.h"
 #include "gb/InterruptRegister.h"
@@ -18,6 +19,7 @@
 #include <deque>
 #include <filesystem>
 #include <list>
+#include <memory>
 #include <queue>
 #include <string_view>
 
@@ -91,6 +93,7 @@ namespace emulator {
 
         std::vector<uint16_t> pc_breakpoints_;
         MemoryBreakpoints memory_breakpoints_{[this]() { single_step_ = true; }};
+        std::unique_ptr<renderer::Renderer> emulator_renderer_;
 
         // buffers for GUI
         MemoryBreakpointData memory_breakpoint_data_;
