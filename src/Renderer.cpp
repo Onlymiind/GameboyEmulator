@@ -28,7 +28,7 @@ namespace renderer {
         }
 
         size_t pixel_idx = 0;
-        for (size_t i = y * gb::g_screen_width + x; pixel_idx < pixels.size() && i + 2 < image_.size();
+        for (size_t i = (y * gb::g_screen_width + x) * 3; pixel_idx < pixels.size() && i + 2 < image_.size();
              i += 3, ++pixel_idx) {
             switch (pixels[i].palette) {
             case gb::Palette::BG:
