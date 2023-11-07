@@ -47,7 +47,9 @@ namespace emulator {
 
         ImGui::BeginTable("##table", 3);
         ImGui::TableNextColumn();
-        ImGui::Image((void *)emulator_renderer_->getTextureID(), ImVec2{gb::g_screen_width, gb::g_screen_height});
+        ImVec2 img_size = ImGui::GetContentRegionAvail();
+        img_size.y = img_size.x * (float(gb::g_screen_height) / float(gb::g_screen_width));
+        ImGui::Image((void *)emulator_renderer_->getTextureID(), img_size);
         ImGui::TableNextColumn();
         StaticStringBuffer<g_instruction_string_buf_size> buf;
         for (size_t i = 0; i < recent_instructions_.size(); ++i) {
