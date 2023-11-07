@@ -226,7 +226,8 @@ namespace emulator {
         ImGui::TextUnformatted("Add memory breakpoint:");
         ImGui::InputScalar("##address", ImGuiDataType_U16, &memory_breakpoint_data_.address, nullptr, nullptr, "%.4x",
                            ImGuiInputTextFlags_CharsHexadecimal);
-        if (ImGui::BeginCombo("Break on:", to_string(memory_breakpoint_data_.break_on).data())) {
+        ImGui::TextUnformatted("Breakpoint mode:");
+        if (ImGui::BeginCombo("##break_on", to_string(memory_breakpoint_data_.break_on).data())) {
             if (ImGui::Selectable(to_string(MemoryBreakpointData::BreakOn::ALWAYS).data())) {
                 memory_breakpoint_data_.break_on = MemoryBreakpointData::BreakOn::ALWAYS;
             } else if (ImGui::Selectable(to_string(MemoryBreakpointData::BreakOn::READ).data())) {
