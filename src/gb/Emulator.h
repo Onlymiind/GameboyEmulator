@@ -24,7 +24,10 @@ namespace gb {
 
         bool terminated() const { return !is_running_; }
 
-        void reset() { cpu_.reset(); }
+        void reset() {
+            cpu_.reset();
+            bus_.reset();
+        }
 
         void start() { is_running_ = true; }
 

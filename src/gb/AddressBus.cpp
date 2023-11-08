@@ -5,6 +5,7 @@
 #include "utils/Utils.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <exception>
 #include <iostream>
 #include <sstream>
@@ -44,11 +45,8 @@ namespace gb {
         } else if (address == g_interrupt_flags_address) {
             data = interrupt_flags_.read();
         } else if (g_memory_io_unused.isInRange(address)) {
+            // catch all reads from io range
             data = unused_io_[address - g_memory_io_unused.min_address];
-        } else if (g_memory_io_unused2.isInRange(address)) {
-            data = unused_io2_[address - g_memory_io_unused2.min_address];
-        } else if (g_memory_io_unused3.isInRange(address)) {
-            data = unused_io3_[address - g_memory_io_unused3.min_address];
         } else {
             throw std::invalid_argument("trying to access invalid memory");
         }
@@ -85,11 +83,8 @@ namespace gb {
         } else if (address == g_interrupt_flags_address) {
             interrupt_flags_.write(data);
         } else if (g_memory_io_unused.isInRange(address)) {
+            // catch all writes to io range
             unused_io_[address - g_memory_io_unused.min_address] = data;
-        } else if (g_memory_io_unused2.isInRange(address)) {
-            unused_io2_[address - g_memory_io_unused2.min_address] = data;
-        } else if (g_memory_io_unused3.isInRange(address)) {
-            unused_io3_[address - g_memory_io_unused3.min_address] = data;
         } else if (g_memory_forbidden.isInRange(address)) {
             // ignore
         } else {
@@ -98,6 +93,20 @@ namespace gb {
 
         if (observer_) {
             observer_->onWrite(address, data);
+        }
+    }
+
+    void AddressBus::reset() {
+        // values set according to mooneye test suite
+        // see accepnance/boot_hwio_dmg0.gb
+
+        // TODO: this test currently fails on timer's DIV register value
+        uint16_t offset = 0;
+        for (; offset < g_io_initail_values.size(); ++offset) {
+            write(0xff00 + offset, g_io_initail_values[offset]);
+        }
+        for (; offset <= g_memory_io_unused.size; ++offset) {
+            write(0xff00 + offset, 0xff);
         }
     }
 

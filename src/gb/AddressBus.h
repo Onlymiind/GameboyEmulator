@@ -4,6 +4,7 @@
 #include "gb/memory/BasicComponents.h"
 #include "gb/ppu/PPU.h"
 
+#include <array>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -31,9 +32,7 @@ namespace gb {
     constexpr MemoryObjectInfo g_memory_hram = {.min_address = 0xff80, .max_address = 0xfffe};
 
     // FIXME: this should eventually be properly mapped
-    constexpr MemoryObjectInfo g_memory_io_unused = {.min_address = 0xff00, .max_address = 0xff03};
-    constexpr MemoryObjectInfo g_memory_io_unused2 = {.min_address = 0xff08, .max_address = 0xff0e};
-    constexpr MemoryObjectInfo g_memory_io_unused3 = {.min_address = 0xff10, .max_address = 0xff7f};
+    constexpr MemoryObjectInfo g_memory_io_unused = {.min_address = 0xff00, .max_address = 0xff7f};
 
     enum class MemoryObjectType { ROM, VRAM, CARTRIDGE_RAM, WRAM, OAM, IO, HRAM, IE };
 
@@ -45,14 +44,20 @@ namespace gb {
         case CARTRIDGE_RAM: return g_memory_cartridge_ram;
         case WRAM: return g_memory_wram;
         case OAM: return g_memory_oam;
-        case IO:
-            return MemoryObjectInfo{.min_address = g_memory_io_unused.min_address,
-                                    .max_address = g_memory_io_unused3.max_address};
+        case IO: return g_memory_io_unused;
         case HRAM: return g_memory_hram;
         case IE: return MemoryObjectInfo{g_interrupt_enable_address, g_interrupt_enable_address};
         default: return MemoryObjectInfo{};
         }
     }
+
+    constexpr std::array g_io_initail_values = {0xcf, 0,    0x7e, 0xff, 0x19, 0,    0,    0xf8, 0xff, 0xff, 0xff,
+                                                0xff, 0xff, 0xff, 0xff, 0xe1, 0x80, 0xbf, 0xf3, 0xff, 0xbf, 0xff,
+                                                0x3f, 0,    0xff, 0xbf, 0x7f, 0xff, 0x9f, 0xff, 0xbf, 0xff, 0xff,
+                                                0,    0,    0xbf, 0x77, 0xf3, 0xf1, 0xff, 0xff, 0xff, 0xff, 0xff,
+                                                0xff, 0xff, 0xff, 0xff, 0xff, 0,    0,    0,    0,    0,    0,
+                                                0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0x91,
+                                                0x83, 0,    0,    1,    0,    0xff, 0xfc, 0xff, 0xff, 0,    0};
 
     class AddressBus {
       public:
@@ -67,6 +72,8 @@ namespace gb {
         uint8_t read(uint16_t address) const;
         void write(uint16_t address, uint8_t data);
 
+        void reset();
+
       private:
         std::string getErrorDescription(uint16_t address, int value = -1) const;
 
@@ -77,8 +84,6 @@ namespace gb {
         RAM<g_memory_oam.size> oam_{};
 
         RAM<g_memory_io_unused.size> unused_io_{};
-        RAM<g_memory_io_unused2.size> unused_io2_{};
-        RAM<g_memory_io_unused3.size> unused_io3_{};
 
         RAM<g_memory_hram.size> hram_{};
         Cartridge &cartridge_;
