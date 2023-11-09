@@ -1,11 +1,11 @@
 # GameboyEmulator
-A gameboy (DMG model) emulator.
+A Game Boy (DMG model) emulator.
 
 ## Current status
 
 ### Implemented:
 - CPU instructions
-- Hardware timer (implementation might have some bugs in it, as instr_timing test is failing due to the timer)
+- Hardware timer
 - Basic memory emulation (some memory-mapped IO registers are implemented as normal RAM)
 - Interrupts
 
@@ -42,7 +42,7 @@ Tests' source code is located under src/tests directory. To build tests add `-DB
 
 ## Tests status
 
-All blargg's tests for CPU instructions as well as instr_timing.gb and memory access timing tests are passing. See src/tests/integration/roms/blargg_test_roms for list of tests.
+All blargg's tests for CPU instructions as well as instr_timing.gb and memory access timing tests are passing. See src/tests/integration/roms/blargg_test_roms for list of tests. Work is being done for passing some of the mooneye test suite roms.
 
 ## Screenshots
 
