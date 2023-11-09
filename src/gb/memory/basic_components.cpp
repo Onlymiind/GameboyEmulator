@@ -79,14 +79,14 @@ namespace gb {
         // thus write to MBC and to cartridge RAM never occur on the same write
         mbc_->write(address, data);
 
-        if (!ram_.empty() && mbc_->ramEnabled()) {
+        if (g_memory_cartridge_ram.isInRange(address) && !ram_.empty() && mbc_->ramEnabled()) {
             ram_[mbc_->getEffectiveAddress(address)] = data;
         }
     }
 
     void MBC1::write(uint16_t address, uint8_t value) {
         if (address <= 0x1fff) {
-            ram_enabled_ = (value & 0xa) == 0xa;
+            ram_enabled_ = (value & 0xf) == 0xa;
         } else if (address <= 0x3fff) {
             rom_bank_ = value & 0b11111;
             if (rom_bank_ == 0) {
@@ -102,12 +102,13 @@ namespace gb {
     size_t MBC1::getEffectiveAddress(uint16_t address) const {
         if (mode_) {
             if (g_memory_cartridge_ram.isInRange(address)) {
-                return (size_t(ram_bank_) << 13) | (address & 0xfff);
+                return ((size_t(ram_bank_) << 13) | (address & 0xfff)) & ram_address_mask_;
             } else if (address <= 0x3fff) {
-                return (size_t(ram_bank_) << 19) | address;
+                return ((size_t(ram_bank_) << 19) | address) & rom_address_mask_;
             }
 
-            return (size_t(ram_bank_) << 19) | (size_t(rom_bank_) << 14) | size_t(address & 0x3fff);
+            return ((size_t(ram_bank_) << 19) | (size_t(rom_bank_) << 14) | size_t(address & 0x3fff)) &
+                   rom_address_mask_;
         }
 
         if (g_memory_cartridge_ram.isInRange(address)) {
@@ -118,6 +119,6 @@ namespace gb {
             return address;
         }
 
-        return (size_t(ram_bank_) << 19) | (size_t(rom_bank_) << 14) | size_t(address & 0x3fff);
+        return ((size_t(ram_bank_) << 19) | (size_t(rom_bank_) << 14) | size_t(address & 0x3fff)) & rom_address_mask_;
     }
 } // namespace gb

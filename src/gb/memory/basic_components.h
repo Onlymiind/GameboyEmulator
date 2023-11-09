@@ -37,7 +37,7 @@ namespace gb {
       private:
         size_t rom_address_mask_ = 0;
         size_t ram_address_mask_ = 0;
-        uint8_t rom_bank_ = 0;
+        uint8_t rom_bank_ = 1;
         uint8_t ram_bank_ = 0;
         bool mode_ = false;
         bool ram_enabled_ = false;

@@ -451,6 +451,7 @@ namespace emulator {
 
         ImGui_ImplGlfw_InitForOpenGL(window_, true);
         ImGui_ImplOpenGL3_Init();
+        refresh_rate_ = glfwGetVideoMode(glfwGetPrimaryMonitor())->refreshRate;
         emulator_renderer_ = std::make_unique<renderer::Renderer>();
         emulator_.getPPU().setRenderer(*emulator_renderer_);
         gui_init_ = true;
@@ -467,6 +468,7 @@ namespace emulator {
 
     void Application::update() {
         try {
+            emulator_.tick();
             if (emulator_.getCPU().isFinished()) {
                 gb::cpu::Instruction instr = emulator_.getCPU().getLastInstruction();
                 recent_instructions_.push_back(instr);
@@ -478,7 +480,6 @@ namespace emulator {
                     single_step_ = true;
                 }
             }
-            emulator_.tick();
         } catch (const std::exception &e) {
             std::cout << "exception occured during emulator update: " << e.what() << std::endl;
             emulator_.stop();
@@ -489,8 +490,11 @@ namespace emulator {
     void Application::advanceFrame() {
         bool old_single_step = single_step_;
         single_step_ = false;
+        constexpr size_t clock_frequency = 1 << 20;
+        size_t max_updates = (clock_frequency / refresh_rate_) * 2;
+
         update();
-        while (!emulator_.getPPU().frameFinished()) {
+        while (!emulator_.getPPU().frameFinished() && max_updates > 0) {
             if (single_step_) {
                 // run current instruction until completion
                 while (!emulator_.getCPU().isFinished()) {
@@ -499,9 +503,12 @@ namespace emulator {
                 break;
             }
             update();
+            --max_updates;
         }
         emulator_.getPPU().resetFrameFinistedFlag();
-        single_step_ = old_single_step;
+        if (!single_step_) {
+            single_step_ = old_single_step;
+        }
     }
 
     bool Application::setROMDirectory() {

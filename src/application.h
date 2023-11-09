@@ -105,5 +105,7 @@ namespace emulator {
         bool gui_init_ = false;
         bool single_step_ = true;
         bool frame_finished_ = false;
+
+        int refresh_rate_ = 60;
     };
 } // namespace emulator
