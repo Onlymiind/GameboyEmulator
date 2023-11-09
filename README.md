@@ -10,16 +10,15 @@ A gameboy (DMG model) emulator.
 - Interrupts
 
 ### Partially implemented:
-- PPU (implementation is a work in progress: mostly works, but is highly inaccurate and has some bugs)
+- PPU (implementation is a work in progress: mostly works, but is highly inaccurate, sprites are yet to be tested)
 
 ### Features:
 - Memory view
 - Instruction breakpoints
 - Memory breakpoints
-- Single stepping
+- Instruction and frame stepping
 - Instruction and CPU registers logging
 - Emulation fast-forwarding
-
 
 The project was tested on Windows and Linux using unit tests and test ROMs (blargg's test ROMs were used). Note that version at `dev` branch might not pass all tests (you should use version at `stable` branch instead).
 
@@ -36,16 +35,20 @@ Tests' source code is located under src/tests directory. To build tests add `-DB
 ## Usage notes
 
 - Breakpoints are removed by pressing backspace while hovering over them.
-- To see CPU status during some instruction, click on the instruction.
+- To see the CPU status during some instruction, click on the instruction.
 - Currently only 10 most recent instructions can be logged.
-- To toggle single stepping or to resume execution after a breakpoint, press spacebar.
+- To stop/resume execution press spacebar.
+- Press S while execution is stopped to advance a single instruction, press F to advance a frame.
+
+## Tests status
+
+All blargg's tests for CPU instructions as well as instr_timing.gb and memory access timing tests are passing. See src/tests/integration/roms/blargg_test_roms for list of tests.
 
 ## Screenshots
 
 ![screenshot](./screenshot.png)
 
 ## TODO list
-- instr_timing test is currently failing
-- PPU implementation has some bugs
+- Properly test PPU
 - Make PPU emulation more accurate
 - Implement at least some of the MBC
