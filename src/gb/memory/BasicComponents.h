@@ -7,6 +7,34 @@
 namespace gb {
 
     // TODO: cartridge RAM, mapper chips
+    class MemoryBankController {
+      public:
+        MemoryBankController() = default;
+        virtual ~MemoryBankController() = default;
+
+        virtual void write(uint16_t address, uint8_t value) = 0;
+        virtual uint16_t getEffectiveAddress(uint16_t address) = 0;
+        virtual bool ramEnabled() = 0;
+    };
+
+    class MBC1 : public MemoryBankController {
+      public:
+        MBC1(size_t rom_size, size_t ram_size) : roms_size_(rom_size), ram_size_(ram_size) {}
+        ~MBC1() override = default;
+
+        void write(uint16_t address, uint8_t value) override;
+        uint16_t getEffectiveAddress(uint16_t address) override;
+
+      private:
+        size_t roms_size_ = 0;
+        size_t ram_size_ = 0;
+        uint8_t rom_bank0_ = 0;
+        uint8_t rom_bank1_ = 0;
+        uint8_t ram_bank_ = 0;
+        bool mode_ = false;
+        bool ram_enabled_ = false;
+    };
+
     class Cartridge {
       public:
         Cartridge() = default;

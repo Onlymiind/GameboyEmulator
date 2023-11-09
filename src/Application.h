@@ -60,6 +60,8 @@ namespace emulator {
         void initGUI();
         void update();
 
+        void advanceFrame();
+
         bool setROMDirectory();
         bool runROM(const std::filesystem::path path);
 

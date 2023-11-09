@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <cstdint>
+#include <cstring>
 #include <span>
 #include <stdexcept>
 #include <type_traits>
@@ -161,6 +162,7 @@ namespace gb {
                 mode_ = PPUMode::OAM_SCAN;
                 cycles_to_finish_ = g_oam_fetch_duration;
                 current_y_ = 0;
+                frame_finished_ = true;
                 if (renderer_) {
                     renderer_->finishFrame();
                 }
@@ -301,5 +303,19 @@ namespace gb {
             return GBColor((obj_palette1_ >> uint8_t(color_idx) * 2) & 0b11);
         }
         return GBColor((obj_palette0_ >> uint8_t(color_idx) * 2) & 0b11);
+    }
+
+    void PPU::reset() {
+        memset(vram_.data(), 0, vram_.size());
+        current_y_ = 0;
+        y_compare_ = 0;
+        window_x_ = 0;
+        window_y_ = 0;
+        scroll_x_ = 0;
+        scroll_y_ = 0;
+        mode_ = PPUMode::VBLANK;
+        cycles_to_finish_ = 1;
+        bg_palette_ = 0xfc;
+        lcd_control_ = 0x91;
     }
 } // namespace gb

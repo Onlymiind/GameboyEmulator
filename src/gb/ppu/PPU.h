@@ -115,10 +115,12 @@ namespace gb {
       public:
         PPU(InterruptRegister &interrupt_flags) : interrupt_flags_(interrupt_flags) {
             objects_on_current_line_.reserve(40);
+            reset();
         }
         PPU(InterruptRegister &interrupt_flags, IRenderer &renderer)
             : interrupt_flags_(interrupt_flags), renderer_(&renderer) {
             objects_on_current_line_.reserve(40);
+            reset();
         }
 
         uint8_t read(uint16_t address) const;
@@ -131,6 +133,11 @@ namespace gb {
         void renderPixelRow();
 
         PPUMode getMode() const { return mode_; }
+
+        bool frameFinished() const { return frame_finished_; }
+        void resetFrameFinistedFlag() { frame_finished_ = false; }
+
+        void reset();
 
       private:
         std::array<GBColor, 8> getTileRow(uint16_t tilemap_base, uint8_t x, uint8_t y);
@@ -146,6 +153,7 @@ namespace gb {
 
         PPUMode mode_ = PPUMode::VBLANK;
         bool dma_running_ = false;
+        bool frame_finished_ = false;
         uint16_t current_dma_address_ = 0;
 
         // memory-mapped registers

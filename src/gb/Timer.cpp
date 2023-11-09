@@ -23,7 +23,7 @@ namespace gb {
         case g_timer_div_address: return DIV_;
         case g_timer_tima_address: return TIMA_;
         case g_timer_tma_address: return TMA_;
-        case g_timer_tac_address: return (uint8_t(TAC_.enable) << 2) | TAC_.freqency;
+        case g_timer_tac_address: return 0xf8 | (uint8_t(TAC_.enable) << 2) | TAC_.freqency;
         default:
             throw std::invalid_argument("Attempting to read data from timer at invalid adress: " +
                                         std::to_string(address));
@@ -44,5 +44,13 @@ namespace gb {
             throw std::invalid_argument("Attempting to write data to timer at invalid adress: " +
                                         std::to_string(address) + ", data: " + std::to_string(+data));
         }
+    }
+
+    void Timer::reset() {
+        counter_ = 0xABCC;
+        TIMA_ = 0;
+        TMA_ = 0;
+        TAC_.enable = false, TAC_.freqency = 0;
+        frequency_bit_was_set_ = false;
     }
 } // namespace gb

@@ -27,13 +27,17 @@ namespace gb {
         void reset() {
             cpu_.reset();
             bus_.reset();
+            ppu_.reset();
+            timer_.reset();
+            ie_.write(0);
+            if_.setFlag(InterruptFlags::VBLANK);
         }
 
         void start() { is_running_ = true; }
 
         void stop() { is_running_ = false; }
 
-        uint8_t peekMemory(uint16_t address) { return bus_.read(address); }
+        std::optional<uint8_t> peekMemory(uint16_t address) { return bus_.peek(address); }
 
         cpu::SharpSM83 &getCPU() { return cpu_; }
         AddressBus &getBus() { return bus_; }

@@ -335,44 +335,44 @@ namespace emulator {
             buffer_.putString("0x")
                 .putU16(base)
                 .putString(": ")
-                .putU8(emulator_.peekMemory(base))
+                .putU8(*emulator_.peekMemory(base))
                 .put(' ')
-                .putU8(emulator_.peekMemory(base + 1))
+                .putU8(*emulator_.peekMemory(base + 1))
                 .put(' ')
-                .putU8(emulator_.peekMemory(base + 2))
+                .putU8(*emulator_.peekMemory(base + 2))
                 .put(' ')
-                .putU8(emulator_.peekMemory(base + 3))
+                .putU8(*emulator_.peekMemory(base + 3))
                 .put(' ')
-                .putU8(emulator_.peekMemory(base + 4))
+                .putU8(*emulator_.peekMemory(base + 4))
                 .put(' ')
-                .putU8(emulator_.peekMemory(base + 5))
+                .putU8(*emulator_.peekMemory(base + 5))
                 .put(' ')
-                .putU8(emulator_.peekMemory(base + 6))
+                .putU8(*emulator_.peekMemory(base + 6))
                 .put(' ')
-                .putU8(emulator_.peekMemory(base + 7))
+                .putU8(*emulator_.peekMemory(base + 7))
                 .put(' ')
-                .putU8(emulator_.peekMemory(base + 8))
+                .putU8(*emulator_.peekMemory(base + 8))
                 .put(' ')
-                .putU8(emulator_.peekMemory(base + 9))
+                .putU8(*emulator_.peekMemory(base + 9))
                 .put(' ')
-                .putU8(emulator_.peekMemory(base + 10))
+                .putU8(*emulator_.peekMemory(base + 10))
                 .put(' ')
-                .putU8(emulator_.peekMemory(base + 11))
+                .putU8(*emulator_.peekMemory(base + 11))
                 .put(' ')
-                .putU8(emulator_.peekMemory(base + 12))
+                .putU8(*emulator_.peekMemory(base + 12))
                 .put(' ')
-                .putU8(emulator_.peekMemory(base + 13))
+                .putU8(*emulator_.peekMemory(base + 13))
                 .put(' ')
-                .putU8(emulator_.peekMemory(base + 14))
+                .putU8(*emulator_.peekMemory(base + 14))
                 .put(' ')
-                .putU8(emulator_.peekMemory(base + 15))
+                .putU8(*emulator_.peekMemory(base + 15))
                 .put('\n');
         }
 
         if (i < len) {
             buffer_.putString("0x").putU16(info.min_address + i).put(':');
             for (; i < len; ++i) {
-                buffer_.put(' ').putU8(emulator_.peekMemory(info.min_address + i));
+                buffer_.put(' ').putU8(*emulator_.peekMemory(info.min_address + i));
             }
         }
         buffer_.finish();
@@ -394,31 +394,17 @@ namespace emulator {
                 single_step_ = !single_step_;
             }
 
-            if (single_step_ && ImGui::IsKeyPressed(ImGuiKey_S)) {
-                update();
-                while (!emulator_.getCPU().isFinished()) {
+            if (single_step_) {
+                if (ImGui::IsKeyPressed(ImGuiKey_S)) {
                     update();
-                }
-            } else if (!single_step_) {
-                for (int i = 0; !emulator_.terminated() && i < updates_per_frame; ++i) {
-                    update();
-                    if (single_step_) {
-                        // run current instruction until completion
-                        while (!emulator_.getCPU().isFinished()) {
-                            update();
-                        }
-                        break;
-                    }
-                }
-
-                ++frame;
-                if (frame == refresh_rate_) {
-                    frame = 0;
-                    size_t leftover_updates = g_cycles_per_second - updates_per_frame * size_t(refresh_rate_);
-                    for (int i = 0; !emulator_.terminated() && i < leftover_updates; ++i) {
+                    while (!emulator_.getCPU().isFinished()) {
                         update();
                     }
+                } else if (ImGui::IsKeyPressed(ImGuiKey_F)) {
+                    advanceFrame();
                 }
+            } else {
+                advanceFrame();
             }
 
             draw();
@@ -481,6 +467,21 @@ namespace emulator {
         } catch (const std::exception &e) {
             std::cout << "exception occured during emulator update: " << e.what() << std::endl;
         }
+    }
+
+    void Application::advanceFrame() {
+        update();
+        while (!emulator_.getPPU().frameFinished()) {
+            if (single_step_) {
+                // run current instruction until completion
+                while (!emulator_.getCPU().isFinished()) {
+                    update();
+                }
+                break;
+            }
+            update();
+        }
+        emulator_.getPPU().resetFrameFinistedFlag();
     }
 
     bool Application::setROMDirectory() {

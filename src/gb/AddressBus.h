@@ -51,13 +51,14 @@ namespace gb {
         }
     }
 
-    constexpr std::array g_io_initail_values = {0xcf, 0,    0x7e, 0xff, 0x19, 0,    0,    0xf8, 0xff, 0xff, 0xff,
-                                                0xff, 0xff, 0xff, 0xff, 0xe1, 0x80, 0xbf, 0xf3, 0xff, 0xbf, 0xff,
-                                                0x3f, 0,    0xff, 0xbf, 0x7f, 0xff, 0x9f, 0xff, 0xbf, 0xff, 0xff,
-                                                0,    0,    0xbf, 0x77, 0xf3, 0xf1, 0xff, 0xff, 0xff, 0xff, 0xff,
-                                                0xff, 0xff, 0xff, 0xff, 0xff, 0,    0,    0,    0,    0,    0,
-                                                0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0x91,
-                                                0x83, 0,    0,    1,    0,    0xff, 0xfc, 0xff, 0xff, 0,    0};
+    constexpr std::array<uint8_t, 77> g_io_initail_values = {0xcf, 0,    0x7e, 0xff, 0x19, 0,    0,    0xf8, 0xff, 0xff,
+                                                             0xff, 0xff, 0xff, 0xff, 0xff, 0xe1, 0x80, 0xbf, 0xf3, 0xff,
+                                                             0xbf, 0xff, 0x3f, 0,    0xff, 0xbf, 0x7f, 0xff, 0x9f, 0xff,
+                                                             0xbf, 0xff, 0xff, 0,    0,    0xbf, 0x77, 0xf3, 0xf1, 0xff,
+                                                             0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0,
+                                                             0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
+                                                             0,    0,    0,    0,    0,    0x91, 0x83, 0,    0,    1,
+                                                             0,    0xff, 0xfc, 0xff, 0xff, 0,    0};
 
     class AddressBus {
       public:
@@ -73,6 +74,8 @@ namespace gb {
         void write(uint16_t address, uint8_t data);
 
         void reset();
+
+        std::optional<uint8_t> peek(uint16_t address) const;
 
       private:
         std::string getErrorDescription(uint16_t address, int value = -1) const;

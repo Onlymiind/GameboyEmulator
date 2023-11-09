@@ -19,11 +19,13 @@ namespace gb {
 
     class Timer {
       public:
-        Timer(InterruptRegister &interrupt_flags) : interrupt_flags_(interrupt_flags) {}
+        Timer(InterruptRegister &interrupt_flags) : interrupt_flags_(interrupt_flags) { reset(); }
 
         void update();
         uint8_t read(uint16_t address) const;
         void write(uint16_t address, uint8_t data);
+
+        void reset();
 
       private:
         // FIXME: do not use UB :)
