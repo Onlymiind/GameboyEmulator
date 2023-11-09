@@ -1,8 +1,8 @@
 #pragma once
-#include "gb/InterruptRegister.h"
-#include "gb/Timer.h"
-#include "gb/memory/BasicComponents.h"
-#include "gb/ppu/PPU.h"
+#include "gb/interrupt_register.h"
+#include "gb/memory/basic_components.h"
+#include "gb/ppu/ppu.h"
+#include "gb/timer.h"
 
 #include <array>
 #include <cstdint>

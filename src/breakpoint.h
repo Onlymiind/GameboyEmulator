@@ -1,6 +1,5 @@
 #pragma once
-#include "gb/AddressBus.h"
-#include "gb/Emulator.h"
+#include "gb/address_bus.h"
 
 #include <cstdint>
 #include <functional>

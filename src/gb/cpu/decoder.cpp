@@ -1,6 +1,6 @@
-#include "gb/cpu/Decoder.h"
-#include "gb/cpu/CPU.h"
-#include "gb/cpu/Operation.h"
+#include "gb/cpu/decoder.h"
+#include "gb/cpu/cpu.h"
+#include "gb/cpu/operation.h"
 
 #include <array>
 #include <cstdint>

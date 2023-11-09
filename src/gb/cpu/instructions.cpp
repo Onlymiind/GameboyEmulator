@@ -1,7 +1,7 @@
-#include "gb/cpu/CPU.h"
-#include "gb/cpu/CPUUtils.h"
-#include "gb/cpu/Operation.h"
-#include "utils/Utils.h"
+#include "gb/cpu/cpu.h"
+#include "gb/cpu/cpu_utils.h"
+#include "gb/cpu/operation.h"
+#include "util/util.h"
 
 #include <climits>
 #include <cstdint>

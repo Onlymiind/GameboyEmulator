@@ -1,8 +1,8 @@
-#include "gb/AddressBus.h"
-#include "gb/InterruptRegister.h"
-#include "gb/memory/BasicComponents.h"
-#include "gb/ppu/PPU.h"
-#include "utils/Utils.h"
+#include "gb/address_bus.h"
+#include "gb/interrupt_register.h"
+#include "gb/memory/basic_components.h"
+#include "gb/ppu/ppu.h"
+#include "util/util.h"
 
 #include <algorithm>
 #include <cstdint>

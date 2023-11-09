@@ -1,6 +1,6 @@
 #pragma once
-#include "gb/cpu/Operation.h"
-#include "utils/Utils.h"
+#include "gb/cpu/operation.h"
+#include "util/util.h"
 
 #include <array>
 #include <bit>

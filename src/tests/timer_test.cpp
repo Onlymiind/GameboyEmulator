@@ -1,6 +1,6 @@
-#include "gb/Timer.h"
-#include "gb/Emulator.h"
-#include "gb/InterruptRegister.h"
+#include "gb/emulator.h"
+#include "gb/interrupt_register.h"
+#include "gb/timer.h"
 #include <cstdint>
 #include <vector>
 

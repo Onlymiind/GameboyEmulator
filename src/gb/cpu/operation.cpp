@@ -1,4 +1,4 @@
-#include "Operation.h"
+#include "gb/cpu/operation.h"
 
 #include <iostream>
 

@@ -1,5 +1,5 @@
-#include "gb/ppu/PPU.h"
-#include "gb/InterruptRegister.h"
+#include "gb/ppu/ppu.h"
+#include "gb/interrupt_register.h"
 #include <algorithm>
 #include <array>
 #include <cstdint>

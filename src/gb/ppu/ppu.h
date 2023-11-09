@@ -1,7 +1,7 @@
 #pragma once
-#include "gb/InterruptRegister.h"
-#include "gb/memory/BasicComponents.h"
-#include "utils/Utils.h"
+#include "gb/interrupt_register.h"
+#include "gb/memory/basic_components.h"
+#include "util/util.h"
 #include <array>
 #include <cstddef>
 #include <cstdint>

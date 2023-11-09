@@ -1,4 +1,4 @@
-#include "gb/InterruptRegister.h"
+#include "gb/interrupt_register.h"
 
 #include "catch2/catch_test_macros.hpp"
 

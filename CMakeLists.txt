@@ -10,23 +10,23 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 enable_testing()
 
 set(EMULATOR_LIB
-    src/gb/cpu/CPU.cpp
-    src/gb/cpu/Instructions.cpp
-    src/gb/AddressBus.cpp
-    src/gb/Timer.cpp
-    src/gb/cpu/Decoder.cpp
-    src/gb/cpu/Operation.cpp
-    src/utils/Utils.h
-    src/gb/AddressBus.h
-    src/gb/InterruptRegister.h
-    src/gb/Timer.h
-    src/gb/memory/BasicComponents.h
-    src/gb/cpu/CPU.h
-    src/gb/cpu/CPUUtils.h
-    src/gb/cpu/Decoder.h
-    src/gb/cpu/Operation.h
-    src/gb/ppu/PPU.h
-    src/gb/ppu/PPU.cpp
+    src/gb/cpu/cpu.cpp
+    src/gb/cpu/instructions.cpp
+    src/gb/address_bus.cpp
+    src/gb/timer.cpp
+    src/gb/cpu/decoder.cpp
+    src/gb/cpu/operation.cpp
+    src/util/util.h
+    src/gb/address_bus.h
+    src/gb/interrupt_register.h
+    src/gb/timer.h
+    src/gb/memory/basic_components.h
+    src/gb/cpu/cpu.h
+    src/gb/cpu/cpu_utils.h
+    src/gb/cpu/decoder.h
+    src/gb/cpu/operation.h
+    src/gb/ppu/ppu.h
+    src/gb/ppu/ppu.cpp
 )
 
 add_library(emulator_lib
@@ -74,13 +74,13 @@ if(NOT TESTS_ONLY)
         ${IMGUI_BACKEND}
         ${GLAD}
         
-        src/Breakpoint.h
-        src/Breakpoint.cpp
-        src/Renderer.h
-        src/Renderer.cpp
-        src/Application.h
-        src/Application.cpp
-        src/Main.cpp
+        src/breakpoint.h
+        src/breakpoint.cpp
+        src/renderer.h
+        src/renderer.cpp
+        src/application.h
+        src/application.cpp
+        src/main.cpp
     )
 
 
@@ -96,13 +96,13 @@ if(BUILD_TESTS OR TESTS_ONLY)
     add_subdirectory(Catch2)
 
     add_executable(tests
-        src/tests/DecoderTest.cpp
-        src/tests/TimerTest.cpp
-        src/tests/integration/IntegrationTest.cpp
-        src/tests/MemoryBreakpointsTest.cpp
+        src/tests/decoder_test.cpp
+        src/tests/timer_test.cpp
+        src/tests/integration/intergration_test.cpp
+        src/tests/memory_breakpoints_test.cpp
 
-        src/Breakpoint.h
-        src/Breakpoint.cpp
+        src/breakpoint.h
+        src/breakpoint.cpp
     )
     target_link_libraries(tests PRIVATE emulator_lib Catch2WithMain)
     target_include_directories(tests PUBLIC src src/tests)

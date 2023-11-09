@@ -1,5 +1,5 @@
 #pragma once
-#include "gb/cpu/Operation.h"
+#include "gb/cpu/operation.h"
 
 #include <array>
 #include <cstddef>

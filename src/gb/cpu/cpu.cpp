@@ -1,10 +1,10 @@
-#include "gb/cpu/CPU.h"
-#include "gb/AddressBus.h"
-#include "gb/InterruptRegister.h"
-#include "gb/cpu/CPUUtils.h"
-#include "gb/cpu/Decoder.h"
-#include "gb/cpu/Operation.h"
-#include "utils/Utils.h"
+#include "gb/cpu/cpu.h"
+#include "gb/address_bus.h"
+#include "gb/cpu/cpu_utils.h"
+#include "gb/cpu/decoder.h"
+#include "gb/cpu/operation.h"
+#include "gb/interrupt_register.h"
+#include "util/util.h"
 
 #include <cstdint>
 #include <exception>

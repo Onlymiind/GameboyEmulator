@@ -1,6 +1,6 @@
 #pragma once
 
-#include "gb/ppu/PPU.h"
+#include "gb/ppu/ppu.h"
 #include <array>
 #include <cstddef>
 #include <cstdint>

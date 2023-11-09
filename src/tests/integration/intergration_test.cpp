@@ -1,9 +1,9 @@
-#include "catch2/catch_message.hpp"
-#include "gb/Emulator.h"
+#include "gb/emulator.h"
+#include "util/util.h"
 
+#include "catch2/catch_message.hpp"
 #include "catch2/catch_test_macros.hpp"
 #include "catch2/generators/catch_generators.hpp"
-#include "utils/Utils.h"
 
 #include <cstdint>
 #include <exception>

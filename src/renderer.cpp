@@ -1,5 +1,5 @@
-#include "Renderer.h"
-#include "gb/ppu/PPU.h"
+#include "renderer.h"
+#include "gb/ppu/ppu.h"
 
 #include "glad/gl.h"
 #include <cstdint>
