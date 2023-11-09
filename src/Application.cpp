@@ -467,7 +467,6 @@ namespace emulator {
 
     void Application::update() {
         try {
-            emulator_.tick();
             if (emulator_.getCPU().isFinished()) {
                 gb::cpu::Instruction instr = emulator_.getCPU().getLastInstruction();
                 recent_instructions_.push_back(instr);
@@ -479,6 +478,7 @@ namespace emulator {
                     single_step_ = true;
                 }
             }
+            emulator_.tick();
         } catch (const std::exception &e) {
             std::cout << "exception occured during emulator update: " << e.what() << std::endl;
         }

@@ -18,7 +18,7 @@ namespace gb::cpu {
             last_instruction_.dst = dst.reg;
             return 4;
         case ArgumentSource::INDIRECT: // LD r, [HL], LD A, [rr]
-            sheduleReadToReg(getWordRegister(src.reg), dst.reg);
+            setByteRegister(dst.reg, data_buffer_.get());
             last_instruction_.src = src.reg;
             last_instruction_.dst = dst.reg;
             return 2;
@@ -416,6 +416,7 @@ namespace gb::cpu {
 
     uint8_t SharpSM83::RETI() {
         shedulePopStack(Registers::PC);
+        sheduleMemoryNoOp();
         IME_ = true;
         wait_for_pc_read_ = true;
         return 4;

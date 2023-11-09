@@ -12,14 +12,14 @@ namespace gb {
 
     uint8_t PPU::read(uint16_t address) const {
         if (g_memory_vram.isInRange(address)) {
-            if (mode_ == PPUMode::RENDER) {
-                return 0xff;
-            }
+            // if (mode_ == PPUMode::RENDER) {
+            //     return 0xff;
+            // }
             return vram_[address - g_memory_vram.min_address];
         } else if (g_memory_oam.isInRange(address)) {
-            if (mode_ == PPUMode::OAM_SCAN || mode_ == PPUMode::RENDER) {
-                return 0xff;
-            }
+            // if (mode_ == PPUMode::OAM_SCAN || mode_ == PPUMode::RENDER) {
+            //     return 0xff;
+            // }
             return oam_[address - g_memory_oam.min_address];
         }
 
@@ -44,15 +44,15 @@ namespace gb {
 
     void PPU::write(uint16_t address, uint8_t data) {
         if (g_memory_vram.isInRange(address)) {
-            if (mode_ == PPUMode::RENDER) {
-                return;
-            }
+            // if (mode_ == PPUMode::RENDER) {
+            //     return;
+            // }
             vram_[address - g_memory_vram.min_address] = data;
             return;
         } else if (g_memory_oam.isInRange(address)) {
-            if (mode_ == PPUMode::OAM_SCAN || mode_ == PPUMode::RENDER) {
-                return;
-            }
+            // if (mode_ == PPUMode::OAM_SCAN || mode_ == PPUMode::RENDER) {
+            //     return;
+            // }
             oam_[address - g_memory_oam.min_address] = data;
             return;
         }

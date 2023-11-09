@@ -1,5 +1,8 @@
 #include "gb/Timer.h"
+#include "gb/Emulator.h"
 #include "gb/InterruptRegister.h"
+#include <cstdint>
+#include <vector>
 
 #define CATCH_CONFIG_MAIN
 #include "catch2/catch_test_macros.hpp"

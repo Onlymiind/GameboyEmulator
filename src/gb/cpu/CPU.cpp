@@ -358,7 +358,7 @@ namespace gb::cpu {
         MemoryOp op = memory_op_queue_.pop_front();
         using enum MemoryOp::Type;
         switch (op.type) {
-        case NONE: return;
+        case NONE: break;
         case READ:
             if (op.data.is<Registers>()) {
                 reg_.setLow(op.data.get<Registers>(), bus_.read(op.address));
