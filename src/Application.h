@@ -66,7 +66,7 @@ namespace emulator {
         void drawMainMenu();
         void drawBreakpointMenu();
         void drawMemoryView();
-
+        void drawEmulatorView();
         void drawMemoryRegion(gb::MemoryObjectType region);
 
         template <typename Element>

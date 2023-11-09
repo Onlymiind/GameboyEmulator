@@ -47,9 +47,7 @@ namespace emulator {
 
         ImGui::BeginTable("##table", 3);
         ImGui::TableNextColumn();
-        ImVec2 img_size = ImGui::GetContentRegionAvail();
-        img_size.y = img_size.x * (float(gb::g_screen_height) / float(gb::g_screen_width));
-        ImGui::Image((void *)emulator_renderer_->getTextureID(), img_size);
+        drawEmulatorView();
         ImGui::TableNextColumn();
         StaticStringBuffer<g_instruction_string_buf_size> buf;
         for (size_t i = 0; i < recent_instructions_.size(); ++i) {
@@ -213,6 +211,7 @@ namespace emulator {
             for (auto it = pc_breakpoints_.begin(); it != pc_breakpoints_.end(); ++it) {
                 buffer_.reserveAndClear(6);
                 buffer_.putString("0x").putU16(*it);
+                buffer_.finish();
                 ImGui::Selectable(buffer_.data());
                 if (ImGui::IsItemHovered() && ImGui::IsKeyPressed(ImGuiKey_Backspace)) {
                     delete_it = it;
@@ -377,6 +376,27 @@ namespace emulator {
         }
         buffer_.finish();
         ImGui::TextUnformatted(buffer_.data(), buffer_.data() + buffer_.size());
+    }
+
+    void Application::drawEmulatorView() {
+        ImVec2 position = ImGui::GetCursorScreenPos();
+        ImVec2 img_size = ImGui::GetContentRegionAvail();
+        img_size.y = img_size.x * (float(gb::g_screen_height) / float(gb::g_screen_width));
+        ImGui::Image((void *)emulator_renderer_->getTextureID(), img_size);
+        if (ImGui::IsItemHovered()) {
+            float scale = img_size.x / gb::g_screen_width;
+            ImVec2 mouse_coords = ImGui::GetMousePos();
+            mouse_coords.x -= position.x;
+            mouse_coords.y -= position.y;
+            float tile_dimension = 8 * scale;
+
+            ImVec2 rect_min(std::floor(mouse_coords.x / (8 * scale)) * tile_dimension,
+                            std::floor(mouse_coords.y / (8 * scale)) * tile_dimension);
+            rect_min.x += position.x;
+            rect_min.y += position.y;
+            ImVec2 rect_max(rect_min.x + tile_dimension, rect_min.y + tile_dimension);
+            ImGui::GetWindowDrawList()->AddRect(rect_min, rect_max, IM_COL32(255, 0, 0, 255));
+        }
     }
 
     Application::Application() {

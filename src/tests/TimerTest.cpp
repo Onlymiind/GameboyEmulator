@@ -15,7 +15,7 @@ TEST_CASE("reading and writing") {
     REQUIRE(timer.read(gb::g_timer_div_address) == 0xAB);
     REQUIRE(timer.read(gb::g_timer_tima_address) == 0);
     REQUIRE(timer.read(gb::g_timer_tma_address) == 0);
-    REQUIRE(timer.read(gb::g_timer_tac_address) == 0);
+    REQUIRE(timer.read(gb::g_timer_tac_address) == 0xf8);
 
     timer.write(gb::g_timer_div_address, 0x10);
     REQUIRE(timer.read(gb::g_timer_div_address) == 0);
@@ -27,7 +27,7 @@ TEST_CASE("reading and writing") {
     assert(timer.read(gb::g_timer_tma_address) == 0x12);
 
     timer.write(gb::g_timer_tac_address, 0b11100101);
-    REQUIRE(timer.read(gb::g_timer_tac_address) == 0b00000101);
+    REQUIRE(timer.read(gb::g_timer_tac_address) == (0xf8 | 0b00000101));
 }
 
 TEST_CASE("interrupt") {
@@ -111,4 +111,18 @@ TEST_CASE("frequencies") {
         timer.update();
         REQUIRE((reg.getFlags() & static_cast<uint8_t>(gb::InterruptFlags::TIMER)));
     }
+}
+
+TEST_CASE("incrementing in emulator") {
+    gb::Emulator emulator;
+    emulator.getCartridge().setROM(std::vector<uint8_t>(32 * 1024));
+    emulator.reset();
+    emulator.start();
+    emulator.getTimer().write(gb::g_timer_div_address, 0);
+    REQUIRE(emulator.getTimer().read(gb::g_timer_div_address) == 0);
+    for (int i = 0; i < 64; ++i) {
+        emulator.tick();
+    }
+
+    REQUIRE(emulator.getTimer().read(gb::g_timer_div_address) == 1);
 }
