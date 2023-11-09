@@ -385,10 +385,7 @@ namespace emulator {
     }
 
     void Application::run() {
-        size_t updates_per_frame = size_t(g_cycles_per_second / size_t(refresh_rate_));
-        int frame = 0;
         while (is_running_) {
-            double time_start = glfwGetTime();
 
             if (ImGui::IsKeyPressed(ImGuiKey_Space, false)) {
                 single_step_ = !single_step_;
@@ -434,8 +431,6 @@ namespace emulator {
 
         ImGui_ImplGlfw_InitForOpenGL(window_, true);
         ImGui_ImplOpenGL3_Init();
-        // TODO: no support for multiple monitors
-        refresh_rate_ = glfwGetVideoMode(glfwGetPrimaryMonitor())->refreshRate;
         emulator_renderer_ = std::make_unique<renderer::Renderer>();
         emulator_.getPPU().setRenderer(*emulator_renderer_);
         gui_init_ = true;
@@ -470,6 +465,8 @@ namespace emulator {
     }
 
     void Application::advanceFrame() {
+        bool old_single_step = single_step_;
+        single_step_ = false;
         update();
         while (!emulator_.getPPU().frameFinished()) {
             if (single_step_) {
@@ -482,6 +479,7 @@ namespace emulator {
             update();
         }
         emulator_.getPPU().resetFrameFinistedFlag();
+        single_step_ = old_single_step;
     }
 
     bool Application::setROMDirectory() {

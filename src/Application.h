@@ -25,8 +25,6 @@
 
 namespace emulator {
 
-    constexpr size_t g_cycles_per_second = size_t(1) << 22;
-
     constexpr size_t g_registers_buffer_size = sizeof("Carry: 1, Half carry: 1\n"
                                                       "Negative: 1, Zero: 1\n"
                                                       "A: ff, AF: ffff\n"
@@ -107,7 +105,5 @@ namespace emulator {
         bool gui_init_ = false;
         bool single_step_ = true;
         bool frame_finished_ = false;
-
-        int refresh_rate_ = 60;
     };
 } // namespace emulator
