@@ -45,7 +45,7 @@ namespace emulator {
                          ImGuiWindowFlags_MenuBar);
         drawMainMenu();
 
-        ImGui::BeginTable("##table", 3);
+        ImGui::BeginTable("##table", 4);
         ImGui::TableNextColumn();
         drawEmulatorView();
         ImGui::TableNextColumn();
@@ -481,6 +481,8 @@ namespace emulator {
             emulator_.tick();
         } catch (const std::exception &e) {
             std::cout << "exception occured during emulator update: " << e.what() << std::endl;
+            emulator_.stop();
+            single_step_ = true;
         }
     }
 

@@ -23,8 +23,6 @@ namespace gb {
         ~IMemoryObserver() = default;
     };
 
-    constexpr MemoryObjectInfo g_memory_rom = {.min_address = 0x0000, .max_address = 0x7FFF};
-    constexpr MemoryObjectInfo g_memory_cartridge_ram = {.min_address = 0xa000, .max_address = 0xbfff};
     constexpr MemoryObjectInfo g_memory_wram = {.min_address = 0xc000, .max_address = 0xdfff};
     constexpr MemoryObjectInfo g_memory_mirror = {.min_address = 0xe000, .max_address = 0xfdff};
     constexpr MemoryObjectInfo g_memory_forbidden = {.min_address = 0xfea0, .max_address = 0xfeff};

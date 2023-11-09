@@ -8,6 +8,7 @@ A Game Boy (DMG model) emulator.
 - Hardware timer
 - Basic memory emulation (some memory-mapped IO registers are implemented as normal RAM)
 - Interrupts
+- Basic MBC1 chip support
 
 ### Partially implemented:
 - PPU (implementation is a work in progress: mostly works, but is highly inaccurate, sprites are yet to be tested)
@@ -51,4 +52,5 @@ All blargg's tests for CPU instructions as well as instr_timing.gb and memory ac
 ## TODO list
 - Properly test PPU
 - Make PPU emulation more accurate
-- Implement at least some of the MBC
+- Sprites are not displayed
+- Emulator completely fails mooneye tests for MBC1 chip, although it works fine with some banked blargg test roms.
