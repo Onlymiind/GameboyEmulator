@@ -80,6 +80,11 @@ namespace gb::cpu {
             return *std::bit_cast<uint16_t *>(&registers_[idx]);
         }
 
+        void setWordRegister(Registers reg, uint16_t data) {
+            setLow(reg, uint8_t(data));
+            setHigh(reg, uint8_t(data >> 8));
+        }
+
         void setAF(uint16_t data) {
             *(std::bit_cast<uint16_t *>(&registers_[g_flags])) = data;
             registers_[g_flags] &= uint8_t(Flags::ALL);

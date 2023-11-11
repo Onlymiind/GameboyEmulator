@@ -54,7 +54,7 @@ namespace renderer {
         image_[base_idx + 2] = color.blue;
     }
 
-    void Renderer::finishFrame() noexcept {
+    void Renderer::flush() {
         GLint last_active;
         glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_active);
         glBindTexture(GL_TEXTURE_2D, texture_id_);
@@ -62,4 +62,5 @@ namespace renderer {
                      image_.data());
         glBindTexture(GL_TEXTURE_2D, last_active);
     }
+
 } // namespace renderer

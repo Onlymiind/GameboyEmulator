@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <exception>
 #include <iostream>
+#include <optional>
 #include <stdexcept>
 
 namespace gb::cpu {
@@ -30,6 +31,7 @@ namespace gb::cpu {
         }
 
         memory_op_executed_ = false;
+        finished_ = false;
 
         if (halt_mode_ && getPendingInterrupt()) {
             // TODO: exiting HALT mode should take 4 cycles
@@ -42,28 +44,19 @@ namespace gb::cpu {
             IME_ = true;
             enable_IME_ = false;
         }
-        if (wait_for_pc_read_ && memory_op_queue_.empty()) {
-            wait_for_pc_read_ = false;
-            sheduleFetchInstruction();
-        } else if (!halt_mode_ && memory_op_queue_.empty()) {
+        if (!halt_mode_ && memory_op_queue_.empty()) {
             if (!current_instruction_) {
-                last_instruction_ = Instruction{.registers = reg_, .ime = IME_};
-                last_instruction_.registers.PC() = last_pc_;
-                std::optional<InterruptFlags> interrupt = getPendingInterrupt();
-                if (interrupt && IME_) {
-                    handleInterrupt(*interrupt);
-                } else {
-                    decode(data_buffer_.get());
-                    if (current_instruction_) {
-                        sheduleMemoryAcceses(*current_instruction_);
-                    }
-                }
+                stopped_ = true;
+                throw std::runtime_error("CPU's memory operation invariant failed");
             }
-            if (current_instruction_ && memory_op_queue_.empty()) {
-                cycles_to_finish_ = dispatch();
-                if (!wait_for_pc_read_) {
-                    sheduleFetchInstruction();
-                }
+
+            if (auto interrupt = getPendingInterrupt(); IME_ && interrupt) {
+                handleInterrupt(*interrupt);
+            } else {
+                dispatch();
+                last_instruction_ = instruction_;
+                finished_ = true;
+                sheduleFetchInstruction();
             }
         }
         executeMemoryOp();
@@ -83,16 +76,16 @@ namespace gb::cpu {
         if_.clearFlag(interrupt);
         sheduleMemoryNoOp();
         sheduleMemoryNoOp();
-        // last_pc_ contains address of the fetched instruction
-        // reg_.PC contains address of the byte after the instruction
-        shedulePushStack(last_pc_);
+        // last_instruction_.registers.PC() contains address of the fetched instruction
+        // reg_.PC() contains address of the byte after the instruction
+        shedulePushStack(instruction_.registers.PC());
         sheduleMemoryNoOp();
-        reg_.PC() = g_interrupt_vectors.at(interrupt);
+        reg_.PC() = getInterruptVector(interrupt);
         sheduleFetchInstruction();
-        cycles_to_finish_ = 5;
     }
 
     void SharpSM83::decode(Opcode code) {
+        instruction_ = Instruction{.registers = reg_, .ime = IME_};
         if (!prefixed_next_ && isPrefix(code)) {
             prefixed_next_ = true;
             sheduleFetchInstruction();
@@ -101,21 +94,21 @@ namespace gb::cpu {
 
         if (prefixed_next_) {
             current_instruction_ = decodePrefixed(code);
-            last_instruction_.type = current_instruction_->type;
-            last_instruction_.arg() = current_instruction_->arg().reg;
+            instruction_.type = current_instruction_->type;
+            instruction_.arg() = current_instruction_->arg().reg;
             if (current_instruction_->bit) {
-                last_instruction_.bit() = *current_instruction_->bit;
+                instruction_.bit() = *current_instruction_->bit;
             }
         } else {
             current_instruction_ = decodeUnprefixed(code);
-            last_instruction_.type = current_instruction_->type;
-            last_instruction_.load_subtype = current_instruction_->ld_subtype;
-            last_instruction_.condition = current_instruction_->condition;
+            instruction_.type = current_instruction_->type;
+            instruction_.load_subtype = current_instruction_->ld_subtype;
+            instruction_.condition = current_instruction_->condition;
         }
         prefixed_next_ = false;
     }
 
-    uint8_t SharpSM83::dispatch() {
+    void SharpSM83::dispatch() {
         using type = InstructionType;
         switch (current_instruction_->type) {
         case type::NOP: return NOP();
@@ -166,16 +159,16 @@ namespace gb::cpu {
     }
 
     void SharpSM83::reset() {
-        reg_.setAF(0x01B0);
-        reg_.BC() = 0x0013;
-        reg_.DE() = 0x00D8;
-        reg_.HL() = 0x014D;
+        reg_.setWordRegister(Registers::AF, 0x01b0);
+        reg_.setWordRegister(Registers::BC, 0x0013);
+        reg_.setWordRegister(Registers::DE, 0x00d8);
+        reg_.setWordRegister(Registers::HL, 0x014d);
 
         reg_.sp = 0xFFFE;
         reg_.PC() = 0x0100;
 
         IME_ = false;
-        last_instruction_ = Instruction{};
+        instruction_ = Instruction{};
         stopped_ = false;
         sheduleFetchInstruction();
     }
@@ -246,9 +239,8 @@ namespace gb::cpu {
     }
 
     void SharpSM83::sheduleReadWord(uint16_t address) {
-        pushMemoryOp(MemoryOp{.address = address, .type = MemoryOp::Type::READ_LOW, .data = uint8_t(Registers::NONE)});
-        pushMemoryOp(
-            MemoryOp{.address = ++address, .type = MemoryOp::Type::READ_HIGH, .data = uint8_t(Registers::NONE)});
+        pushMemoryOp(MemoryOp{.address = address, .type = MemoryOp::Type::READ, .data = uint8_t(Registers::NONE)});
+        pushMemoryOp(MemoryOp{.address = ++address, .type = MemoryOp::Type::READ, .data = uint8_t(Registers::NONE)});
     }
 
     void SharpSM83::sheduleWriteByte(uint16_t address, uint8_t data) {
@@ -276,22 +268,17 @@ namespace gb::cpu {
         if (isByteRegister(reg)) {
             pushMemoryOp(MemoryOp{.address = address, .type = MemoryOp::Type::READ, .data = uint8_t(reg)});
         } else {
-            pushMemoryOp(MemoryOp{.address = address, .type = MemoryOp::Type::READ_LOW, .data = uint8_t(reg)});
-            pushMemoryOp(MemoryOp{.address = ++address, .type = MemoryOp::Type::READ_HIGH, .data = uint8_t(reg)});
+            pushMemoryOp(
+                MemoryOp{.address = address, .type = MemoryOp::Type::READ, .data = reg & Registers::LOW_REG_MASK});
+            pushMemoryOp(MemoryOp{.address = ++address,
+                                  .type = MemoryOp::Type::READ,
+                                  .data = uint8_t((reg & Registers::HIGH_REG_MASK) >> 4)});
         }
     }
 
     void SharpSM83::sheduleFetchInstruction() {
-        sheduleReadByte(reg_.PC());
-        if (!prefixed_next_) {
-            last_pc_ = reg_.PC();
-        }
-        if (halt_bug_) {
-            halt_bug_ = false;
-        } else {
-            ++reg_.PC();
-        }
-        current_instruction_ = {};
+        current_instruction_ = std::nullopt;
+        pushMemoryOp(MemoryOp{.type = MemoryOp::Type::FETCH_INSTRUCTION});
     }
 
     void SharpSM83::sheduleMemoryAcceses(DecodedInstruction instr) {
@@ -328,6 +315,7 @@ namespace gb::cpu {
         if (memory_op_queue_.empty() || memory_op_executed_) {
             return;
         }
+        memory_op_executed_ = true;
 
         MemoryOp op = memory_op_queue_.pop_front();
         using enum MemoryOp::Type;
@@ -340,25 +328,20 @@ namespace gb::cpu {
                 data_buffer_.put(bus_.read(op.address));
             }
             break;
-        case READ_HIGH:
-            if (op.data != uint8_t(Registers::NONE)) {
-                Registers reg = Registers(op.data);
-                reg_.setHigh(reg, bus_.read(op.address));
+        case FETCH_INSTRUCTION:
+            decode(bus_.read(reg_.PC()));
+            if (halt_bug_) {
+                halt_bug_ = false;
             } else {
-                data_buffer_.putHigh(bus_.read(op.address));
+                ++reg_.PC();
+            }
+            // false if fetched 0xCB
+            if (current_instruction_) {
+                sheduleMemoryAcceses(*current_instruction_);
             }
             break;
-        case READ_LOW:
-            if (op.data != uint8_t(Registers::NONE)) {
-                Registers reg = Registers(op.data);
-                reg_.setLow(reg, bus_.read(op.address));
-            } else {
-                data_buffer_.putLow(bus_.read(op.address));
-            }
-            break;
+
         case WRITE: bus_.write(op.address, op.data); break;
         }
-
-        memory_op_executed_ = true;
     }
 } // namespace gb::cpu

@@ -34,16 +34,7 @@ namespace gb {
             if_.setFlag(InterruptFlags::VBLANK);
         }
 
-        void start() {
-            is_running_ = true;
-            try {
-                // fetch the first instruction
-                cpu_.tick();
-            } catch (...) {
-                is_running_ = false;
-                throw;
-            }
-        }
+        void start() { is_running_ = true; }
 
         void stop() { is_running_ = false; }
 

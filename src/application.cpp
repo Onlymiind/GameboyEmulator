@@ -397,6 +397,7 @@ namespace emulator {
     }
 
     void Application::drawEmulatorView() {
+        emulator_renderer_->flush();
         ImVec2 position = ImGui::GetCursorScreenPos();
         ImVec2 img_size = ImGui::GetContentRegionAvail();
         img_size.y = img_size.x * (float(gb::g_screen_height) / float(gb::g_screen_width));
@@ -504,7 +505,7 @@ namespace emulator {
             if (emulator_.getCPU().isFinished()) {
                 gb::cpu::Instruction instr = emulator_.getCPU().getLastInstruction();
                 recent_instructions_.push_back(instr);
-                // StringBuffer<g_instruction_string_buf_size> buf;
+                // StaticStringBuffer<g_instruction_string_buf_size> buf;
                 // printInstruction(buf, recent_instructions_.size() - 1);
                 // std::cout << buf.data() << '\n';
                 if (!single_step_ &&
@@ -659,5 +660,6 @@ namespace emulator {
         }
 
         out << "##" << idx; // for Dear ImGui ids
+        out << '\0';
     }
 } // namespace emulator

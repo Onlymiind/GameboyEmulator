@@ -151,6 +151,13 @@ class Queue {
     bool empty() const { return size_ == 0; }
     size_t size() const { return size_; }
 
+    T front() const {
+        if (empty()) {
+            throw std::runtime_error("attempting to pop_front from empty queue");
+        }
+        return data_[begin_];
+    }
+
     T pop_front() {
         if (empty()) {
             throw std::runtime_error("attempting to pop_front from empty queue");

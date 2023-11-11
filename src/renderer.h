@@ -45,9 +45,11 @@ namespace renderer {
         Renderer();
 
         void drawPixels(size_t x, size_t y, std::span<gb::PixelInfo> color) noexcept override;
-        void finishFrame() noexcept override;
+        void finishFrame() noexcept override {}
 
         uint64_t getTextureID() const { return texture_id_; }
+
+        void flush();
 
       private:
         void setPixel(size_t base_idx, Color color);

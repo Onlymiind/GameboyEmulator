@@ -52,19 +52,20 @@ TEST_CASE("run cpu test roms") {
     emulator.getCartridge().setROM(readFile(rom_dir + rom_name));
 
     emulator.getBus().setObserver(test_out);
+    emulator.reset();
     emulator.start();
-    uint16_t old_pc = emulator.getCPU().getProgramCounter();
+    uint16_t old_pc = 0xffff;
     while (!emulator.terminated()) {
         try {
             emulator.tick();
             if (emulator.getCPU().isFinished()) {
                 // tests jump to infinite loop after comletion
-                if (!emulator.getCPU().isHalted() && emulator.getCPU().getProgramCounter() == old_pc) {
+                if (!emulator.getCPU().isHalted() && emulator.getCPU().getLastInstruction().registers.PC() == old_pc) {
                     INFO("Test rom completion detected at address:");
                     INFO(old_pc);
                     break;
                 }
-                old_pc = emulator.getCPU().getProgramCounter();
+                old_pc = emulator.getCPU().getLastInstruction().registers.PC();
             }
 
         } catch (const std::exception &e) {
