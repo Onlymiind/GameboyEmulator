@@ -1,4 +1,5 @@
 #pragma once
+#include "gb/gb_input.h"
 #include "gb/interrupt_register.h"
 #include "gb/memory/basic_components.h"
 #include "gb/ppu/ppu.h"
@@ -60,10 +61,10 @@ namespace gb {
 
     class AddressBus {
       public:
-        AddressBus(Cartridge &cartridge, PPU &ppu, Timer &timer, InterruptRegister &interrupt_enable,
+        AddressBus(Cartridge &cartridge, PPU &ppu, Timer &timer, Input &input, InterruptRegister &interrupt_enable,
                    InterruptRegister &interrupt_flags)
             : cartridge_(cartridge), interrupt_enable_(interrupt_enable), interrupt_flags_(interrupt_flags),
-              timer_(timer), ppu_(ppu) {}
+              timer_(timer), ppu_(ppu), input_(input) {}
 
         void setObserver(IMemoryObserver &observer) { observer_ = &observer; }
         void removeObserver() { observer_ = nullptr; }
@@ -92,6 +93,7 @@ namespace gb {
         InterruptRegister &interrupt_flags_;
         Timer &timer_;
         PPU &ppu_;
+        Input &input_;
 
         uint8_t data_ = 0;
     };

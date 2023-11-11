@@ -1,4 +1,5 @@
 #include "gb/address_bus.h"
+#include "gb/gb_input.h"
 #include "gb/interrupt_register.h"
 #include "gb/memory/basic_components.h"
 #include "gb/ppu/ppu.h"
@@ -32,34 +33,36 @@ namespace gb {
     }
 
     void AddressBus::write(uint16_t address, uint8_t data) {
-        if (g_memory_rom.isInRange(address) && cartridge_.hasROM()) {
-            cartridge_.write(address, data);
-        } else if (g_memory_vram.isInRange(address)) {
-            ppu_.write(address, data);
-        } else if (g_memory_cartridge_ram.isInRange(address) && cartridge_.hasRAM()) {
-            cartridge_.write(address, data);
-        } else if (g_memory_wram.isInRange(address)) {
+        if (address <= g_memory_rom.max_address) {
+            cartridge_.writeROM(address, data);
+        } else if (address <= g_memory_vram.max_address) {
+            ppu_.writeVRAM(address, data);
+        } else if (address <= g_memory_cartridge_ram.max_address) {
+            cartridge_.writeRAM(address, data);
+        } else if (address <= g_memory_wram.max_address) {
             wram_[address - g_memory_wram.min_address] = data;
-        } else if (g_memory_mirror.isInRange(address)) {
+        } else if (address <= g_memory_mirror.max_address) {
             // only lower 13 bits of the address are used
             wram_[address & 0x1fff] = data;
-        } else if (g_memory_oam.isInRange(address)) {
-            ppu_.write(address, data);
+        } else if (address <= g_memory_oam.max_address) {
+            ppu_.writeOAM(address, data);
+        } else if (address <= g_memory_forbidden.max_address) {
+            // ignore
+        } else if (address == g_memory_joypad_address) {
+            input_.write(data);
         } else if (g_memory_timer.isInRange(address)) {
             timer_.write(address, data);
         } else if (g_memory_ppu_registers.isInRange(address)) {
-            ppu_.write(address, data);
-        } else if (g_memory_hram.isInRange(address)) {
-            hram_[address - g_memory_hram.min_address] = data;
+            ppu_.writeIO(address, data);
         } else if (address == g_interrupt_enable_address) {
             interrupt_enable_.write(data);
         } else if (address == g_interrupt_flags_address) {
             interrupt_flags_.write(data);
-        } else if (g_memory_io_unused.isInRange(address)) {
-            // catch all writes to io range
+        } else if (address <= g_memory_io_unused.max_address) {
+            // catch all reads from io range
             unused_io_[address - g_memory_io_unused.min_address] = data;
-        } else if (g_memory_forbidden.isInRange(address)) {
-            // ignore
+        } else if (address <= g_memory_hram.max_address) {
+            hram_[address - g_memory_hram.min_address] = data;
         } else {
             throw std::invalid_argument("trying to access invalid memory");
         }
@@ -94,35 +97,37 @@ namespace gb {
     }
 
     std::optional<uint8_t> AddressBus::peek(uint16_t address) const {
-        if (g_memory_rom.isInRange(address) && cartridge_.hasROM()) {
-            return cartridge_.read(address);
-        } else if (g_memory_vram.isInRange(address)) {
-            return ppu_.read(address);
-        } else if (g_memory_cartridge_ram.isInRange(address) && cartridge_.hasRAM()) {
-            return cartridge_.read(address);
-        } else if (g_memory_wram.isInRange(address)) {
+        if (address <= g_memory_rom.max_address) {
+            return cartridge_.readROM(address);
+        } else if (address <= g_memory_vram.max_address) {
+            return ppu_.readVRAM(address);
+        } else if (address <= g_memory_cartridge_ram.max_address) {
+            return cartridge_.readRAM(address);
+        } else if (address <= g_memory_wram.max_address) {
             return wram_[address - g_memory_wram.min_address];
-        } else if (g_memory_mirror.isInRange(address)) {
+        } else if (address <= g_memory_mirror.max_address) {
             // only lower 13 bits of the address are used
             return wram_[address & 0x1fff];
-        } else if (g_memory_oam.isInRange(address)) {
-            return ppu_.read(address);
-        } else if (g_memory_forbidden.isInRange(address)) {
+        } else if (address <= g_memory_oam.max_address) {
+            return ppu_.readOAM(address);
+        } else if (address <= g_memory_forbidden.max_address) {
             // TODO: value depends on PPU behaviour
             return 0xff;
+        } else if (address == g_memory_joypad_address) {
+            return input_.read();
         } else if (g_memory_timer.isInRange(address)) {
             return timer_.read(address);
         } else if (g_memory_ppu_registers.isInRange(address)) {
-            return ppu_.read(address);
-        } else if (g_memory_hram.isInRange(address)) {
-            return hram_[address - g_memory_hram.min_address];
+            return ppu_.readIO(address);
         } else if (address == g_interrupt_enable_address) {
             return interrupt_enable_.read();
         } else if (address == g_interrupt_flags_address) {
             return interrupt_flags_.read();
-        } else if (g_memory_io_unused.isInRange(address)) {
+        } else if (address <= g_memory_io_unused.max_address) {
             // catch all reads from io range
             return unused_io_[address - g_memory_io_unused.min_address];
+        } else if (address <= g_memory_hram.max_address) {
+            return hram_[address - g_memory_hram.min_address];
         }
 
         return {};

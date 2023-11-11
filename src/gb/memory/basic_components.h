@@ -16,7 +16,8 @@ namespace gb {
         virtual ~MemoryBankController() = default;
 
         virtual void write(uint16_t address, uint8_t value) = 0;
-        virtual size_t getEffectiveAddress(uint16_t address) const = 0;
+        virtual size_t getEffectiveROMAddress(uint16_t address) const = 0;
+        virtual size_t getEffectiveRAMAddress(uint16_t address) const = 0;
         virtual bool ramEnabled() const = 0;
     };
 
@@ -31,7 +32,10 @@ namespace gb {
         ~MBC1() override = default;
 
         void write(uint16_t address, uint8_t value) override;
-        size_t getEffectiveAddress(uint16_t address) const override;
+        size_t getEffectiveROMAddress(uint16_t address) const override;
+        size_t getEffectiveRAMAddress(uint16_t address) const override {
+            return ((mode_ ? (size_t(ram_bank_) << 13) : 0) | size_t(address & 0xfff)) & ram_address_mask_;
+        }
         bool ramEnabled() const override { return ram_enabled_; }
 
       private:
@@ -64,8 +68,11 @@ namespace gb {
         Cartridge(std::vector<uint8_t> rom) : rom_(std::move(rom)) {}
 
         bool setROM(std::vector<uint8_t> rom);
-        uint8_t read(uint16_t address) const;
-        void write(uint16_t address, uint8_t data);
+        uint8_t readROM(uint16_t address) const;
+        void writeROM(uint16_t address, uint8_t data);
+
+        uint8_t readRAM(uint16_t address) const;
+        void writeRAM(uint16_t address, uint8_t data);
 
         bool hasRAM() const { return !ram_.empty(); }
         bool hasROM() const { return !rom_.empty(); }

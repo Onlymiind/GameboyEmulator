@@ -123,8 +123,14 @@ namespace gb {
             reset();
         }
 
-        uint8_t read(uint16_t address) const;
-        void write(uint16_t address, uint8_t data);
+        uint8_t readIO(uint16_t address) const;
+        void writeIO(uint16_t address, uint8_t data);
+
+        uint8_t readVRAM(uint16_t address) const;
+        void writeVRAM(uint16_t address, uint8_t data);
+
+        uint8_t readOAM(uint16_t address) const;
+        void writeOAM(uint16_t address, uint8_t data);
 
         void update();
 

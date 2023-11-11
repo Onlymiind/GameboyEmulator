@@ -53,35 +53,44 @@ namespace gb {
         return true;
     }
 
-    uint8_t Cartridge::read(uint16_t address) const {
-        if (g_memory_cartridge_ram.isInRange(address)) {
-            if (ram_.empty()) {
-                throw std::invalid_argument("accessing unmapped cartridge RAM");
-            }
-
-            if (mbc_ && mbc_->ramEnabled()) {
-                return ram_[mbc_->getEffectiveAddress(address)];
-            }
-            return 0xff;
+    uint8_t Cartridge::readROM(uint16_t address) const {
+        if (!g_memory_rom.isInRange(address)) [[unlikely]] {
+            throw std::invalid_argument("wrong ROM address");
         }
 
         if (mbc_) {
-            return rom_[mbc_->getEffectiveAddress(address)];
+            size_t addr = mbc_->getEffectiveROMAddress(address);
+            return rom_[addr];
         }
 
         return rom_[address];
     }
-    void Cartridge::write(uint16_t address, uint8_t data) {
+    void Cartridge::writeROM(uint16_t address, uint8_t data) {
         if (!mbc_) {
             return;
         }
         // it seems that MBC chips' registers are always in ROM,
         // thus write to MBC and to cartridge RAM never occur on the same write
         mbc_->write(address, data);
+    }
 
-        if (g_memory_cartridge_ram.isInRange(address) && !ram_.empty() && mbc_->ramEnabled()) {
-            ram_[mbc_->getEffectiveAddress(address)] = data;
+    uint8_t Cartridge::readRAM(uint16_t address) const {
+        if (ram_.empty()) {
+            throw std::invalid_argument("accessing unmapped cartridge RAM");
         }
+
+        if (mbc_ && mbc_->ramEnabled()) {
+            return ram_[mbc_->getEffectiveRAMAddress(address)];
+        }
+        return 0xff;
+    }
+
+    void Cartridge::writeRAM(uint16_t address, uint8_t data) {
+        if (ram_.empty() || !mbc_->ramEnabled()) {
+            return;
+        }
+
+        ram_[mbc_->getEffectiveRAMAddress(address)] = data;
     }
 
     void MBC1::write(uint16_t address, uint8_t value) {
@@ -99,23 +108,10 @@ namespace gb {
         }
     }
 
-    size_t MBC1::getEffectiveAddress(uint16_t address) const {
-        if (mode_) {
-            if (g_memory_cartridge_ram.isInRange(address)) {
-                return ((size_t(ram_bank_) << 13) | (address & 0xfff)) & ram_address_mask_;
-            } else if (address <= 0x3fff) {
-                return ((size_t(ram_bank_) << 19) | address) & rom_address_mask_;
-            }
-
-            return ((size_t(ram_bank_) << 19) | (size_t(rom_bank_) << 14) | size_t(address & 0x3fff)) &
-                   rom_address_mask_;
-        }
-
-        if (g_memory_cartridge_ram.isInRange(address)) {
-            return address & 0xfff;
-        }
-
-        if (address <= 0x3fff) {
+    size_t MBC1::getEffectiveROMAddress(uint16_t address) const {
+        if (mode_ && address <= 0x3fff) {
+            return ((size_t(ram_bank_) << 19) | address) & rom_address_mask_;
+        } else if (address <= 0x3fff) {
             return address;
         }
 

@@ -10,18 +10,7 @@
 
 namespace gb {
 
-    uint8_t PPU::read(uint16_t address) const {
-        if (g_memory_vram.isInRange(address)) {
-            // if (mode_ == PPUMode::RENDER) {
-            //     return 0xff;
-            // }
-            return vram_[address - g_memory_vram.min_address];
-        } else if (g_memory_oam.isInRange(address)) {
-            // if (mode_ == PPUMode::OAM_SCAN || mode_ == PPUMode::RENDER) {
-            //     return 0xff;
-            // }
-            return oam_[address - g_memory_oam.min_address];
-        }
+    uint8_t PPU::readIO(uint16_t address) const {
 
         switch (address) {
         case g_lcd_control_address: return lcd_control_;
@@ -42,20 +31,7 @@ namespace gb {
         return 0;
     }
 
-    void PPU::write(uint16_t address, uint8_t data) {
-        if (g_memory_vram.isInRange(address)) {
-            // if (mode_ == PPUMode::RENDER) {
-            //     return;
-            // }
-            vram_[address - g_memory_vram.min_address] = data;
-            return;
-        } else if (g_memory_oam.isInRange(address)) {
-            // if (mode_ == PPUMode::OAM_SCAN || mode_ == PPUMode::RENDER) {
-            //     return;
-            // }
-            oam_[address - g_memory_oam.min_address] = data;
-            return;
-        }
+    void PPU::writeIO(uint16_t address, uint8_t data) {
 
         switch (address) {
         case g_lcd_control_address: lcd_control_ = data; break;
@@ -77,6 +53,37 @@ namespace gb {
         case g_window_x_address: window_x_ = data; break;
         default: throw std::invalid_argument("unreachable");
         }
+    }
+
+    uint8_t PPU::readVRAM(uint16_t address) const {
+        if (!g_memory_vram.isInRange(address)) [[unlikely]] {
+            throw std::invalid_argument("wrong VRAM address");
+        }
+
+        return vram_[address - g_memory_vram.min_address];
+    }
+
+    void PPU::writeVRAM(uint16_t address, uint8_t data) {
+        if (!g_memory_vram.isInRange(address)) [[unlikely]] {
+            throw std::invalid_argument("wrong VRAM address");
+        }
+
+        vram_[address - g_memory_vram.min_address] = data;
+    }
+
+    uint8_t PPU::readOAM(uint16_t address) const {
+        if (!g_memory_oam.isInRange(address)) [[unlikely]] {
+            throw std::invalid_argument("wrong VRAM address");
+        }
+
+        return oam_[address - g_memory_oam.min_address];
+    }
+    void PPU::writeOAM(uint16_t address, uint8_t data) {
+        if (!g_memory_oam.isInRange(address)) [[unlikely]] {
+            throw std::invalid_argument("wrong VRAM address");
+        }
+
+        oam_[address - g_memory_oam.min_address] = data;
     }
 
     void PPU::update() {
@@ -149,6 +156,7 @@ namespace gb {
                 if (current_y_ == g_screen_height) {
                     mode_ = PPUMode::VBLANK;
                     cycles_to_finish_ = g_vblank_duration;
+                    interrupt_flags_.setFlag(InterruptFlags::VBLANK);
                     set_interrupt = status_ & PPUInterruptSelectFlags::VBLANK;
                 } else {
                     mode_ = PPUMode::OAM_SCAN;

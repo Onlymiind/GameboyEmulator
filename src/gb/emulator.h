@@ -3,6 +3,7 @@
 #include "gb/cpu/cpu.h"
 #include "gb/cpu/cpu_utils.h"
 #include "gb/cpu/decoder.h"
+#include "gb/gb_input.h"
 #include "gb/interrupt_register.h"
 #include "gb/memory/basic_components.h"
 #include "gb/ppu/ppu.h"
@@ -55,14 +56,16 @@ namespace gb {
         PPU &getPPU() { return ppu_; }
         InterruptRegister &getIE() { return ie_; }
         InterruptRegister &getIF() { return if_; }
+        Input &getInput() { return input_; }
 
       private:
         Cartridge cartridge_;
         InterruptRegister ie_;
         InterruptRegister if_;
+        Input input_{if_};
         Timer timer_{if_};
         PPU ppu_{if_};
-        AddressBus bus_{cartridge_, ppu_, timer_, ie_, if_};
+        AddressBus bus_{cartridge_, ppu_, timer_, input_, ie_, if_};
         cpu::SharpSM83 cpu_{bus_, ie_, if_};
 
         bool is_running_ = false;
