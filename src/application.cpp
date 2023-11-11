@@ -43,87 +43,24 @@ namespace emulator {
         ImGui::Begin("name", nullptr,
                      ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove |
                          ImGuiWindowFlags_MenuBar);
+
         drawMainMenu();
 
-        ImGui::BeginTable("##table", 4);
-        ImGui::TableNextColumn();
-        drawEmulatorView();
-        ImGui::TableNextColumn();
-        StaticStringBuffer<g_instruction_string_buf_size> buf;
-        for (size_t i = 0; i < recent_instructions_.size(); ++i) {
-            printInstruction(buf, i);
-            if (ImGui::Selectable(buf.data())) {
-                registers_to_print_ = std::pair<gb::cpu::RegisterFile, bool>{recent_instructions_[i].registers,
-                                                                             recent_instructions_[i].ime};
+        if (ImGui::BeginTabBar("View")) {
+            if (ImGui::BeginTabItem("EmulatorView")) {
+                drawEmulatorView();
+                ImGui::EndTabItem();
             }
-        }
-
-        if (registers_to_print_) {
-            ImGui::NewLine();
-            auto [regs, ime] = *registers_to_print_;
-            buffer_.reserveAndClear(g_registers_buffer_size);
-            buffer_.putString("Carry: ")
-                .putBool(regs.getFlag(gb::cpu::Flags::CARRY))
-                .putString(", Half carry: ")
-                .putBool(regs.getFlag(gb::cpu::Flags::HALF_CARRY))
-                .putString("\nNegative: ")
-                .putBool(regs.getFlag(gb::cpu::Flags::NEGATIVE))
-                .putString(", Zero: ")
-                .putBool(regs.getFlag(gb::cpu::Flags::ZERO))
-                .putString("\nA: ")
-                .putU8(regs.A())
-                .putString(", AF: ")
-                .putU16(regs.AF())
-                .putString("\nC: ")
-                .putU8(regs.C())
-                .putString(", B: ")
-                .putU8(regs.B())
-                .putString(", BC: ")
-                .putU16(regs.BC())
-                .putString("\nE: ")
-                .putU8(regs.E())
-                .putString(", D: ")
-                .putU8(regs.D())
-                .putString(", DE: ")
-                .putU16(regs.DE())
-                .putString("\nH: ")
-                .putU8(regs.H())
-                .putString(", L: ")
-                .putU8(regs.L())
-                .putString(", HL: ")
-                .putU16(regs.HL())
-                .putString("\nSP: ")
-                .putU16(regs.sp)
-                .putString(", PC: ")
-                .putU16(regs.pc)
-                .putString("\nIME: ")
-                .putBool(ime);
-            ImGui::TextUnformatted(buffer_.data(), buffer_.data() + buffer_.size());
-        }
-
-        ImGui::NewLine();
-        uint64_t instr = 0;
-        ImGui::TextUnformatted("Fast forward (in number of instructions):");
-        if (ImGui::InputScalar("##run_instr", ImGuiDataType_U64, &instr, nullptr, nullptr, "%d",
-                               ImGuiInputTextFlags_EnterReturnsTrue)) {
-            for (uint64_t i = 0; i < instr; ++i) {
-                update();
-                while (!emulator_.terminated() && !emulator_.getCPU().isFinished()) {
-                    update();
-                }
+            if (ImGui::BeginTabItem("Debugger")) {
+                drawDebuggerMenu();
+                ImGui::EndTabItem();
             }
+            if (ImGui::BeginTabItem("Memory view")) {
+                drawMemoryView();
+                ImGui::EndTabItem();
+            }
+            ImGui::EndTabBar();
         }
-
-        if (single_step_) {
-            ImGui::NewLine();
-            ImGui::TextUnformatted("Single stepping");
-        }
-
-        ImGui::TableNextColumn();
-        drawBreakpointMenu();
-        ImGui::EndTable();
-
-        drawMemoryView();
 
         ImGui::End();
 
@@ -199,6 +136,84 @@ namespace emulator {
         }
 
         ImGui::EndMenuBar();
+    }
+
+    void Application::drawDebuggerMenu() {
+        ImGui::BeginTable("##table", 2);
+        ImGui::TableNextColumn();
+        StaticStringBuffer<g_instruction_string_buf_size> buf;
+        for (size_t i = 0; i < recent_instructions_.size(); ++i) {
+            printInstruction(buf, i);
+            if (ImGui::Selectable(buf.data())) {
+                registers_to_print_ = std::pair<gb::cpu::RegisterFile, bool>{recent_instructions_[i].registers,
+                                                                             recent_instructions_[i].ime};
+            }
+        }
+
+        if (registers_to_print_) {
+            ImGui::NewLine();
+            auto [regs, ime] = *registers_to_print_;
+            buffer_.reserveAndClear(g_registers_buffer_size);
+            buffer_.putString("Carry: ")
+                .putBool(regs.getFlag(gb::cpu::Flags::CARRY))
+                .putString(", Half carry: ")
+                .putBool(regs.getFlag(gb::cpu::Flags::HALF_CARRY))
+                .putString("\nNegative: ")
+                .putBool(regs.getFlag(gb::cpu::Flags::NEGATIVE))
+                .putString(", Zero: ")
+                .putBool(regs.getFlag(gb::cpu::Flags::ZERO))
+                .putString("\nA: ")
+                .putU8(regs.A())
+                .putString(", AF: ")
+                .putU16(regs.AF())
+                .putString("\nC: ")
+                .putU8(regs.C())
+                .putString(", B: ")
+                .putU8(regs.B())
+                .putString(", BC: ")
+                .putU16(regs.BC())
+                .putString("\nE: ")
+                .putU8(regs.E())
+                .putString(", D: ")
+                .putU8(regs.D())
+                .putString(", DE: ")
+                .putU16(regs.DE())
+                .putString("\nH: ")
+                .putU8(regs.H())
+                .putString(", L: ")
+                .putU8(regs.L())
+                .putString(", HL: ")
+                .putU16(regs.HL())
+                .putString("\nSP: ")
+                .putU16(regs.sp)
+                .putString(", PC: ")
+                .putU16(regs.pc)
+                .putString("\nIME: ")
+                .putBool(ime);
+            ImGui::TextUnformatted(buffer_.data(), buffer_.data() + buffer_.size());
+        }
+
+        ImGui::NewLine();
+        uint64_t instr = 0;
+        ImGui::TextUnformatted("Fast forward (in number of instructions):");
+        if (ImGui::InputScalar("##run_instr", ImGuiDataType_U64, &instr, nullptr, nullptr, "%d",
+                               ImGuiInputTextFlags_EnterReturnsTrue)) {
+            for (uint64_t i = 0; i < instr; ++i) {
+                update();
+                while (!emulator_.terminated() && !emulator_.getCPU().isFinished()) {
+                    update();
+                }
+            }
+        }
+
+        if (single_step_) {
+            ImGui::NewLine();
+            ImGui::TextUnformatted("Single stepping");
+        }
+
+        ImGui::TableNextColumn();
+        drawBreakpointMenu();
+        ImGui::EndTable();
     }
 
     void Application::drawBreakpointMenu() {

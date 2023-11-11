@@ -65,6 +65,7 @@ namespace emulator {
         bool runROM(const std::filesystem::path path);
 
         void drawMainMenu();
+        void drawDebuggerMenu();
         void drawBreakpointMenu();
         void drawMemoryView();
         void drawEmulatorView();
