@@ -47,7 +47,7 @@ namespace emulator {
         drawMainMenu();
 
         if (ImGui::BeginTabBar("View")) {
-            if (ImGui::BeginTabItem("EmulatorView")) {
+            if (ImGui::BeginTabItem("Emulator view")) {
                 drawEmulatorView();
                 ImGui::EndTabItem();
             }

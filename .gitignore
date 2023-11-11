@@ -367,7 +367,6 @@ build/
 callgrind*
 *.pl
 *.ini
-*.png
 
 lua-5.4.6/
 scripting_test/

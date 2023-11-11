@@ -47,7 +47,13 @@ All blargg's tests for CPU instructions as well as instr_timing.gb and memory ac
 
 ## Screenshots
 
-![screenshot](./screenshot.png)
+![Emulator view](./emulator_view.png)
+
+
+![Debugger](./debugger.png)
+
+
+![Memory view](./memory_view.png)
 
 ## TODO list
 - Properly test PPU
