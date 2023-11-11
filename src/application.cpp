@@ -187,7 +187,7 @@ namespace emulator {
                 .putString("\nSP: ")
                 .putU16(regs.sp)
                 .putString(", PC: ")
-                .putU16(regs.pc)
+                .putU16(regs.PC())
                 .putString("\nIME: ")
                 .putBool(ime);
             ImGui::TextUnformatted(buffer_.data(), buffer_.data() + buffer_.size());
@@ -508,7 +508,7 @@ namespace emulator {
                 // printInstruction(buf, recent_instructions_.size() - 1);
                 // std::cout << buf.data() << '\n';
                 if (!single_step_ &&
-                    std::binary_search(pc_breakpoints_.begin(), pc_breakpoints_.end(), instr.registers.pc)) {
+                    std::binary_search(pc_breakpoints_.begin(), pc_breakpoints_.end(), instr.registers.PC())) {
                     single_step_ = true;
                 }
             }
@@ -594,7 +594,7 @@ namespace emulator {
         std::stringstream out;
         out.rdbuf()->pubsetbuf(buf.data(), buf.capacityWithNullChar());
 
-        out << std::hex << instr.registers.pc << ' ' << to_string(instr.type);
+        out << std::hex << instr.registers.PC() << ' ' << to_string(instr.type);
         if (instr.condition) {
             out << ' ' << to_string(*instr.condition);
         }

@@ -96,7 +96,7 @@ namespace gb::cpu {
 
         RegisterFile getRegisters() const { return reg_; }
 
-        uint16_t getProgramCounter() const { return reg_.pc; }
+        uint16_t getProgramCounter() const { return reg_.PC(); }
 
         bool isFinished() const {
             return !current_instruction_ && !prefixed_next_ && memory_op_queue_.empty();

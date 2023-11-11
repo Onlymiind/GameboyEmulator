@@ -1,5 +1,6 @@
 #include "gb/ppu/ppu.h"
 #include "gb/interrupt_register.h"
+#include "util/util.h"
 #include <algorithm>
 #include <array>
 #include <cstdint>
@@ -188,8 +189,7 @@ namespace gb {
         if (current_x_ >= g_screen_width) {
             return;
         }
-        std::vector<PixelInfo> pixels;
-        pixels.reserve(8);
+        StaticVector<PixelInfo, 8> pixels;
 
         if (lcd_control_ & LCDControlFlags::BG_ENABLE) {
             uint16_t tilemap_base = g_first_tilemap_offset;
@@ -279,7 +279,9 @@ namespace gb {
         }
 
         if (pixels.empty()) {
-            pixels.insert(pixels.end(), 8, PixelInfo{});
+            for (size_t i = 0; i < 8; ++i) {
+                pixels.push_back(PixelInfo{});
+            }
         }
         if (renderer_) {
             renderer_->drawPixels(current_x_, current_y_, pixels);

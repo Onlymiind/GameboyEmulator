@@ -298,3 +298,42 @@ class StringBuffer {
     size_t size_ = 0;
     size_t capacity_ = 0;
 };
+
+template <typename T, size_t CAPACITY>
+class StaticVector {
+  public:
+    static_assert(std::is_aggregate_v<T>);
+    StaticVector() = default;
+
+    T &operator[](size_t idx) {
+        if (idx >= size_) [[unlikely]] {
+            throw std::out_of_range("out of bounds access");
+        }
+
+        return elems_[idx];
+    }
+
+    T *begin() { return &elems_[0]; }
+    T *end() { return &elems_[0] + size_; }
+
+    const T *begin() const { return &elems_[0]; }
+    const T *end() const { return &elems_[0] + size_; }
+
+    size_t size() const { return size_; }
+    size_t capacity() const { return CAPACITY; }
+
+    bool empty() const { return size_ == 0; }
+
+    void push_back(T elem) {
+        if (size_ >= CAPACITY) {
+            throw std::out_of_range("pushing into full StaticVector");
+        }
+
+        elems_[size_] = elem;
+        ++size_;
+    }
+
+  private:
+    T elems_[CAPACITY];
+    size_t size_ = 0;
+};

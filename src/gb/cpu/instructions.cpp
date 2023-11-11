@@ -336,7 +336,7 @@ namespace gb::cpu {
     uint8_t SharpSM83::JP(DecodedInstruction instr) {
         if (instr.src.src == ArgumentSource::DOUBLE_REGISTER) { // JP HL
             last_instruction_.arg() = Registers::HL;
-            reg_.pc = reg_.HL();
+            reg_.PC() = reg_.HL();
             return 1;
         }
         uint16_t address = data_buffer_.getWord();
@@ -345,7 +345,7 @@ namespace gb::cpu {
         if (instr.condition.has_value() && !checkCondition(*instr.condition)) {
             return 3;
         }
-        reg_.pc = address;
+        reg_.PC() = address;
         sheduleMemoryNoOp();
         return 4;
     }
@@ -358,7 +358,7 @@ namespace gb::cpu {
             return 2;
         }
 
-        reg_.pc += rel_address;
+        reg_.PC() += rel_address;
         sheduleMemoryNoOp();
         return 3;
     }
@@ -380,8 +380,8 @@ namespace gb::cpu {
     uint8_t SharpSM83::RST(uint16_t reset_vector) {
         last_instruction_.arg() = reset_vector;
         sheduleMemoryNoOp();
-        shedulePushStack(reg_.pc);
-        reg_.pc = reset_vector;
+        shedulePushStack(reg_.PC());
+        reg_.PC() = reset_vector;
         return 4;
     }
 
@@ -394,8 +394,8 @@ namespace gb::cpu {
         }
 
         sheduleMemoryNoOp();
-        shedulePushStack(reg_.pc);
-        reg_.pc = address;
+        shedulePushStack(reg_.PC());
+        reg_.PC() = address;
         return 6;
     }
 

@@ -21,7 +21,7 @@ namespace gb::cpu {
         reg_.HL() = 0x014D;
 
         reg_.sp = 0xFFFE;
-        reg_.pc = 0x0100;
+        reg_.PC() = 0x0100;
     }
 
     void SharpSM83::tick() {
@@ -31,7 +31,7 @@ namespace gb::cpu {
 
         memory_op_executed_ = false;
 
-        if (halt_mode_ && if_.getFlags()) {
+        if (halt_mode_ && getPendingInterrupt()) {
             // TODO: exiting HALT mode should take 4 cycles
             // if an interrupt is enabled, even if IME = false;
             halt_mode_ = false;
@@ -48,7 +48,7 @@ namespace gb::cpu {
         } else if (!halt_mode_ && memory_op_queue_.empty()) {
             if (!current_instruction_) {
                 last_instruction_ = Instruction{.registers = reg_, .ime = IME_};
-                last_instruction_.registers.pc = last_pc_;
+                last_instruction_.registers.PC() = last_pc_;
                 std::optional<InterruptFlags> interrupt = getPendingInterrupt();
                 if (interrupt && IME_) {
                     handleInterrupt(*interrupt);
@@ -79,7 +79,7 @@ namespace gb::cpu {
     }
 
     void SharpSM83::handleInterrupt(InterruptFlags interrupt) {
-        ie_.clearFlag(interrupt);
+        IME_ = false;
         if_.clearFlag(interrupt);
         sheduleMemoryNoOp();
         sheduleMemoryNoOp();
@@ -87,7 +87,7 @@ namespace gb::cpu {
         // reg_.PC contains address of the byte after the instruction
         shedulePushStack(last_pc_);
         sheduleMemoryNoOp();
-        reg_.pc = g_interrupt_vectors.at(interrupt);
+        reg_.PC() = g_interrupt_vectors.at(interrupt);
         sheduleFetchInstruction();
         cycles_to_finish_ = 5;
     }
@@ -172,7 +172,7 @@ namespace gb::cpu {
         reg_.HL() = 0x014D;
 
         reg_.sp = 0xFFFE;
-        reg_.pc = 0x0100;
+        reg_.PC() = 0x0100;
 
         IME_ = false;
         last_instruction_ = Instruction{};
@@ -282,14 +282,14 @@ namespace gb::cpu {
     }
 
     void SharpSM83::sheduleFetchInstruction() {
-        sheduleReadByte(reg_.pc);
+        sheduleReadByte(reg_.PC());
         if (!prefixed_next_) {
-            last_pc_ = reg_.pc;
+            last_pc_ = reg_.PC();
         }
         if (halt_bug_) {
             halt_bug_ = false;
         } else {
-            ++reg_.pc;
+            ++reg_.PC();
         }
         current_instruction_ = {};
     }
@@ -298,12 +298,12 @@ namespace gb::cpu {
         switch (instr.src.src) {
         case ArgumentSource::IMMEDIATE_S8:
         case ArgumentSource::IMMEDIATE_U8:
-            sheduleReadByte(reg_.pc);
-            ++reg_.pc;
+            sheduleReadByte(reg_.PC());
+            ++reg_.PC();
             return;
         case ArgumentSource::IMMEDIATE_U16:
-            sheduleReadWord(reg_.pc);
-            reg_.pc += 2;
+            sheduleReadWord(reg_.PC());
+            reg_.PC() += 2;
             return;
         case ArgumentSource::INDIRECT:
             if (instr.src.reg == Registers::C) {
@@ -314,13 +314,13 @@ namespace gb::cpu {
         }
 
         if (instr.dst.src == ArgumentSource::IMMEDIATE_U8) {
-            sheduleReadByte(reg_.pc);
-            ++reg_.pc;
+            sheduleReadByte(reg_.PC());
+            ++reg_.PC();
 
         } else if (instr.dst.src == ArgumentSource::IMMEDIATE_U16) {
 
-            sheduleReadWord(reg_.pc);
-            reg_.pc += 2;
+            sheduleReadWord(reg_.PC());
+            reg_.PC() += 2;
         }
     }
 
@@ -343,11 +343,7 @@ namespace gb::cpu {
         case READ_HIGH:
             if (op.data != uint8_t(Registers::NONE)) {
                 Registers reg = Registers(op.data);
-                if (reg == Registers::PC) {
-                    reg_.pc = (reg_.pc & 0x00FF) | (uint16_t(bus_.read(op.address)) << 8);
-                } else {
-                    reg_.setHigh(reg, bus_.read(op.address));
-                }
+                reg_.setHigh(reg, bus_.read(op.address));
             } else {
                 data_buffer_.putHigh(bus_.read(op.address));
             }
@@ -355,11 +351,7 @@ namespace gb::cpu {
         case READ_LOW:
             if (op.data != uint8_t(Registers::NONE)) {
                 Registers reg = Registers(op.data);
-                if (reg == Registers::PC) {
-                    reg_.pc = (reg_.pc & 0xFF00) | uint16_t(bus_.read(op.address));
-                } else {
-                    reg_.setLow(reg, bus_.read(op.address));
-                }
+                reg_.setLow(reg, bus_.read(op.address));
             } else {
                 data_buffer_.putLow(bus_.read(op.address));
             }
