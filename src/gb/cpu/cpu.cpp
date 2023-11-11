@@ -47,7 +47,7 @@ namespace gb::cpu {
             sheduleFetchInstruction();
         } else if (!halt_mode_ && memory_op_queue_.empty()) {
             if (!current_instruction_) {
-                last_instruction_ = Instruction{.registers = reg_};
+                last_instruction_ = Instruction{.registers = reg_, .ime = IME_};
                 last_instruction_.registers.pc = last_pc_;
                 std::optional<InterruptFlags> interrupt = getPendingInterrupt();
                 if (interrupt && IME_) {

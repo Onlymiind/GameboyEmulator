@@ -31,7 +31,8 @@ namespace emulator {
                                                       "C: ff, B: ff, BC: ffff\n"
                                                       "E: ff, D: ff, DE: ffff\n"
                                                       "H: ff, L: ff, HL: ffff\n"
-                                                      "SP: ffff, PC: ffff");
+                                                      "SP: ffff, PC: fff\n"
+                                                      "IME: 1");
 
     constexpr size_t g_instruction_string_buf_size = sizeof("ffff CALL nz, ffff##111"); // ##111 is needed to accomodate
                                                                                         // for Dear ImGui ids
@@ -98,7 +99,7 @@ namespace emulator {
         // buffers for GUI
         MemoryBreakpointData memory_breakpoint_data_;
         std::string new_romdir_;
-        std::optional<gb::cpu::RegisterFile> registers_to_print_;
+        std::optional<std::pair<gb::cpu::RegisterFile, bool>> registers_to_print_;
         StringBuffer buffer_;
 
         bool is_running_ = true;

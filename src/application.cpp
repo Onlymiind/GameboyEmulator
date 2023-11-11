@@ -53,13 +53,14 @@ namespace emulator {
         for (size_t i = 0; i < recent_instructions_.size(); ++i) {
             printInstruction(buf, i);
             if (ImGui::Selectable(buf.data())) {
-                registers_to_print_ = recent_instructions_[i].registers;
+                registers_to_print_ = std::pair<gb::cpu::RegisterFile, bool>{recent_instructions_[i].registers,
+                                                                             recent_instructions_[i].ime};
             }
         }
 
         if (registers_to_print_) {
             ImGui::NewLine();
-            auto &regs = *registers_to_print_;
+            auto [regs, ime] = *registers_to_print_;
             buffer_.reserveAndClear(g_registers_buffer_size);
             buffer_.putString("Carry: ")
                 .putBool(regs.getFlag(gb::cpu::Flags::CARRY))
@@ -94,7 +95,9 @@ namespace emulator {
                 .putString("\nSP: ")
                 .putU16(regs.sp)
                 .putString(", PC: ")
-                .putU16(regs.pc);
+                .putU16(regs.pc)
+                .putString("\nIME: ")
+                .putBool(ime);
             ImGui::TextUnformatted(buffer_.data(), buffer_.data() + buffer_.size());
         }
 

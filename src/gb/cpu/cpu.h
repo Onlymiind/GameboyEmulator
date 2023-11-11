@@ -32,6 +32,7 @@ namespace gb::cpu {
         Argument dst;
 
         RegisterFile registers;
+        bool ime = false;
 
         Argument &arg() { return src; }
         Argument &arg1() { return src; }
