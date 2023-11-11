@@ -399,13 +399,17 @@ namespace emulator {
         }
     }
 
-    Application::Application() {
+    Application::Application() : memory_breakpoints_([this]() { single_step_ = true; }) {
         initGUI();
         emulator_.getBus().setObserver(memory_breakpoints_);
     }
 
     void Application::run() {
+        // double start_time = glfwGetTime();
+        // int frame = 0;
         while (is_running_) {
+
+            double start = glfwGetTime();
 
             if (ImGui::IsKeyPressed(ImGuiKey_Space, false)) {
                 single_step_ = !single_step_;
@@ -424,7 +428,17 @@ namespace emulator {
                 advanceFrame();
             }
 
+            glfwSetWindowTitle(window_, ("emulator [" + std::to_string(glfwGetTime() - start) + "]").c_str());
+
             draw();
+            // ++frame;
+            // double time = glfwGetTime();
+            // if (time - start_time > 1.0) {
+            //     double fps = double(frame) / (time - start_time);
+            //     glfwSetWindowTitle(window_, ("emulator [" + std::to_string(fps) + "]").c_str());
+            //     frame = 0;
+            //     start_time = time;
+            // }
 
             if (window_ && glfwWindowShouldClose(window_)) {
                 is_running_ = false;
