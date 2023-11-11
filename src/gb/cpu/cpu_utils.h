@@ -64,6 +64,22 @@ namespace gb::cpu {
             registers_[idx] = data;
         }
 
+        uint8_t getByteRegister(Registers reg) const {
+            size_t idx = reg & Registers::LOW_REG_MASK;
+            if (idx >= registers_.size()) [[unlikely]] {
+                throw std::invalid_argument("invalid byte register");
+            }
+            return registers_[idx];
+        }
+        uint16_t getWordRegister(Registers reg) const {
+            size_t idx = reg & Registers::LOW_REG_MASK;
+            if (isByteRegister(reg) || idx >= registers_.size()) [[unlikely]] {
+                throw std::invalid_argument("invalid word register");
+            }
+
+            return *std::bit_cast<uint16_t *>(&registers_[idx]);
+        }
+
         void setAF(uint16_t data) {
             *(std::bit_cast<uint16_t *>(&registers_[g_flags])) = data;
             registers_[g_flags] &= uint8_t(Flags::ALL);

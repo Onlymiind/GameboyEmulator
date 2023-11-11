@@ -71,7 +71,6 @@ namespace gb::cpu {
     enum class ArgumentType : uint8_t { NONE = 0, UNSIGNED_8, UNSIGNED_16, SIGNED_8 };
 
     enum class Registers : uint8_t {
-        NONE = 0,
 
         FLAGS = 0,
         A = 1,
@@ -85,12 +84,15 @@ namespace gb::cpu {
         BC = (B << 4) | C,
         DE = (D << 4) | E,
         HL = (H << 4) | L,
-        SP = 254,
-        PC = 255,
+        SP = 0xfd,
+        PC = 0xfe,
+        NONE = 0xff,
 
         LOW_REG_MASK = 0x0F,
         HIGH_REG_MASK = 0xF0
     };
+
+    constexpr inline bool isByteRegister(Registers reg) { return (uint8_t(reg) & 0xf0) == 0; }
 
     constexpr inline uint8_t operator&(Registers lhs, Registers rhs) { return uint8_t(lhs) & uint8_t(rhs); }
 

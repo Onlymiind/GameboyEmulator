@@ -44,7 +44,7 @@ namespace gb::cpu {
 
         uint16_t address = 0;
         Type type = Type::NONE;
-        Variant<std::monostate, uint8_t, Registers> data;
+        uint8_t data;
     };
 
     class DataBuffer {
