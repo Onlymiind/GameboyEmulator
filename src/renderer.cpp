@@ -4,7 +4,6 @@
 #include "glad/gl.h"
 #include <cstdint>
 
-#include <GL/gl.h>
 #include <functional>
 
 namespace renderer {
