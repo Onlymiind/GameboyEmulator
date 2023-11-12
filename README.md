@@ -39,7 +39,7 @@ Tests' source code is located under src/tests directory. To build tests add `-DB
 - To see the CPU status during some instruction, click on the instruction.
 - Currently only 10 most recent instructions can be logged.
 - To stop/resume execution press spacebar.
-- Press S while execution is stopped to advance a single instruction, press F to advance a frame.
+- Press F11 while execution is stopped to advance a single instruction, press F12 to advance a frame.
 
 ## Tests status
 

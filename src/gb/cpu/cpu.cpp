@@ -34,8 +34,7 @@ namespace gb::cpu {
         finished_ = false;
 
         if (halt_mode_ && getPendingInterrupt()) {
-            // TODO: exiting HALT mode should take 4 cycles
-            // if an interrupt is enabled, even if IME = false;
+            // TODO: exiting HALT mode should take 4 cycles, even if IME = false;
             halt_mode_ = false;
         }
 
@@ -47,7 +46,8 @@ namespace gb::cpu {
         if (!halt_mode_ && memory_op_queue_.empty()) {
             if (!current_instruction_) {
                 stopped_ = true;
-                throw std::runtime_error("CPU's memory operation invariant failed");
+                throw std::runtime_error(
+                    "CPU's memory operation invariant failed: no instruction available after queue exhaustion");
             }
 
             if (auto interrupt = getPendingInterrupt(); IME_ && interrupt) {
@@ -55,7 +55,6 @@ namespace gb::cpu {
             } else {
                 dispatch();
                 last_instruction_ = instruction_;
-                finished_ = true;
                 sheduleFetchInstruction();
             }
         }
@@ -329,6 +328,7 @@ namespace gb::cpu {
             }
             break;
         case FETCH_INSTRUCTION:
+            finished_ = true;
             decode(bus_.read(reg_.PC()));
             if (halt_bug_) {
                 halt_bug_ = false;

@@ -125,8 +125,6 @@ namespace gb::cpu {
         void decode(Opcode code);
         void pushMemoryOp(MemoryOp op);
 
-        // Unprefixed instrictions. Return the amount of machine cycles needed
-        // for the instruction
         void NOP() {}
         void RLA();
         void RLCA();
@@ -164,8 +162,6 @@ namespace gb::cpu {
 
         void loadByte(ArgumentInfo destination, ArgumentInfo source);
 
-        // Prefixed instructions. Return the amount of machine cycles needed for
-        // the instruction
         void RLC(Registers reg);
         void RRC(Registers reg);
         void RL(Registers reg);

@@ -424,8 +424,6 @@ namespace emulator {
     }
 
     void Application::run() {
-        // double start_time = glfwGetTime();
-        // int frame = 0;
         while (is_running_) {
 
             double start = glfwGetTime();
@@ -435,12 +433,12 @@ namespace emulator {
             }
 
             if (single_step_) {
-                if (ImGui::IsKeyPressed(ImGuiKey_S)) {
+                if (ImGui::IsKeyPressed(ImGuiKey_F11)) {
                     update();
                     while (!emulator_.getCPU().isFinished()) {
                         update();
                     }
-                } else if (ImGui::IsKeyPressed(ImGuiKey_F)) {
+                } else if (ImGui::IsKeyPressed(ImGuiKey_F12)) {
                     advanceFrame();
                 }
             } else {
@@ -450,14 +448,6 @@ namespace emulator {
             glfwSetWindowTitle(window_, ("emulator [" + std::to_string(glfwGetTime() - start) + "]").c_str());
 
             draw();
-            // ++frame;
-            // double time = glfwGetTime();
-            // if (time - start_time > 1.0) {
-            //     double fps = double(frame) / (time - start_time);
-            //     glfwSetWindowTitle(window_, ("emulator [" + std::to_string(fps) + "]").c_str());
-            //     frame = 0;
-            //     start_time = time;
-            // }
 
             if (window_ && glfwWindowShouldClose(window_)) {
                 is_running_ = false;
