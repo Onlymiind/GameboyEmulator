@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GB_EMULATOR_SRC_GB_CPU_OPERATION_HDR_
+#define GB_EMULATOR_SRC_GB_CPU_OPERATION_HDR_
 
 #include <cstdint>
 #include <iostream>
@@ -158,3 +159,5 @@ namespace gb::cpu {
     //  std::ostream& operator<<(std::ostream& os, UnprefixedInstruction instr);
     //  std::ostream& operator<<(std::ostream& os, PrefixedInstruction instr);
 } // namespace gb::cpu
+
+#endif

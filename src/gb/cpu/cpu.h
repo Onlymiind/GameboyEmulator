@@ -1,4 +1,6 @@
-#pragma once
+#ifndef GB_EMULATOR_SRC_GB_CPU_CPU_HDR_
+#define GB_EMULATOR_SRC_GB_CPU_CPU_HDR_
+
 #include "gb/address_bus.h"
 #include "gb/cpu/cpu_utils.h"
 #include "gb/cpu/decoder.h"
@@ -200,3 +202,5 @@ namespace gb::cpu {
         std::optional<DecodedInstruction> current_instruction_;
     };
 } // namespace gb::cpu
+
+#endif

@@ -1,4 +1,6 @@
-#pragma once
+#ifndef GB_EMULATOR_SRC_GB_CPU_CPU_UTILS_HDR_
+#define GB_EMULATOR_SRC_GB_CPU_CPU_UTILS_HDR_
+
 #include "gb/cpu/operation.h"
 #include "util/util.h"
 
@@ -123,3 +125,5 @@ namespace gb::cpu {
     inline bool halfBorrowed(uint8_t lhs, uint8_t rhs) { return (lhs & 0x0F) < (rhs & 0x0F); }
     inline bool halfCarried(uint16_t rhs, uint16_t lhs) { return ((lhs & 0x0FFF) + (rhs & 0x0FFF)) > 0x0FFF; }
 } // namespace gb::cpu
+
+#endif

@@ -1,4 +1,6 @@
-#pragma once
+#ifndef GB_EMULATOR_SRC_GB_INTERRUPT_REGISTER_HDR_
+#define GB_EMULATOR_SRC_GB_INTERRUPT_REGISTER_HDR_
+
 #include <cstdint>
 
 namespace gb {
@@ -36,3 +38,5 @@ namespace gb {
         uint8_t interrupts_;
     };
 } // namespace gb
+
+#endif

@@ -1,4 +1,6 @@
-#pragma once
+#ifndef GB_EMULATOR_SRC_APPLICATION_HDR_
+#define GB_EMULATOR_SRC_APPLICATION_HDR_
+
 #include "breakpoint.h"
 #include "gb/address_bus.h"
 #include "gb/cpu/cpu.h"
@@ -111,3 +113,5 @@ namespace emulator {
         int refresh_rate_ = 60;
     };
 } // namespace emulator
+
+#endif

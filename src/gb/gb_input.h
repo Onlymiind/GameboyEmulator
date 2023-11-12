@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GB_EMULATOR_SRC_GB_GB_INPUT_HDR_
+#define GB_EMULATOR_SRC_GB_GB_INPUT_HDR_
 
 #include "gb/interrupt_register.h"
 #include "util/util.h"
@@ -66,3 +67,5 @@ namespace gb {
         bool select_buttons_ = false;
     };
 } // namespace gb
+
+#endif

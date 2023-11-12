@@ -1,4 +1,6 @@
-#pragma once
+#ifndef GB_EMULATOR_SRC_GB_ADDRESS_BUS_HDR_
+#define GB_EMULATOR_SRC_GB_ADDRESS_BUS_HDR_
+
 #include "gb/gb_input.h"
 #include "gb/interrupt_register.h"
 #include "gb/memory/basic_components.h"
@@ -99,3 +101,5 @@ namespace gb {
     };
 
 } // namespace gb
+
+#endif

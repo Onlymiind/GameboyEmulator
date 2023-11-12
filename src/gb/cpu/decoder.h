@@ -1,4 +1,6 @@
-#pragma once
+#ifndef GB_EMULATOR_SRC_GB_CPU_DECODER_HDR_
+#define GB_EMULATOR_SRC_GB_CPU_DECODER_HDR_
+
 #include "gb/cpu/operation.h"
 
 #include <array>
@@ -17,3 +19,5 @@ namespace gb::cpu {
 
     inline bool isPrefix(Opcode code) { return code.code == 0xCB; }
 } // namespace gb::cpu
+
+#endif

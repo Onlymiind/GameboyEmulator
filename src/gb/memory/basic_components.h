@@ -1,4 +1,6 @@
-#pragma once
+#ifndef GB_EMULATOR_SRC_GB_MEMORY_BASIC_COMPONENTS_HDR_
+#define GB_EMULATOR_SRC_GB_MEMORY_BASIC_COMPONENTS_HDR_
+
 #include <array>
 #include <bit>
 #include <cstddef>
@@ -86,3 +88,5 @@ namespace gb {
     template <size_t SIZE>
     using RAM = std::array<uint8_t, SIZE>;
 } // namespace gb
+
+#endif

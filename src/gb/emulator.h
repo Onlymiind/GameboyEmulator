@@ -1,4 +1,6 @@
-#pragma once
+#ifndef GB_EMULATOR_SRC_GB_EMULATOR_HDR_
+#define GB_EMULATOR_SRC_GB_EMULATOR_HDR_
+
 #include "gb/address_bus.h"
 #include "gb/cpu/cpu.h"
 #include "gb/cpu/cpu_utils.h"
@@ -80,3 +82,5 @@ namespace gb {
         }
     }
 } // namespace gb
+
+#endif

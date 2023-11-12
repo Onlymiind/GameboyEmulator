@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GB_EMULATOR_SRC_UTIL_UTIL_HDR_
+#define GB_EMULATOR_SRC_UTIL_UTIL_HDR_
 
 #include <cstddef>
 #include <cstdint>
@@ -344,3 +345,5 @@ class StaticVector {
     T elems_[CAPACITY];
     size_t size_ = 0;
 };
+
+#endif

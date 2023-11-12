@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GB_EMULATOR_SRC_RENDERER_HDR_
+#define GB_EMULATOR_SRC_RENDERER_HDR_
 
 #include "gb/ppu/ppu.h"
 #include <array>
@@ -59,3 +60,5 @@ namespace renderer {
         uint64_t texture_id_ = 0;
     };
 } // namespace renderer
+
+#endif

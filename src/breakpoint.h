@@ -1,4 +1,6 @@
-#pragma once
+#ifndef GB_EMULATOR_SRC_BREAKPOINT_HDR_
+#define GB_EMULATOR_SRC_BREAKPOINT_HDR_
+
 #include "gb/address_bus.h"
 
 #include <cstdint>
@@ -63,3 +65,4 @@ namespace emulator {
         std::vector<MemoryBreakpointData> breakpoints_;
     };
 } // namespace emulator
+#endif

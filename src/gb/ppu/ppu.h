@@ -1,4 +1,6 @@
-#pragma once
+#ifndef GB_EMULATOR_SRC_GB_PPU_PPU_HDR_
+#define GB_EMULATOR_SRC_GB_PPU_PPU_HDR_
+
 #include "gb/interrupt_register.h"
 #include "gb/memory/basic_components.h"
 #include "util/util.h"
@@ -205,3 +207,5 @@ namespace gb {
         return result;
     }
 } // namespace gb
+
+#endif

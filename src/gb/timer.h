@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GB_EMULATOR_SRC_GB_TIMER_HDR_
+#define GB_EMULATOR_SRC_GB_TIMER_HDR_
 
 #include "gb/interrupt_register.h"
 
@@ -51,3 +52,5 @@ namespace gb {
         InterruptRegister &interrupt_flags_;
     };
 } // namespace gb
+
+#endif
