@@ -72,6 +72,7 @@ namespace gb::cpu {
         uint8_t msb_ = 0;
         bool empty_ = true;
     };
+
     class SharpSM83 {
       public:
         SharpSM83(AddressBus &bus, InterruptRegister &interrupt_enable, InterruptRegister &interrupt_flags);
@@ -82,7 +83,7 @@ namespace gb::cpu {
 
         uint16_t getProgramCounter() const { return reg_.PC(); }
 
-        bool isFinished() const { return stopped_ || finished_; }
+        bool isFinished() const { return stopped_ || (!jumping_to_interrupt_ && !prefixed_next_ && finished_); }
 
         bool isHalted() const { return halt_mode_; }
 
@@ -190,6 +191,7 @@ namespace gb::cpu {
         bool prefixed_next_ = false;
         bool stopped_ = false;
         bool finished_ = false;
+        bool jumping_to_interrupt_ = false;
 
         Queue<MemoryOp, 8> memory_op_queue_;
         Instruction last_instruction_;

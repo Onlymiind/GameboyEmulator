@@ -55,6 +55,7 @@ namespace gb::cpu {
             } else {
                 dispatch();
                 last_instruction_ = instruction_;
+                jumping_to_interrupt_ = false;
                 sheduleFetchInstruction();
             }
         }
@@ -71,11 +72,12 @@ namespace gb::cpu {
     }
 
     void SharpSM83::handleInterrupt(InterruptFlags interrupt) {
+        jumping_to_interrupt_ = true;
         IME_ = false;
         if_.clearFlag(interrupt);
         sheduleMemoryNoOp();
         sheduleMemoryNoOp();
-        // last_instruction_.registers.PC() contains address of the fetched instruction
+        // instruction_.registers.PC() contains address of the fetched instruction
         // reg_.PC() contains address of the byte after the instruction
         shedulePushStack(instruction_.registers.PC());
         sheduleMemoryNoOp();
