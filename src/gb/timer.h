@@ -29,16 +29,7 @@ namespace gb {
         void reset();
 
       private:
-        // FIXME: do not use UB :)
-        union {
-            // TODO: Wrong init
-            uint16_t counter_ = 0xABCC;
-
-            struct {
-                uint8_t align;
-                uint8_t DIV_;
-            };
-        };
+        uint16_t counter_ = 0xABCC;
 
         uint8_t TIMA_ = 0;
         uint8_t TMA_ = 0;

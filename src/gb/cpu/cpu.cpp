@@ -75,7 +75,11 @@ namespace gb::cpu {
         jumping_to_interrupt_ = true;
         IME_ = false;
         if_.clearFlag(interrupt);
-        sheduleMemoryNoOp();
+        // with this no-op added the emulator fails mooneye's intr_timing test.
+        // it looks like interrupts are checked before new instruction is fetched
+        // so in case of this emulator the FETCH_INSTRUCTION takes place of the first no-op.
+        // TODO: probably should call it from executeMemoryOp() then.
+        // sheduleMemoryNoOp();
         sheduleMemoryNoOp();
         // instruction_.registers.PC() contains address of the fetched instruction
         // reg_.PC() contains address of the byte after the instruction

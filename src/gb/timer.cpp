@@ -1,5 +1,6 @@
 #include "timer.h"
 
+#include <cstdint>
 #include <limits>
 #include <stdexcept>
 #include <string>
@@ -20,7 +21,7 @@ namespace gb {
 
     uint8_t Timer::read(uint16_t address) const {
         switch (address) {
-        case g_timer_div_address: return DIV_;
+        case g_timer_div_address: return uint8_t((counter_ & 0xff00) >> 8);
         case g_timer_tima_address: return TIMA_;
         case g_timer_tma_address: return TMA_;
         case g_timer_tac_address: return 0xf8 | (uint8_t(TAC_.enable) << 2) | TAC_.freqency;
