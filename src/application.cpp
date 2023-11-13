@@ -10,6 +10,7 @@
 #include "gb/memory/basic_components.h"
 #include "gb/ppu/ppu.h"
 #include "gb/timer.h"
+#include "imgui_internal.h"
 #include "renderer.h"
 #include "util/util.h"
 
@@ -21,6 +22,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <exception>
@@ -217,11 +219,19 @@ namespace emulator {
         drawBreakpointMenu();
         ImGui::EndTable();
 
+        drawDisassembly();
+    }
+
+    void Application::drawDisassembly() {
         if (disassembler_.isDirty()) {
             InstructionAddress next_addr{.address = 0xffff};
             disasm_buffer_.clear();
+            disassembly_line_count_ = disassembler_.size();
+            size_t offset = 0;
+            InstructionAddress last_address;
             for (auto instr : disassembler_) {
                 if (next_addr != instr.first) {
+                    size_t offset_change = 0;
                     if (next_addr.bank != instr.first.bank) {
                         disasm_buffer_.reserve(sizeof("\nBank ffff:\n"));
                         if (gb::g_memory_rom.isInRange(instr.first.address) ||
@@ -230,23 +240,70 @@ namespace emulator {
                         } else {
                             disasm_buffer_.putString("\nNot banked:\n");
                         }
+                        offset_change += 2;
                     }
                     disasm_buffer_.reserve(sizeof("\nffff:\n"));
                     disasm_buffer_.put('\n').putU16(instr.first.address);
                     disasm_buffer_.putString(":\n");
+                    offset_change += 2;
+                    offset += offset_change;
+                    instruction_line_offsets_[instr.first] = offset;
                 }
                 printInstruction(disasm_buffer_, instr.second);
                 disasm_buffer_.put('\n');
                 next_addr = InstructionAddress{uint16_t(instr.first.address + instr.second.width), instr.first.bank};
+                last_address = instr.first;
             }
+            disassembly_line_count_ += offset;
+            instruction_line_offsets_[last_address] = offset;
             disasm_buffer_.finish();
             disassembler_.clearDirtyFlag();
         }
 
         if (ImGui::BeginChild("##disassembly")) {
             ImGui::TextUnformatted(disasm_buffer_.data(), disasm_buffer_.data() + disasm_buffer_.size());
+            if ((ImGui::IsKeyDown(ImGuiKey_LeftCtrl) || ImGui::IsKeyDown(ImGuiKey_RightCtrl)) &&
+                ImGui::IsKeyDown(ImGuiKey_F)) {
+                ImGui::OpenPopup("Search instruction by address");
+            }
+            std::optional<float> scroll;
+            if (ImGui::BeginPopup("Search instruction by address")) {
+                ImGui::InputScalar("Address##search", ImGuiDataType_U16, &search_instruction_address_, nullptr, nullptr,
+                                   "%.4x", ImGuiInputTextFlags_CharsHexadecimal);
+                ImGui::InputScalar("Bank##search", ImGuiDataType_U16, &search_instruction_bank_, nullptr, nullptr,
+                                   "%.4x", ImGuiInputTextFlags_CharsHexadecimal);
+                if (ImGui::Button("Search")) {
+
+                    InstructionAddress addr{
+                        search_instruction_address_,
+                        search_instruction_bank_,
+                    };
+                    auto it = disassembler_.at(addr);
+                    if (it != disassembler_.end()) {
+                        size_t line = std::distance(disassembler_.begin(), it) + 1;
+                        size_t offset = 0;
+                        if (auto offset_it = instruction_line_offsets_.upper_bound(addr);
+                            offset_it != instruction_line_offsets_.begin()) {
+                            --offset_it;
+                            offset = offset_it->second;
+                        }
+                        line += offset;
+
+                        scroll = std::min(float(line) / float(disassembly_line_count_), 1.0f);
+                    }
+                    ImGui::CloseCurrentPopup();
+                }
+                if (ImGui::Button("Cancel")) {
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::EndPopup();
+                if (scroll) {
+                    ImGui::SetScrollHereY(*scroll);
+                    scroll = std::nullopt;
+                }
+            }
+            ImGui::EndChild();
         }
-        ImGui::EndChild();
     }
 
     void Application::drawBreakpointMenu() {

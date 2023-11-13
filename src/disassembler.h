@@ -57,7 +57,12 @@ namespace emulator {
         ConstInerator end() const { return disassembly_.end(); }
         ConstInerator at(InstructionAddress addr) const { return disassembly_.find(addr); }
 
-        void clear() { disassembly_.clear(); }
+        size_t size() const { return disassembly_.size(); }
+
+        void clear() {
+            dirty_ = true;
+            disassembly_.clear();
+        }
 
         bool isDirty() const { return dirty_; }
         void clearDirtyFlag() { dirty_ = false; }

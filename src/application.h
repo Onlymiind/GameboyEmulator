@@ -19,6 +19,7 @@
 #include "GLFW/glfw3.h"
 // clang-format on
 
+#include <cstddef>
 #include <cstdint>
 #include <deque>
 #include <filesystem>
@@ -71,6 +72,7 @@ namespace emulator {
         void drawMainMenu();
         void drawDebuggerMenu();
         void drawBreakpointMenu();
+        void drawDisassembly();
         void drawMemoryView();
         void drawEmulatorView();
         void drawMemoryRegion(gb::MemoryObjectType region);
@@ -105,6 +107,11 @@ namespace emulator {
         uint16_t current_ram_bank_ = 0;
 
         Disassembler disassembler_;
+        std::map<InstructionAddress, size_t> instruction_line_offsets_;
+        uint16_t search_instruction_address_ = 0;
+        uint16_t search_instruction_bank_ = InstructionAddress::g_none_bank;
+        bool instruction_search_active_ = false;
+        size_t disassembly_line_count_ = 0;
 
         // buffers for GUI
         MemoryBreakpointData memory_breakpoint_data_;
