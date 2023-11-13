@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <limits>
 #include <memory>
+#include <utility>
 #include <vector>
 
 namespace gb {
@@ -21,6 +22,9 @@ namespace gb {
         virtual size_t getEffectiveROMAddress(uint16_t address) const = 0;
         virtual size_t getEffectiveRAMAddress(uint16_t address) const = 0;
         virtual bool ramEnabled() const = 0;
+
+        virtual std::pair<uint16_t, uint16_t> getCurrentROMBanks() const = 0;
+        virtual uint16_t getCurrentRAMBank() const = 0;
     };
 
     constexpr size_t getAddressMask(size_t size) {
@@ -39,6 +43,12 @@ namespace gb {
             return ((mode_ ? (size_t(ram_bank_) << 13) : 0) | size_t(address & 0xfff)) & ram_address_mask_;
         }
         bool ramEnabled() const override { return ram_enabled_; }
+
+        std::pair<uint16_t, uint16_t> getCurrentROMBanks() const override;
+
+        uint16_t getCurrentRAMBank() const override {
+            return uint16_t(((size_t(ram_bank_) << 13) & ram_address_mask_) >> 13);
+        }
 
       private:
         size_t rom_address_mask_ = 0;
@@ -63,6 +73,7 @@ namespace gb {
 
     constexpr MemoryObjectInfo g_memory_rom = {.min_address = 0x0000, .max_address = 0x7FFF};
     constexpr MemoryObjectInfo g_memory_cartridge_ram = {.min_address = 0xa000, .max_address = 0xbfff};
+    constexpr uint16_t g_memory_rom_bank0_max_address = 0x3fff;
 
     class Cartridge {
       public:
@@ -78,6 +89,20 @@ namespace gb {
 
         bool hasRAM() const { return !ram_.empty(); }
         bool hasROM() const { return !rom_.empty(); }
+
+        std::pair<uint16_t, uint16_t> getCurrentROMBanks() const {
+            if (mbc_) {
+                return mbc_->getCurrentROMBanks();
+            }
+            return {0, 1};
+        }
+
+        uint16_t getCurrentRAMBank() const {
+            if (mbc_) {
+                return mbc_->getCurrentRAMBank();
+            }
+            return 0;
+        }
 
       private:
         std::unique_ptr<MemoryBankController> mbc_;

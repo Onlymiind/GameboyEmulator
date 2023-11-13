@@ -20,6 +20,9 @@ A Game Boy (DMG model) emulator.
 - Instruction and frame stepping
 - Instruction and CPU registers logging
 - Emulation fast-forwarding
+- Basic diassembler
+    * Instructions are displayed only if they are executed at least once
+    * Dynamically changing code (i.e. if code at the same RAM address and bank is modified after first execution) might lead to artifatcs if legths of dynamically changing instructions do not match.
 
 The project was tested on Windows and Linux using unit tests and test ROMs (blargg's test ROMs were used). Note that version at `dev` branch might not pass all tests (you should use version at `stable` branch instead).
 

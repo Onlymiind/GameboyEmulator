@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <memory>
 #include <stdexcept>
+#include <utility>
 #include <vector>
 
 namespace gb {
@@ -109,12 +110,21 @@ namespace gb {
     }
 
     size_t MBC1::getEffectiveROMAddress(uint16_t address) const {
-        if (mode_ && address <= 0x3fff) {
+        if (mode_ && address <= g_memory_rom_bank0_max_address) {
             return ((size_t(ram_bank_) << 19) | address) & rom_address_mask_;
-        } else if (address <= 0x3fff) {
+        } else if (address <= g_memory_rom_bank0_max_address) {
             return address;
         }
 
         return ((size_t(ram_bank_) << 19) | (size_t(rom_bank_) << 14) | size_t(address & 0x3fff)) & rom_address_mask_;
+    }
+
+    std::pair<uint16_t, uint16_t> MBC1::getCurrentROMBanks() const {
+        std::pair<uint16_t, uint16_t> result{0, 1};
+        if (mode_) {
+            result.first = uint16_t(((size_t(ram_bank_) << 19) & rom_address_mask_) >> 19);
+        }
+        result.second = uint16_t((((size_t(ram_bank_) << 19) | (size_t(rom_bank_) << 14)) & rom_address_mask_) >> 14);
+        return result;
     }
 } // namespace gb

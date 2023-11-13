@@ -3,6 +3,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
@@ -79,11 +80,6 @@ template <size_t CAPACITY>
 class StaticStringBuffer {
   public:
     StaticStringBuffer() { data_[0] = '\0'; }
-
-    ~StaticStringBuffer() = default;
-
-    StaticStringBuffer(const StaticStringBuffer<CAPACITY> &) = delete;
-    StaticStringBuffer<CAPACITY> &operator=(const StaticStringBuffer<CAPACITY> &) = delete;
 
     size_t capacity() { return CAPACITY; }
     size_t capacityWithNullChar() { return CAPACITY + 1; }
@@ -220,14 +216,17 @@ class StringBuffer {
     size_t capacity() const { return capacity_; }
     const char *data() const { return data_; }
 
-    void reserveAndClear(size_t size) {
-        if (capacity_ < (size + 1)) {
-            char *data = new char[size + 1];
-            delete[] data_;
-            data_ = data;
-            capacity_ = size + 1;
+    void reserve(size_t size) {
+        ensure(size);
+        if (size_ == 0) {
+            data_[0] = '\0';
         }
-        data_[0] = '\0';
+    }
+
+    void clear() {
+        if (data_) {
+            data_[0] = '\0';
+        }
         size_ = 0;
     }
 
@@ -268,8 +267,12 @@ class StringBuffer {
             uncheckedPut('-');
             val = int8_t(-val);
         }
-        uncheckedPut('0' + val / 100);
-        uncheckedPut('0' + val / 10);
+        if (uint8_t digit = val / 100; digit != 0) {
+            uncheckedPut('0' + val / 100);
+        }
+        if (uint8_t digit = val / 10; digit != 0) {
+            uncheckedPut('0' + val / 100);
+        }
         uncheckedPut('0' + val % 10);
         return *this;
     }
@@ -280,12 +283,22 @@ class StringBuffer {
         return *this;
     }
 
-    void finish() { data_[size_] = '\0'; }
+    void finish() {
+        ensure(1);
+        data_[size_] = '\0';
+    }
 
   private:
     void ensure(size_t length) {
         if (capacity_ - size_ < length + 1) {
-            throw std::runtime_error("not enough space in the buffer");
+            size_t new_capacity = std::max(capacity_ * 2, size_ + length + 1);
+            char *new_data = new char[new_capacity];
+            if (data_) {
+                std::memcpy(new_data, data_, size_);
+            }
+            delete[] data_;
+            data_ = new_data;
+            capacity_ = new_capacity;
         }
     }
 

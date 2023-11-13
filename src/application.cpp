@@ -1,5 +1,6 @@
 #include "application.h"
 #include "breakpoint.h"
+#include "disassembler.h"
 #include "gb/address_bus.h"
 #include "gb/cpu/cpu.h"
 #include "gb/cpu/cpu_utils.h"
@@ -140,10 +141,10 @@ namespace emulator {
     void Application::drawDebuggerMenu() {
         ImGui::BeginTable("##table", 2);
         ImGui::TableNextColumn();
-        StaticStringBuffer<g_instruction_string_buf_size> buf;
         for (size_t i = 0; i < recent_instructions_.size(); ++i) {
-            printInstruction(buf, i);
-            if (ImGui::Selectable(buf.data())) {
+            buffer_.clear();
+            printInstruction(buffer_, recent_instructions_[i], i);
+            if (ImGui::Selectable(buffer_.data())) {
                 registers_to_print_ = std::pair<gb::cpu::RegisterFile, bool>{recent_instructions_[i].registers,
                                                                              recent_instructions_[i].ime};
             }
@@ -152,7 +153,8 @@ namespace emulator {
         if (registers_to_print_) {
             ImGui::NewLine();
             auto [regs, ime] = *registers_to_print_;
-            buffer_.reserveAndClear(g_registers_buffer_size);
+            buffer_.clear();
+            buffer_.reserve(g_registers_buffer_size);
             buffer_.putString("Carry: ")
                 .putBool(regs.getFlag(gb::cpu::Flags::CARRY))
                 .putString(", Half carry: ")
@@ -189,6 +191,7 @@ namespace emulator {
                 .putU16(regs.PC())
                 .putString("\nIME: ")
                 .putBool(ime);
+            buffer_.finish();
             ImGui::TextUnformatted(buffer_.data(), buffer_.data() + buffer_.size());
         }
 
@@ -213,6 +216,37 @@ namespace emulator {
         ImGui::TableNextColumn();
         drawBreakpointMenu();
         ImGui::EndTable();
+
+        if (disassembler_.isDirty()) {
+            InstructionAddress next_addr{.address = 0xffff};
+            disasm_buffer_.clear();
+            for (auto instr : disassembler_) {
+                if (next_addr != instr.first) {
+                    if (next_addr.bank != instr.first.bank) {
+                        disasm_buffer_.reserve(sizeof("\nBank ffff:\n"));
+                        if (gb::g_memory_rom.isInRange(instr.first.address) ||
+                            gb::g_memory_cartridge_ram.isInRange(instr.first.address)) {
+                            disasm_buffer_.putString("\nBank ").putU16(instr.first.bank).putString(":\n");
+                        } else {
+                            disasm_buffer_.putString("\nNot banked:\n");
+                        }
+                    }
+                    disasm_buffer_.reserve(sizeof("\nffff:\n"));
+                    disasm_buffer_.put('\n').putU16(instr.first.address);
+                    disasm_buffer_.putString(":\n");
+                }
+                printInstruction(disasm_buffer_, instr.second);
+                disasm_buffer_.put('\n');
+                next_addr = InstructionAddress{uint16_t(instr.first.address + instr.second.width), instr.first.bank};
+            }
+            disasm_buffer_.finish();
+            disassembler_.clearDirtyFlag();
+        }
+
+        if (ImGui::BeginChild("##disassembly")) {
+            ImGui::TextUnformatted(disasm_buffer_.data(), disasm_buffer_.data() + disasm_buffer_.size());
+        }
+        ImGui::EndChild();
     }
 
     void Application::drawBreakpointMenu() {
@@ -226,7 +260,8 @@ namespace emulator {
             ImGui::Text("PC breakpoints: ");
             auto delete_it = pc_breakpoints_.end();
             for (auto it = pc_breakpoints_.begin(); it != pc_breakpoints_.end(); ++it) {
-                buffer_.reserveAndClear(6);
+                buffer_.clear();
+                buffer_.reserve(6);
                 buffer_.putString("0x").putU16(*it);
                 buffer_.finish();
                 ImGui::Selectable(buffer_.data());
@@ -271,7 +306,8 @@ namespace emulator {
             ImGui::Text("Memory breakpoints: ");
             std::optional<MemoryBreakpointData> delete_val;
             for (auto br : memory_breakpoints_.getBreakpoints()) {
-                buffer_.reserveAndClear(sizeof("Address: 0xffff\nBreak on: ALWAYS, value: 0xff"));
+                buffer_.clear();
+                buffer_.reserve(sizeof("Address: 0xffff\nBreak on: ALWAYS, value: 0xff"));
                 buffer_.putString("Address: 0x")
                     .putU16(br.address)
                     .putString("\nbreak on: ")
@@ -345,7 +381,8 @@ namespace emulator {
         }
         uint16_t i = 0;
         size_t rows = info.size / 16 + (info.size % 16 != 0);
-        buffer_.reserveAndClear(rows * (16 * 3 + 8));
+        buffer_.clear();
+        buffer_.reserve(rows * (16 * 3 + 8));
         for (; i + 15 < len; i += 16) {
             uint16_t base = info.min_address + i;
             buffer_.putString("0x")
@@ -392,7 +429,11 @@ namespace emulator {
             }
         }
         buffer_.finish();
-        ImGui::TextUnformatted(buffer_.data(), buffer_.data() + buffer_.size());
+
+        if (ImGui::BeginChild("##memory view")) {
+            ImGui::TextUnformatted(buffer_.data(), buffer_.data() + buffer_.size());
+        }
+        ImGui::EndChild();
     }
 
     void Application::drawEmulatorView() {
@@ -434,7 +475,7 @@ namespace emulator {
             if (single_step_) {
                 if (ImGui::IsKeyPressed(ImGuiKey_F11)) {
                     update();
-                    while (!emulator_.getCPU().isFinished()) {
+                    while (!(emulator_.getCPU().isFinished() || emulator_.terminated())) {
                         update();
                     }
                 } else if (ImGui::IsKeyPressed(ImGuiKey_F12)) {
@@ -494,6 +535,17 @@ namespace emulator {
             if (emulator_.getCPU().isFinished()) {
                 gb::cpu::Instruction instr = emulator_.getCPU().getLastInstruction();
                 recent_instructions_.push_back(instr);
+                if (instr.registers.PC() <= gb::g_memory_rom_bank0_max_address) {
+                    disassembler_.addInstruction(instr, current_rom_banks_.first);
+                } else if (instr.registers.PC() <= gb::g_memory_rom.max_address) {
+                    disassembler_.addInstruction(instr, current_rom_banks_.second);
+                } else if (gb::g_memory_cartridge_ram.isInRange(instr.registers.PC())) {
+                    disassembler_.addInstruction(instr, current_ram_bank_);
+                } else {
+                    disassembler_.addInstruction(instr);
+                }
+                current_ram_bank_ = emulator_.getCartridge().getCurrentRAMBank();
+                current_rom_banks_ = emulator_.getCartridge().getCurrentROMBanks();
                 // StaticStringBuffer<g_instruction_string_buf_size> buf;
                 // printInstruction(buf, recent_instructions_.size() - 1);
                 // std::cout << buf.data() << '\n';
@@ -510,6 +562,9 @@ namespace emulator {
     }
 
     void Application::advanceFrame() {
+        if (emulator_.terminated()) {
+            return;
+        }
         bool old_single_step = single_step_;
         single_step_ = false;
         constexpr size_t clock_frequency = 1 << 20;
@@ -564,6 +619,7 @@ namespace emulator {
         emulator_.getCartridge().setROM(std::move(data));
         emulator_.reset();
         emulator_.start();
+        disassembler_.clear();
 
         return true;
     }
@@ -578,36 +634,35 @@ namespace emulator {
         memory_breakpoint_data_ = MemoryBreakpointData{};
     }
 
-    void Application::printInstruction(StaticStringBuffer<g_instruction_string_buf_size> &buf, size_t idx) {
+    void Application::printInstruction(StringBuffer &buf, gb::cpu::Instruction instr, std::optional<size_t> idx) {
         using namespace gb::cpu;
-        auto &instr = recent_instructions_[idx];
-        std::stringstream out;
-        out.rdbuf()->pubsetbuf(buf.data(), buf.capacityWithNullChar());
-
-        out << std::hex << instr.registers.PC() << ' ' << to_string(instr.type);
+        buf.reserve(sizeof("ffff CALL nz, ffff##125"));
+        buf.putU16(instr.registers.PC()).put(' ').putString(to_string(instr.type));
         if (instr.condition) {
-            out << ' ' << to_string(*instr.condition);
+            buf.put(' ').putString(to_string(*instr.condition));
         }
 
-        auto print_arg = [&out](gb::cpu::Instruction::Argument arg) {
+        auto print_arg = [&buf](gb::cpu::Instruction::Argument arg) {
             if (arg.empty()) {
                 return;
-            } else if (arg.is<Registers>()) {
-                out << ' ' << to_string(arg.get<Registers>());
+            }
+            buf.put(' ');
+            if (arg.is<Registers>()) {
+                buf.putString(to_string(arg.get<Registers>()));
             } else if (arg.is<int8_t>()) {
-                out << std::setw(0) << std::dec << ' ' << (arg.get<int8_t>() > 0 ? "+" : "") << +arg.get<int8_t>();
+                buf.putSigned(arg.get<int8_t>());
             } else if (arg.is<uint8_t>()) {
-                out << ' ' << std::setw(2) << std::setfill('0') << std::hex << int(arg.get<uint8_t>());
+                buf.putU8(arg.get<uint8_t>());
             } else if (arg.is<uint16_t>()) {
-                out << ' ' << std::setw(4) << std::setfill('0') << std::hex << int(arg.get<uint16_t>());
+                buf.putU16(arg.get<uint16_t>());
             }
         };
 
         if (instr.load_subtype) {
             if (*instr.load_subtype == LoadSubtype::LD_OFFSET_SP) {
-                out << " HL,";
+                buf.putString(" HL,");
             } else if (*instr.load_subtype == LoadSubtype::LD_IO) {
-                out << "H";
+                buf.put('H');
             }
         }
 
@@ -617,19 +672,19 @@ namespace emulator {
             switch (*instr.load_subtype) {
             case LoadSubtype::LD_DEC:
                 if (instr.dst.get<Registers>() == Registers::HL) {
-                    out << "--";
+                    buf.putString("--");
                 }
                 break;
             case LoadSubtype::LD_INC:
                 if (instr.dst.get<Registers>() == Registers::HL) {
-                    out << "++";
+                    buf.putString("++");
                 }
                 break;
             }
         }
 
         if (!instr.dst.empty()) {
-            out << ',';
+            buf.put(',');
         }
         print_arg(instr.src);
 
@@ -637,18 +692,19 @@ namespace emulator {
             switch (*instr.load_subtype) {
             case LoadSubtype::LD_DEC:
                 if (instr.src.get<Registers>() == Registers::HL) {
-                    out << "--";
+                    buf.putString("--");
                 }
                 break;
             case LoadSubtype::LD_INC:
                 if (instr.src.get<Registers>() == Registers::HL) {
-                    out << "++";
+                    buf.putString("++");
                 }
                 break;
             }
         }
-
-        out << "##" << idx; // for Dear ImGui ids
-        out << '\0';
+        if (idx) {
+            buf.putString("##").putU8(uint8_t(*idx));
+        }
+        buf.finish();
     }
 } // namespace emulator

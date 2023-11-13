@@ -2,6 +2,7 @@
 #define GB_EMULATOR_SRC_APPLICATION_HDR_
 
 #include "breakpoint.h"
+#include "disassembler.h"
 #include "gb/address_bus.h"
 #include "gb/cpu/cpu.h"
 #include "gb/cpu/cpu_utils.h"
@@ -18,6 +19,7 @@
 #include "GLFW/glfw3.h"
 // clang-format on
 
+#include <cstdint>
 #include <deque>
 #include <filesystem>
 #include <list>
@@ -84,7 +86,7 @@ namespace emulator {
         void addPCBreakpoint(uint16_t address);
         void addMemoryBreakpoint();
 
-        void printInstruction(StaticStringBuffer<g_instruction_string_buf_size> &buf, size_t idx);
+        void printInstruction(StringBuffer &buf, gb::cpu::Instruction instr, std::optional<size_t> idx = {});
 
       private:
         gb::Emulator emulator_;
@@ -99,11 +101,17 @@ namespace emulator {
         MemoryBreakpoints memory_breakpoints_{[this]() { single_step_ = true; }};
         std::unique_ptr<renderer::Renderer> emulator_renderer_;
 
+        std::pair<uint16_t, uint16_t> current_rom_banks_{0, 1};
+        uint16_t current_ram_bank_ = 0;
+
+        Disassembler disassembler_;
+
         // buffers for GUI
         MemoryBreakpointData memory_breakpoint_data_;
         std::string new_romdir_;
         std::optional<std::pair<gb::cpu::RegisterFile, bool>> registers_to_print_;
         StringBuffer buffer_;
+        StringBuffer disasm_buffer_;
 
         bool is_running_ = true;
         bool gui_init_ = false;

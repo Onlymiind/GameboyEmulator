@@ -35,12 +35,18 @@ namespace gb::cpu {
 
         RegisterFile registers;
         bool ime = false;
+        uint8_t width = 1;
 
         Argument &arg() { return src; }
         Argument &arg1() { return src; }
         Argument &arg2() { return dst; }
         Argument &bit() { return dst; }
     };
+
+    constexpr inline bool operator==(Instruction lhs, Instruction rhs) {
+        return lhs.type == rhs.type && lhs.load_subtype == rhs.load_subtype && lhs.condition == rhs.condition &&
+               lhs.src == rhs.src;
+    }
 
     struct MemoryOp {
         enum class Type : uint8_t { NONE, READ, FETCH_INSTRUCTION, WRITE };

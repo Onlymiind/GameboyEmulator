@@ -86,11 +86,14 @@ namespace gb::cpu {
     }
 
     void SharpSM83::decode(Opcode code) {
-        instruction_ = Instruction{.registers = reg_, .ime = IME_};
-        if (!prefixed_next_ && isPrefix(code)) {
-            prefixed_next_ = true;
-            sheduleFetchInstruction();
-            return;
+        if (!prefixed_next_) {
+            instruction_ = Instruction{.registers = reg_, .ime = IME_};
+            if (isPrefix(code)) {
+                ++instruction_.width;
+                prefixed_next_ = true;
+                sheduleFetchInstruction();
+                return;
+            }
         }
 
         if (prefixed_next_) {
@@ -283,31 +286,71 @@ namespace gb::cpu {
     }
 
     void SharpSM83::sheduleMemoryAcceses(DecodedInstruction instr) {
+        if (!memory_op_executed_) [[unlikely]] {
+            throw std::runtime_error(
+                "sheduleMemoryAccess must be called only during FETCH_INSTRUCTION memory operation");
+        }
+
+        // manually inline all neseccary sheduleXXX method to avoid calling executeMemoryOp()
+        // as it will never actually execute anything
         switch (instr.src.src) {
         case ArgumentSource::IMMEDIATE_S8:
         case ArgumentSource::IMMEDIATE_U8:
-            sheduleReadByte(reg_.PC());
+            memory_op_queue_.push_back(MemoryOp{
+                .address = reg_.PC(),
+                .type = MemoryOp::Type::READ,
+                .data = uint8_t(Registers::NONE),
+            });
+            ++instruction_.width;
             ++reg_.PC();
             return;
         case ArgumentSource::IMMEDIATE_U16:
-            sheduleReadWord(reg_.PC());
+            memory_op_queue_.push_back(MemoryOp{
+                .address = reg_.PC(),
+                .type = MemoryOp::Type::READ,
+                .data = uint8_t(Registers::NONE),
+            });
+            memory_op_queue_.push_back(MemoryOp{
+                .address = uint16_t(reg_.PC() + 1),
+                .type = MemoryOp::Type::READ,
+                .data = uint8_t(Registers::NONE),
+            });
+            instruction_.width += 2;
             reg_.PC() += 2;
             return;
         case ArgumentSource::INDIRECT:
             if (instr.src.reg == Registers::C) {
                 return;
             }
-            sheduleReadByte(getWordRegister(instr.src.reg));
+            memory_op_queue_.push_back(MemoryOp{
+                .address = getWordRegister(instr.src.reg),
+                .type = MemoryOp::Type::READ,
+                .data = uint8_t(Registers::NONE),
+            });
             return;
         }
 
         if (instr.dst.src == ArgumentSource::IMMEDIATE_U8) {
-            sheduleReadByte(reg_.PC());
+            memory_op_queue_.push_back(MemoryOp{
+                .address = reg_.PC(),
+                .type = MemoryOp::Type::READ,
+                .data = uint8_t(Registers::NONE),
+            });
+            ++instruction_.width;
             ++reg_.PC();
 
         } else if (instr.dst.src == ArgumentSource::IMMEDIATE_U16) {
-
-            sheduleReadWord(reg_.PC());
+            memory_op_queue_.push_back(MemoryOp{
+                .address = reg_.PC(),
+                .type = MemoryOp::Type::READ,
+                .data = uint8_t(Registers::NONE),
+            });
+            memory_op_queue_.push_back(MemoryOp{
+                .address = uint16_t(reg_.PC() + 1),
+                .type = MemoryOp::Type::READ,
+                .data = uint8_t(Registers::NONE),
+            });
+            instruction_.width += 2;
             reg_.PC() += 2;
         }
     }
