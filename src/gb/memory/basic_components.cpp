@@ -110,9 +110,9 @@ namespace gb {
     }
 
     size_t MBC1::getEffectiveROMAddress(uint16_t address) const {
-        if (mode_ && address <= g_memory_rom_bank0_max_address) {
+        if (mode_ && address <= g_rom_bank0_max_address) {
             return ((size_t(ram_bank_) << 19) | address) & rom_address_mask_;
-        } else if (address <= g_memory_rom_bank0_max_address) {
+        } else if (address <= g_rom_bank0_max_address) {
             return address;
         }
 

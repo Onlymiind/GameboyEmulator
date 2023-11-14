@@ -178,6 +178,14 @@ namespace gb::cpu {
         IME_ = false;
         instruction_ = Instruction{};
         stopped_ = false;
+        finished_ = false;
+        jumping_to_interrupt_ = false;
+        halt_bug_ = false;
+        halt_mode_ = false;
+        enable_IME_ = false;
+        memory_op_executed_ = false;
+        prefixed_next_ = false;
+        memory_op_queue_.clear();
         sheduleFetchInstruction();
     }
 

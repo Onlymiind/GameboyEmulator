@@ -32,6 +32,7 @@ namespace gb {
             bus_.reset();
             ppu_.reset();
             timer_.reset();
+            cartridge_.reset();
             ie_.write(0);
             if_.setFlag(InterruptFlags::VBLANK);
         }

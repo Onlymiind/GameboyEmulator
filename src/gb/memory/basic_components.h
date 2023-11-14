@@ -25,6 +25,7 @@ namespace gb {
 
         virtual std::pair<uint16_t, uint16_t> getCurrentROMBanks() const = 0;
         virtual uint16_t getCurrentRAMBank() const = 0;
+        virtual void reset() = 0;
     };
 
     constexpr size_t getAddressMask(size_t size) {
@@ -50,6 +51,13 @@ namespace gb {
             return uint16_t(((size_t(ram_bank_) << 13) & ram_address_mask_) >> 13);
         }
 
+        void reset() override {
+            rom_bank_ = 1;
+            ram_bank_ = 0;
+            mode_ = false;
+            ram_enabled_ = false;
+        }
+
       private:
         size_t rom_address_mask_ = 0;
         size_t ram_address_mask_ = 0;
@@ -73,7 +81,7 @@ namespace gb {
 
     constexpr MemoryObjectInfo g_memory_rom = {.min_address = 0x0000, .max_address = 0x7FFF};
     constexpr MemoryObjectInfo g_memory_cartridge_ram = {.min_address = 0xa000, .max_address = 0xbfff};
-    constexpr uint16_t g_memory_rom_bank0_max_address = 0x3fff;
+    constexpr uint16_t g_rom_bank0_max_address = 0x3fff;
 
     class Cartridge {
       public:
@@ -89,6 +97,12 @@ namespace gb {
 
         bool hasRAM() const { return !ram_.empty(); }
         bool hasROM() const { return !rom_.empty(); }
+
+        void reset() {
+            if (mbc_) {
+                mbc_->reset();
+            }
+        }
 
         std::pair<uint16_t, uint16_t> getCurrentROMBanks() const {
             if (mbc_) {

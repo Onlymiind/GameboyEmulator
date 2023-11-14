@@ -592,7 +592,7 @@ namespace emulator {
             if (emulator_.getCPU().isFinished()) {
                 gb::cpu::Instruction instr = emulator_.getCPU().getLastInstruction();
                 recent_instructions_.push_back(instr);
-                if (instr.registers.PC() <= gb::g_memory_rom_bank0_max_address) {
+                if (instr.registers.PC() <= gb::g_rom_bank0_max_address) {
                     disassembler_.addInstruction(instr, current_rom_banks_.first);
                 } else if (instr.registers.PC() <= gb::g_memory_rom.max_address) {
                     disassembler_.addInstruction(instr, current_rom_banks_.second);
