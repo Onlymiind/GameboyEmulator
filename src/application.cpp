@@ -249,6 +249,7 @@ namespace emulator {
                     offset += offset_change;
                     instruction_line_offsets_[instr.first] = offset;
                 }
+                disasm_buffer_.putString("    ");
                 printInstruction(disasm_buffer_, instr.second);
                 disasm_buffer_.put('\n');
                 next_addr = InstructionAddress{uint16_t(instr.first.address + instr.second.width), instr.first.bank};
