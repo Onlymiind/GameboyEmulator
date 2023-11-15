@@ -64,11 +64,11 @@ namespace gb::cpu {
             break;
         case LoadSubtype::LD_DEC:
             loadByte(instr.dst, instr.src);
-            --reg_.HL();
+            reg_.HL(reg_.HL() - 1);
             break;
         case LoadSubtype::LD_INC:
             loadByte(instr.dst, instr.src);
-            ++reg_.HL();
+            reg_.HL(reg_.HL() + 1);
             break;
         case LoadSubtype::LD_IO: {
             // true if loading from register A, false otherwise
@@ -100,7 +100,7 @@ namespace gb::cpu {
             reg_.setFlag(C, carried(uint8_t(reg_.sp), uint8_t(offset)));
             reg_.setFlag(Z, 0);
             reg_.setFlag(N, 0);
-            reg_.HL() = reg_.sp + offset;
+            reg_.HL(reg_.sp + offset);
             sheduleMemoryNoOp();
             break;
         }
@@ -159,7 +159,7 @@ namespace gb::cpu {
             uint16_t value = getWordRegister(instr.src.reg);
             reg_.setFlag(H, halfCarried(reg_.HL(), value));
             reg_.setFlag(C, carried(reg_.HL(), value));
-            reg_.HL() += value;
+            reg_.HL(reg_.HL() + value);
             sheduleMemoryNoOp();
             break;
         }
@@ -310,7 +310,7 @@ namespace gb::cpu {
     void SharpSM83::JP(DecodedInstruction instr) {
         if (instr.src.src == ArgumentSource::DOUBLE_REGISTER) { // JP HL
             instruction_.arg() = Registers::HL;
-            reg_.PC() = reg_.HL();
+            reg_.PC(reg_.HL());
             return;
         }
         uint16_t address = data_buffer_.getWord();
@@ -319,7 +319,7 @@ namespace gb::cpu {
         if (instr.condition.has_value() && !checkCondition(*instr.condition)) {
             return;
         }
-        reg_.PC() = address;
+        reg_.PC(address);
         sheduleMemoryNoOp();
     }
 
@@ -331,7 +331,7 @@ namespace gb::cpu {
             return;
         }
 
-        reg_.PC() += rel_address;
+        reg_.PC(reg_.PC() + rel_address);
         sheduleMemoryNoOp();
     }
 
@@ -351,7 +351,7 @@ namespace gb::cpu {
         instruction_.arg() = reset_vector;
         sheduleMemoryNoOp();
         shedulePushStack(reg_.PC());
-        reg_.PC() = reset_vector;
+        reg_.PC(reset_vector);
     }
 
     void SharpSM83::CALL(std::optional<Conditions> condition) {
@@ -364,7 +364,7 @@ namespace gb::cpu {
 
         sheduleMemoryNoOp();
         shedulePushStack(reg_.PC());
-        reg_.PC() = address;
+        reg_.PC(address);
     }
 
     void SharpSM83::RET(std::optional<Conditions> condition) {

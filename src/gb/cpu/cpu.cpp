@@ -16,13 +16,13 @@ namespace gb::cpu {
 
     SharpSM83::SharpSM83(AddressBus &bus, InterruptRegister &interrupt_enable, InterruptRegister &interrupt_flags)
         : bus_(bus), ie_(interrupt_enable), if_(interrupt_flags) {
-        reg_.setAF(0x01B0);
-        reg_.BC() = 0x0013;
-        reg_.DE() = 0x00D8;
-        reg_.HL() = 0x014D;
+        reg_.AF(0x01B0);
+        reg_.BC(0x0013);
+        reg_.DE(0x00D8);
+        reg_.HL(0x014D);
 
         reg_.sp = 0xFFFE;
-        reg_.PC() = 0x0100;
+        reg_.PC(0x0100);
     }
 
     void SharpSM83::tick() {
@@ -85,7 +85,7 @@ namespace gb::cpu {
         // reg_.PC() contains address of the byte after the instruction
         shedulePushStack(instruction_.registers.PC());
         sheduleMemoryNoOp();
-        reg_.PC() = getInterruptVector(interrupt);
+        reg_.PC(getInterruptVector(interrupt));
         sheduleFetchInstruction();
     }
 
@@ -173,7 +173,7 @@ namespace gb::cpu {
         reg_.setWordRegister(Registers::HL, 0x014d);
 
         reg_.sp = 0xFFFE;
-        reg_.PC() = 0x0100;
+        reg_.PC(0x100);
 
         IME_ = false;
         instruction_ = Instruction{};
@@ -314,7 +314,7 @@ namespace gb::cpu {
                 .data = uint8_t(Registers::NONE),
             });
             ++instruction_.width;
-            ++reg_.PC();
+            reg_.PC(reg_.PC() + 1);
             return;
         case ArgumentSource::IMMEDIATE_U16:
             memory_op_queue_.push_back(MemoryOp{
@@ -328,7 +328,7 @@ namespace gb::cpu {
                 .data = uint8_t(Registers::NONE),
             });
             instruction_.width += 2;
-            reg_.PC() += 2;
+            reg_.PC(reg_.PC() + 2);
             return;
         case ArgumentSource::INDIRECT:
             if (instr.src.reg == Registers::C) {
@@ -349,7 +349,7 @@ namespace gb::cpu {
                 .data = uint8_t(Registers::NONE),
             });
             ++instruction_.width;
-            ++reg_.PC();
+            reg_.PC(reg_.PC() + 1);
 
         } else if (instr.dst.src == ArgumentSource::IMMEDIATE_U16) {
             memory_op_queue_.push_back(MemoryOp{
@@ -363,7 +363,7 @@ namespace gb::cpu {
                 .data = uint8_t(Registers::NONE),
             });
             instruction_.width += 2;
-            reg_.PC() += 2;
+            reg_.PC(reg_.PC() + 2);
         }
     }
 
@@ -390,7 +390,7 @@ namespace gb::cpu {
             if (halt_bug_) {
                 halt_bug_ = false;
             } else {
-                ++reg_.PC();
+                reg_.PC(reg_.PC() + 1);
             }
             // false if fetched 0xCB
             if (current_instruction_) {
