@@ -8,11 +8,13 @@
 #include "gb/gb_input.h"
 #include "gb/interrupt_register.h"
 #include "gb/memory/basic_components.h"
+#include "gb/memory/memory_map.h"
 #include "gb/ppu/ppu.h"
 #include "gb/timer.h"
 #include "util/util.h"
 
 #include <cstdint>
+#include <memory>
 #include <sstream>
 #include <stdexcept>
 #include <vector>
@@ -53,13 +55,14 @@ namespace gb {
         Input &getInput() { return input_; }
 
       private:
+        std::unique_ptr<Memory> memory_ = std::make_unique<Memory>();
         Cartridge cartridge_;
         InterruptRegister ie_;
         InterruptRegister if_;
         Input input_{if_};
         Timer timer_{if_};
-        PPU ppu_{if_};
-        AddressBus bus_{cartridge_, ppu_, timer_, input_, ie_, if_};
+        PPU ppu_{if_, memory_->vram, memory_->oam};
+        AddressBus bus_{memory_->wram, memory_->unused_io, memory_->hram, cartridge_, ppu_, timer_, input_, ie_, if_};
         cpu::SharpSM83 cpu_{bus_, ie_, if_};
 
         bool is_running_ = false;

@@ -77,7 +77,7 @@ namespace gb {
         // initial values for all implemented hardware are reset by corresponding class
         std::memcpy(unused_io_.data(), g_io_initail_values.data(), g_io_initail_values.size());
         uint8_t *ptr = unused_io_.data() + g_io_initail_values.size();
-        memset(ptr, 0xff, unused_io_.end() - ptr);
+        memset(ptr, 0xff, unused_io_.data() + unused_io_.size() - ptr);
     }
 
     std::string AddressBus::getErrorDescription(uint16_t address, int value) const {

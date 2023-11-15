@@ -29,6 +29,7 @@ set(EMULATOR_LIB
     src/gb/ppu/ppu.h
     src/gb/ppu/ppu.cpp
     src/gb/gb_input.h
+    src/gb/memory/memory_map.h
 )
 
 add_library(emulator_lib

@@ -3,6 +3,7 @@
 
 #include "gb/interrupt_register.h"
 #include "gb/memory/basic_components.h"
+#include "gb/memory/memory_map.h"
 #include "util/util.h"
 #include <array>
 #include <cstddef>
@@ -11,9 +12,6 @@
 
 namespace gb {
 
-    constexpr MemoryObjectInfo g_memory_vram = {.min_address = 0x8000, .max_address = 0x9fff};
-    constexpr MemoryObjectInfo g_memory_oam = {.min_address = 0xe000, .max_address = 0xfe9f};
-    constexpr MemoryObjectInfo g_memory_ppu_registers = {.min_address = 0xFF40, .max_address = 0xFF4B};
     constexpr uint16_t g_lcd_control_address = 0xFF40;
     constexpr uint16_t g_lcd_status = 0xFF41;
     constexpr uint16_t g_scroll_y_address = 0xFF42;
@@ -115,12 +113,8 @@ namespace gb {
 
     class PPU {
       public:
-        PPU(InterruptRegister &interrupt_flags) : interrupt_flags_(interrupt_flags) {
-            objects_on_current_line_.reserve(40);
-            reset();
-        }
-        PPU(InterruptRegister &interrupt_flags, IRenderer &renderer)
-            : interrupt_flags_(interrupt_flags), renderer_(&renderer) {
+        PPU(InterruptRegister &interrupt_flags, VRAM vram, OAM oam)
+            : interrupt_flags_(interrupt_flags), vram_(vram), oam_(oam) {
             objects_on_current_line_.reserve(40);
             reset();
         }
@@ -180,8 +174,8 @@ namespace gb {
         uint8_t window_x_ = 0;
         uint8_t window_y_ = 0;
 
-        RAM<g_memory_vram.size> vram_{};
-        RAM<g_memory_oam.size> oam_{};
+        VRAM vram_;
+        OAM oam_;
     };
 
     constexpr inline std::array<GBColor, 8> decodeTileRow(uint8_t low, uint8_t high) {

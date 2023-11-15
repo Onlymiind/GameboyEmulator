@@ -4,6 +4,7 @@
 #include "gb/gb_input.h"
 #include "gb/interrupt_register.h"
 #include "gb/memory/basic_components.h"
+#include "gb/memory/memory_map.h"
 #include "gb/ppu/ppu.h"
 #include "gb/timer.h"
 
@@ -26,14 +27,9 @@ namespace gb {
         ~IMemoryObserver() = default;
     };
 
-    constexpr MemoryObjectInfo g_memory_wram = {.min_address = 0xc000, .max_address = 0xdfff};
     constexpr MemoryObjectInfo g_memory_mirror = {.min_address = 0xe000, .max_address = 0xfdff};
     constexpr MemoryObjectInfo g_memory_forbidden = {.min_address = 0xfea0, .max_address = 0xfeff};
     constexpr MemoryObjectInfo g_memory_timer = {.min_address = 0xFF04, .max_address = 0xFF07};
-    constexpr MemoryObjectInfo g_memory_hram = {.min_address = 0xff80, .max_address = 0xfffe};
-
-    // FIXME: this should eventually be properly mapped
-    constexpr MemoryObjectInfo g_memory_io_unused = {.min_address = 0xff00, .max_address = 0xff7f};
 
     enum class MemoryObjectType { ROM, VRAM, CARTRIDGE_RAM, WRAM, OAM, IO, HRAM, IE };
 
@@ -63,10 +59,11 @@ namespace gb {
 
     class AddressBus {
       public:
-        AddressBus(Cartridge &cartridge, PPU &ppu, Timer &timer, Input &input, InterruptRegister &interrupt_enable,
-                   InterruptRegister &interrupt_flags)
-            : cartridge_(cartridge), interrupt_enable_(interrupt_enable), interrupt_flags_(interrupt_flags),
-              timer_(timer), ppu_(ppu), input_(input) {}
+        AddressBus(WRAM wram, UnusedIO unused_io, HRAM hram, Cartridge &cartridge, PPU &ppu, Timer &timer, Input &input,
+                   InterruptRegister &interrupt_enable, InterruptRegister &interrupt_flags)
+            : wram_(wram), unused_io_(unused_io), hram_(hram), cartridge_(cartridge),
+              interrupt_enable_(interrupt_enable), interrupt_flags_(interrupt_flags), timer_(timer), ppu_(ppu),
+              input_(input) {}
 
         void setObserver(IMemoryObserver &observer) { observer_ = &observer; }
         void removeObserver() { observer_ = nullptr; }
@@ -83,13 +80,10 @@ namespace gb {
 
         IMemoryObserver *observer_ = nullptr;
 
-        RAM<g_memory_vram.size> vram_{};
-        RAM<g_memory_wram.size> wram_{};
-        RAM<g_memory_oam.size> oam_{};
+        WRAM wram_;
+        UnusedIO unused_io_;
+        HRAM hram_;
 
-        RAM<g_memory_io_unused.size> unused_io_{};
-
-        RAM<g_memory_hram.size> hram_{};
         Cartridge &cartridge_;
         InterruptRegister &interrupt_enable_;
         InterruptRegister &interrupt_flags_;
