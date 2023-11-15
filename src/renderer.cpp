@@ -8,6 +8,7 @@
 
 namespace renderer {
     Renderer::Renderer() {
+        image_.resize(g_image_size_bytes);
         GLuint id{};
         glGenTextures(1, &id);
         texture_id_ = uint64_t(id);

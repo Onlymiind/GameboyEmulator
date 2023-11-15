@@ -13,6 +13,7 @@ namespace renderer {
     constexpr size_t g_red_offset = 0;
     constexpr size_t g_blue_offset = 1;
     constexpr size_t g_green_offset = 2;
+    constexpr size_t g_image_size_bytes = gb::g_screen_width * gb::g_screen_height * g_bytes_per_pixel;
 
     struct Color {
         uint8_t red = 0;
@@ -56,7 +57,7 @@ namespace renderer {
         void setPixel(size_t base_idx, Color color);
 
         std::optional<Palette> palette_;
-        std::array<uint8_t, gb::g_screen_width * gb::g_screen_height * g_bytes_per_pixel> image_{};
+        std::vector<uint8_t> image_;
         uint64_t texture_id_ = 0;
     };
 } // namespace renderer
