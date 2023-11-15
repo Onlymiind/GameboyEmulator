@@ -13,45 +13,43 @@ namespace gb {
 
     uint8_t PPU::readIO(uint16_t address) const {
 
-        switch (address) {
-        case g_lcd_control_address: return lcd_control_;
-        case g_lcd_status: return status_ | (uint8_t(current_y_ == y_compare_) << 2) | uint8_t(mode_);
-        case g_scroll_x_address: return scroll_x_;
-        case g_scroll_y_address: return scroll_y_;
-        case g_lcd_y_address: return current_y_;
-        case g_y_compare_address: return y_compare_;
-        case g_dma_src_address: return dma_src_;
-        case g_background_palette_address: return bg_palette_;
-        case g_object_palette0_address: return obj_palette0_;
-        case g_object_palette1_address: return obj_palette1_;
-        case g_window_y_address: return window_y_;
-        case g_window_x_address: return window_x_;
+        switch (IO(address)) {
+        case IO::LCDC: return lcd_control_;
+        case IO::LCD_STATUS: return status_ | (uint8_t(current_y_ == y_compare_) << 2) | uint8_t(mode_);
+        case IO::SCROLL_X: return scroll_x_;
+        case IO::SCROLL_Y: return scroll_y_;
+        case IO::LCD_Y: return current_y_;
+        case IO::LYC: return y_compare_;
+        case IO::DMA_SRC: return dma_src_;
+        case IO::BG_PALETTE: return bg_palette_;
+        case IO::OBJ0_PALETTE: return obj_palette0_;
+        case IO::OBJ1_PALETTE: return obj_palette1_;
+        case IO::WINDOW_Y: return window_y_;
+        case IO::WINDOW_X: return window_x_;
+        default: throw std::invalid_argument("unreachable"); return 0;
         }
-
-        throw std::invalid_argument("unreachable");
-        return 0;
     }
 
     void PPU::writeIO(uint16_t address, uint8_t data) {
 
-        switch (address) {
-        case g_lcd_control_address: lcd_control_ = data; break;
-        case g_lcd_status: status_ = data & ~0b111; break;
-        case g_scroll_x_address: scroll_x_ = data; break;
-        case g_scroll_y_address: scroll_y_ = data; break;
-        case g_lcd_y_address: // read only
+        switch (IO(address)) {
+        case IO::LCDC: lcd_control_ = data; break;
+        case IO::LCD_STATUS: status_ = data & ~0b111; break;
+        case IO::SCROLL_X: scroll_x_ = data; break;
+        case IO::SCROLL_Y: scroll_y_ = data; break;
+        case IO::LCD_Y: // read only
             break;
-        case g_y_compare_address: y_compare_ = data; break;
-        case g_dma_src_address:
+        case IO::LYC: y_compare_ = data; break;
+        case IO::DMA_SRC:
             dma_src_ = data;
             dma_running_ = true;
             // TODO: set DMA start address, implement DMA
             break;
-        case g_background_palette_address: bg_palette_ = data; break;
-        case g_object_palette0_address: obj_palette0_ = data; break;
-        case g_object_palette1_address: obj_palette1_ = data; break;
-        case g_window_y_address: window_y_ = data; break;
-        case g_window_x_address: window_x_ = data; break;
+        case IO::BG_PALETTE: bg_palette_ = data; break;
+        case IO::OBJ0_PALETTE: obj_palette0_ = data; break;
+        case IO::OBJ1_PALETTE: obj_palette1_ = data; break;
+        case IO::WINDOW_Y: window_y_ = data; break;
+        case IO::WINDOW_X: window_x_ = data; break;
         default: throw std::invalid_argument("unreachable");
         }
     }

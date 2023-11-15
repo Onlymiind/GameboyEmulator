@@ -48,15 +48,15 @@ namespace gb {
             ppu_.writeOAM(address, data);
         } else if (address <= g_memory_forbidden.max_address) {
             // ignore
-        } else if (address == g_memory_joypad_address) {
+        } else if (address == uint16_t(IO::JOYPAD)) {
             input_.write(data);
         } else if (g_memory_timer.isInRange(address)) {
             timer_.write(address, data);
         } else if (g_memory_ppu_registers.isInRange(address)) {
             ppu_.writeIO(address, data);
-        } else if (address == g_interrupt_enable_address) {
+        } else if (address == uint16_t(IO::IE)) {
             interrupt_enable_.write(data);
-        } else if (address == g_interrupt_flags_address) {
+        } else if (address == uint16_t(IO::IF)) {
             interrupt_flags_.write(data);
         } else if (address <= g_memory_io_unused.max_address) {
             // catch all reads from io range
@@ -113,15 +113,15 @@ namespace gb {
         } else if (address <= g_memory_forbidden.max_address) {
             // TODO: value depends on PPU behaviour
             return 0xff;
-        } else if (address == g_memory_joypad_address) {
+        } else if (address == uint16_t(IO::JOYPAD)) {
             return input_.read();
         } else if (g_memory_timer.isInRange(address)) {
             return timer_.read(address);
         } else if (g_memory_ppu_registers.isInRange(address)) {
             return ppu_.readIO(address);
-        } else if (address == g_interrupt_enable_address) {
+        } else if (address == uint16_t(IO::IE)) {
             return interrupt_enable_.read();
-        } else if (address == g_interrupt_flags_address) {
+        } else if (address == uint16_t(IO::IF)) {
             return interrupt_flags_.read();
         } else if (address <= g_memory_io_unused.max_address) {
             // catch all reads from io range

@@ -13,8 +13,6 @@ namespace gb {
     };
 
     constexpr uint8_t g_unused_interrupt_bits = 0b11100000;
-    constexpr uint16_t g_interrupt_enable_address = 0xFFFF;
-    constexpr uint16_t g_interrupt_flags_address = 0xFF0F;
 
     class InterruptRegister {
       public:

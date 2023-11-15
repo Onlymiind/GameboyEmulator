@@ -8,11 +8,6 @@
 
 namespace gb {
 
-    constexpr uint16_t g_timer_div_address = 0xFF04;
-    constexpr uint16_t g_timer_tima_address = 0xFF05;
-    constexpr uint16_t g_timer_tma_address = 0xFF06;
-    constexpr uint16_t g_timer_tac_address = 0xFF07;
-
     // Frequencies of a timer: 4096 Hz, 262144 Hz, 65536 Hz and 16386 Hz
     // respectively. Frequency is set from bits 0-1 of TAC
     constexpr std::array g_frequency_bit_mask = {uint16_t(1) << 9, uint16_t(1) << 3, uint16_t(1) << 5,

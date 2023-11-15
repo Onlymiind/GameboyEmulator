@@ -27,27 +27,6 @@ namespace gb {
         ~IMemoryObserver() = default;
     };
 
-    constexpr MemoryObjectInfo g_memory_mirror = {.min_address = 0xe000, .max_address = 0xfdff};
-    constexpr MemoryObjectInfo g_memory_forbidden = {.min_address = 0xfea0, .max_address = 0xfeff};
-    constexpr MemoryObjectInfo g_memory_timer = {.min_address = 0xFF04, .max_address = 0xFF07};
-
-    enum class MemoryObjectType { ROM, VRAM, CARTRIDGE_RAM, WRAM, OAM, IO, HRAM, IE };
-
-    constexpr MemoryObjectInfo objectTypeToInfo(MemoryObjectType type) {
-        using enum MemoryObjectType;
-        switch (type) {
-        case ROM: return g_memory_rom;
-        case VRAM: return g_memory_vram;
-        case CARTRIDGE_RAM: return g_memory_cartridge_ram;
-        case WRAM: return g_memory_wram;
-        case OAM: return g_memory_oam;
-        case IO: return g_memory_io_unused;
-        case HRAM: return g_memory_hram;
-        case IE: return MemoryObjectInfo{g_interrupt_enable_address, g_interrupt_enable_address};
-        default: return MemoryObjectInfo{};
-        }
-    }
-
     constexpr std::array<uint8_t, 77> g_io_initail_values = {0xcf, 0,    0x7e, 0xff, 0x19, 0,    0,    0xf8, 0xff, 0xff,
                                                              0xff, 0xff, 0xff, 0xff, 0xff, 0xe1, 0x80, 0xbf, 0xf3, 0xff,
                                                              0xbf, 0xff, 0x3f, 0,    0xff, 0xbf, 0x7f, 0xff, 0x9f, 0xff,

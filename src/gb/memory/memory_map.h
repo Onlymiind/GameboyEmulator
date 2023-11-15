@@ -32,7 +32,10 @@ namespace gb {
         OBJ0_PALETTE = 0xff48,
         OBJ1_PALETTE = 0xff49,
         WINDOW_Y = 0xff4a,
-        WINDOW_X = 0xff4b
+        WINDOW_X = 0xff4b,
+
+        // Interrupt enable
+        IE = 0xffff
     };
 
     constexpr MemoryObjectInfo g_memory_wram = {.min_address = 0xc000, .max_address = 0xdfff};
@@ -56,6 +59,27 @@ namespace gb {
     using OAM = std::span<uint8_t, g_memory_oam.size>;
     using HRAM = std::span<uint8_t, g_memory_hram.size>;
     using UnusedIO = std::span<uint8_t, g_memory_io_unused.size>;
+
+    constexpr MemoryObjectInfo g_memory_mirror = {.min_address = 0xe000, .max_address = 0xfdff};
+    constexpr MemoryObjectInfo g_memory_forbidden = {.min_address = 0xfea0, .max_address = 0xfeff};
+    constexpr MemoryObjectInfo g_memory_timer = {.min_address = 0xFF04, .max_address = 0xFF07};
+
+    enum class MemoryObjectType { ROM, VRAM, CARTRIDGE_RAM, WRAM, OAM, IO, HRAM, IE };
+
+    constexpr MemoryObjectInfo objectTypeToInfo(MemoryObjectType type) {
+        using enum MemoryObjectType;
+        switch (type) {
+        case ROM: return g_memory_rom;
+        case VRAM: return g_memory_vram;
+        case CARTRIDGE_RAM: return g_memory_cartridge_ram;
+        case WRAM: return g_memory_wram;
+        case OAM: return g_memory_oam;
+        case IO: return g_memory_io_unused;
+        case HRAM: return g_memory_hram;
+        case IE: return MemoryObjectInfo{uint16_t(IO::IE), uint16_t(IO::IE)};
+        default: return MemoryObjectInfo{};
+        }
+    }
 } // namespace gb
 
 #endif

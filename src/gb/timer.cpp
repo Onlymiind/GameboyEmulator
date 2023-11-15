@@ -1,4 +1,5 @@
 #include "timer.h"
+#include "gb/memory/memory_map.h"
 
 #include <cstdint>
 #include <limits>
@@ -20,11 +21,11 @@ namespace gb {
     }
 
     uint8_t Timer::read(uint16_t address) const {
-        switch (address) {
-        case g_timer_div_address: return uint8_t((counter_ & 0xff00) >> 8);
-        case g_timer_tima_address: return TIMA_;
-        case g_timer_tma_address: return TMA_;
-        case g_timer_tac_address: return 0xf8 | (uint8_t(TAC_.enable) << 2) | TAC_.freqency;
+        switch (IO(address)) {
+        case IO::DIV: return uint8_t((counter_ & 0xff00) >> 8);
+        case IO::TIMA: return TIMA_;
+        case IO::TMA: return TMA_;
+        case IO::TAC: return 0xf8 | (uint8_t(TAC_.enable) << 2) | TAC_.freqency;
         default:
             throw std::invalid_argument("Attempting to read data from timer at invalid adress: " +
                                         std::to_string(address));
@@ -33,11 +34,11 @@ namespace gb {
     }
 
     void Timer::write(uint16_t address, uint8_t data) {
-        switch (address) {
-        case g_timer_div_address: counter_ = 0; break;
-        case g_timer_tima_address: TIMA_ = data; break;
-        case g_timer_tma_address: TMA_ = data; break;
-        case g_timer_tac_address:
+        switch (IO(address)) {
+        case IO::DIV: counter_ = 0; break;
+        case IO::TIMA: TIMA_ = data; break;
+        case IO::TMA: TMA_ = data; break;
+        case IO::TAC:
             TAC_.enable = (data & 0b00000100) != 0;
             TAC_.freqency = data & 0b00000011;
             break;

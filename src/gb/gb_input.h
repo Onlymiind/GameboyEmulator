@@ -24,8 +24,6 @@ namespace gb {
     constexpr uint8_t g_input_select_dpad = setBit(4);
     constexpr uint8_t g_input_select_buttons = setBit(5);
 
-    constexpr uint16_t g_memory_joypad_address = 0xff00;
-
     struct InputState {
         bool a = false;
         bool b = false;

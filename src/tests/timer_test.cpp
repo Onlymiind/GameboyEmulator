@@ -15,29 +15,29 @@ TEST_CASE("reading and writing") {
     gb::InterruptRegister reg;
     gb::Timer timer(reg);
 
-    REQUIRE(timer.read(gb::g_timer_div_address) == 0xAB);
-    REQUIRE(timer.read(gb::g_timer_tima_address) == 0);
-    REQUIRE(timer.read(gb::g_timer_tma_address) == 0);
-    REQUIRE(timer.read(gb::g_timer_tac_address) == 0xf8);
+    REQUIRE(timer.read(uint16_t(gb::IO::DIV)) == 0xAB);
+    REQUIRE(timer.read(uint16_t(gb::IO::TIMA)) == 0);
+    REQUIRE(timer.read(uint16_t(gb::IO::TMA)) == 0);
+    REQUIRE(timer.read(uint16_t(gb::IO::TAC)) == 0xf8);
 
-    timer.write(gb::g_timer_div_address, 0x10);
-    REQUIRE(timer.read(gb::g_timer_div_address) == 0);
+    timer.write(uint16_t(gb::IO::DIV), 0x10);
+    REQUIRE(timer.read(uint16_t(gb::IO::DIV)) == 0);
 
-    timer.write(gb::g_timer_tima_address, 0x11);
-    REQUIRE(timer.read(gb::g_timer_tima_address) == 0x11);
+    timer.write(uint16_t(gb::IO::TIMA), 0x11);
+    REQUIRE(timer.read(uint16_t(gb::IO::TIMA)) == 0x11);
 
-    timer.write(gb::g_timer_tma_address, 0x12);
-    assert(timer.read(gb::g_timer_tma_address) == 0x12);
+    timer.write(uint16_t(gb::IO::TMA), 0x12);
+    assert(timer.read(uint16_t(gb::IO::TMA)) == 0x12);
 
-    timer.write(gb::g_timer_tac_address, 0b11100101);
-    REQUIRE(timer.read(gb::g_timer_tac_address) == (0xf8 | 0b00000101));
+    timer.write(uint16_t(gb::IO::TAC), 0b11100101);
+    REQUIRE(timer.read(uint16_t(gb::IO::TAC)) == (0xf8 | 0b00000101));
 }
 
 TEST_CASE("interrupt") {
     gb::InterruptRegister reg;
     gb::Timer timer(reg);
-    timer.write(gb::g_timer_div_address, 0);
-    timer.write(gb::g_timer_tac_address, 4);
+    timer.write(uint16_t(gb::IO::DIV), 0);
+    timer.write(uint16_t(gb::IO::TAC), 4);
 
     // This should cause timer with default register values to set interrupt bit
     for (int j = 256; j > 0; --j) {
@@ -55,8 +55,8 @@ TEST_CASE("frequencies") {
         gb::Timer timer(reg);
 
         // Enable timer, set frequency to the first one
-        timer.write(gb::g_timer_div_address, 0);
-        timer.write(gb::g_timer_tac_address, 4);
+        timer.write(uint16_t(gb::IO::DIV), 0);
+        timer.write(uint16_t(gb::IO::TAC), 4);
 
         for (int i = 1024 * 256 - 1; i > 0; --i) {
             timer.update();
@@ -71,8 +71,8 @@ TEST_CASE("frequencies") {
         gb::Timer timer(reg);
 
         // Enable timer, set second frequency
-        timer.write(gb::g_timer_div_address, 0);
-        timer.write(gb::g_timer_tac_address, 5);
+        timer.write(uint16_t(gb::IO::DIV), 0);
+        timer.write(uint16_t(gb::IO::TAC), 5);
 
         for (int i = 16 * 256 - 1; i > 0; --i) {
             timer.update();
@@ -87,8 +87,8 @@ TEST_CASE("frequencies") {
         gb::Timer timer(reg);
 
         // Enable timer, set third frequency
-        timer.write(gb::g_timer_div_address, 0);
-        timer.write(gb::g_timer_tac_address, 6);
+        timer.write(uint16_t(gb::IO::DIV), 0);
+        timer.write(uint16_t(gb::IO::TAC), 6);
 
         for (int i = 64 * 256 - 1; i > 0; --i) {
             timer.update();
@@ -103,8 +103,8 @@ TEST_CASE("frequencies") {
         gb::Timer timer(reg);
 
         // Enable timer, set last frequency
-        timer.write(gb::g_timer_div_address, 0);
-        timer.write(gb::g_timer_tac_address, 7);
+        timer.write(uint16_t(gb::IO::DIV), 0);
+        timer.write(uint16_t(gb::IO::TAC), 7);
 
         for (int i = 256 * 256 - 1; i > 0; --i) {
             timer.update();
@@ -121,11 +121,11 @@ TEST_CASE("incrementing in emulator") {
     emulator.getCartridge().setROM(std::vector<uint8_t>(32 * 1024));
     emulator.reset();
     emulator.start();
-    emulator.getTimer().write(gb::g_timer_div_address, 0);
-    REQUIRE(emulator.getTimer().read(gb::g_timer_div_address) == 0);
+    emulator.getTimer().write(uint16_t(gb::IO::DIV), 0);
+    REQUIRE(emulator.getTimer().read(uint16_t(gb::IO::DIV)) == 0);
     for (int i = 0; i < 64; ++i) {
         emulator.tick();
     }
 
-    REQUIRE(emulator.getTimer().read(gb::g_timer_div_address) == 1);
+    REQUIRE(emulator.getTimer().read(uint16_t(gb::IO::DIV)) == 1);
 }

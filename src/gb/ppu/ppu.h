@@ -12,19 +12,6 @@
 
 namespace gb {
 
-    constexpr uint16_t g_lcd_control_address = 0xFF40;
-    constexpr uint16_t g_lcd_status = 0xFF41;
-    constexpr uint16_t g_scroll_y_address = 0xFF42;
-    constexpr uint16_t g_scroll_x_address = 0xFF43;
-    constexpr uint16_t g_lcd_y_address = 0xFF44;
-    constexpr uint16_t g_y_compare_address = 0xFF45;
-    constexpr uint16_t g_dma_src_address = 0xFF46;
-    constexpr uint16_t g_background_palette_address = 0xFF47;
-    constexpr uint16_t g_object_palette0_address = 0xFF48;
-    constexpr uint16_t g_object_palette1_address = 0xFF49;
-    constexpr uint16_t g_window_y_address = 0xFF4A;
-    constexpr uint16_t g_window_x_address = 0xFF4B;
-
     constexpr uint16_t g_second_tile_data_block_offset = 0x9000;
     constexpr uint16_t g_first_tilemap_offset = 0x9800;
     constexpr uint16_t g_second_tilemap_offset = 0x9C00;
