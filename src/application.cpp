@@ -166,31 +166,31 @@ namespace emulator {
                 .putString(", Zero: ")
                 .putBool(regs.getFlag(gb::cpu::Flags::ZERO))
                 .putString("\nA: ")
-                .putU8(regs.A())
+                .putU8(regs.a())
                 .putString(", AF: ")
-                .putU16(regs.AF())
+                .putU16(regs.af())
                 .putString("\nC: ")
-                .putU8(regs.C())
+                .putU8(regs.c())
                 .putString(", B: ")
-                .putU8(regs.B())
+                .putU8(regs.b())
                 .putString(", BC: ")
-                .putU16(regs.BC())
+                .putU16(regs.bc())
                 .putString("\nE: ")
-                .putU8(regs.E())
+                .putU8(regs.e())
                 .putString(", D: ")
-                .putU8(regs.D())
+                .putU8(regs.d())
                 .putString(", DE: ")
-                .putU16(regs.DE())
+                .putU16(regs.de())
                 .putString("\nH: ")
-                .putU8(regs.H())
+                .putU8(regs.h())
                 .putString(", L: ")
-                .putU8(regs.L())
+                .putU8(regs.l())
                 .putString(", HL: ")
-                .putU16(regs.HL())
+                .putU16(regs.hl())
                 .putString("\nSP: ")
                 .putU16(regs.sp)
                 .putString(", PC: ")
-                .putU16(regs.PC())
+                .putU16(regs.pc())
                 .putString("\nIME: ")
                 .putBool(ime);
             buffer_.finish();
@@ -593,11 +593,11 @@ namespace emulator {
             if (emulator_.getCPU().isFinished()) {
                 gb::cpu::Instruction instr = emulator_.getCPU().getLastInstruction();
                 recent_instructions_.push_back(instr);
-                if (instr.registers.PC() <= gb::g_rom_bank0_max_address) {
+                if (instr.registers.pc() <= gb::g_rom_bank0_max_address) {
                     disassembler_.addInstruction(instr, current_rom_banks_.first);
-                } else if (instr.registers.PC() <= gb::g_memory_rom.max_address) {
+                } else if (instr.registers.pc() <= gb::g_memory_rom.max_address) {
                     disassembler_.addInstruction(instr, current_rom_banks_.second);
-                } else if (gb::g_memory_cartridge_ram.isInRange(instr.registers.PC())) {
+                } else if (gb::g_memory_cartridge_ram.isInRange(instr.registers.pc())) {
                     disassembler_.addInstruction(instr, current_ram_bank_);
                 } else {
                     disassembler_.addInstruction(instr);
@@ -608,7 +608,7 @@ namespace emulator {
                 // printInstruction(buf, recent_instructions_.size() - 1);
                 // std::cout << buf.data() << '\n';
                 if (!single_step_ &&
-                    std::binary_search(pc_breakpoints_.begin(), pc_breakpoints_.end(), instr.registers.PC())) {
+                    std::binary_search(pc_breakpoints_.begin(), pc_breakpoints_.end(), instr.registers.pc())) {
                     single_step_ = true;
                 }
             }
@@ -695,7 +695,7 @@ namespace emulator {
     void Application::printInstruction(StringBuffer &buf, gb::cpu::Instruction instr, std::optional<size_t> idx) {
         using namespace gb::cpu;
         buf.reserve(sizeof("ffff CALL nz, ffff##125"));
-        buf.putU16(instr.registers.PC()).put(' ').putString(to_string(instr.type));
+        buf.putU16(instr.registers.pc()).put(' ').putString(to_string(instr.type));
         if (instr.condition) {
             buf.put(' ').putString(to_string(*instr.condition));
         }

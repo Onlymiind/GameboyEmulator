@@ -16,13 +16,13 @@ namespace gb::cpu {
 
     SharpSM83::SharpSM83(AddressBus &bus, InterruptRegister &interrupt_enable, InterruptRegister &interrupt_flags)
         : bus_(bus), ie_(interrupt_enable), if_(interrupt_flags) {
-        reg_.AF(0x01B0);
-        reg_.BC(0x0013);
-        reg_.DE(0x00D8);
-        reg_.HL(0x014D);
+        reg_.af(0x01B0);
+        reg_.bc(0x0013);
+        reg_.de(0x00D8);
+        reg_.hl(0x014D);
 
         reg_.sp = 0xFFFE;
-        reg_.PC(0x0100);
+        reg_.pc(0x0100);
     }
 
     void SharpSM83::tick() {
@@ -83,9 +83,9 @@ namespace gb::cpu {
         sheduleMemoryNoOp();
         // instruction_.registers.PC() contains address of the fetched instruction
         // reg_.PC() contains address of the byte after the instruction
-        shedulePushStack(instruction_.registers.PC());
+        shedulePushStack(instruction_.registers.pc());
         sheduleMemoryNoOp();
-        reg_.PC(getInterruptVector(interrupt));
+        reg_.pc(getInterruptVector(interrupt));
         sheduleFetchInstruction();
     }
 
@@ -173,7 +173,7 @@ namespace gb::cpu {
         reg_.setWordRegister(Registers::HL, 0x014d);
 
         reg_.sp = 0xFFFE;
-        reg_.PC(0x100);
+        reg_.pc(0x100);
 
         IME_ = false;
         instruction_ = Instruction{};
@@ -309,26 +309,26 @@ namespace gb::cpu {
         case ArgumentSource::IMMEDIATE_S8:
         case ArgumentSource::IMMEDIATE_U8:
             memory_op_queue_.push_back(MemoryOp{
-                .address = reg_.PC(),
+                .address = reg_.pc(),
                 .type = MemoryOp::Type::READ,
                 .data = uint8_t(Registers::NONE),
             });
             ++instruction_.width;
-            reg_.PC(reg_.PC() + 1);
+            reg_.pc(reg_.pc() + 1);
             return;
         case ArgumentSource::IMMEDIATE_U16:
             memory_op_queue_.push_back(MemoryOp{
-                .address = reg_.PC(),
+                .address = reg_.pc(),
                 .type = MemoryOp::Type::READ,
                 .data = uint8_t(Registers::NONE),
             });
             memory_op_queue_.push_back(MemoryOp{
-                .address = uint16_t(reg_.PC() + 1),
+                .address = uint16_t(reg_.pc() + 1),
                 .type = MemoryOp::Type::READ,
                 .data = uint8_t(Registers::NONE),
             });
             instruction_.width += 2;
-            reg_.PC(reg_.PC() + 2);
+            reg_.pc(reg_.pc() + 2);
             return;
         case ArgumentSource::INDIRECT:
             if (instr.src.reg == Registers::C) {
@@ -344,26 +344,26 @@ namespace gb::cpu {
 
         if (instr.dst.src == ArgumentSource::IMMEDIATE_U8) {
             memory_op_queue_.push_back(MemoryOp{
-                .address = reg_.PC(),
+                .address = reg_.pc(),
                 .type = MemoryOp::Type::READ,
                 .data = uint8_t(Registers::NONE),
             });
             ++instruction_.width;
-            reg_.PC(reg_.PC() + 1);
+            reg_.pc(reg_.pc() + 1);
 
         } else if (instr.dst.src == ArgumentSource::IMMEDIATE_U16) {
             memory_op_queue_.push_back(MemoryOp{
-                .address = reg_.PC(),
+                .address = reg_.pc(),
                 .type = MemoryOp::Type::READ,
                 .data = uint8_t(Registers::NONE),
             });
             memory_op_queue_.push_back(MemoryOp{
-                .address = uint16_t(reg_.PC() + 1),
+                .address = uint16_t(reg_.pc() + 1),
                 .type = MemoryOp::Type::READ,
                 .data = uint8_t(Registers::NONE),
             });
             instruction_.width += 2;
-            reg_.PC(reg_.PC() + 2);
+            reg_.pc(reg_.pc() + 2);
         }
     }
 
@@ -386,11 +386,11 @@ namespace gb::cpu {
             break;
         case FETCH_INSTRUCTION:
             finished_ = true;
-            decode(bus_.read(reg_.PC()));
+            decode(bus_.read(reg_.pc()));
             if (halt_bug_) {
                 halt_bug_ = false;
             } else {
-                reg_.PC(reg_.PC() + 1);
+                reg_.pc(reg_.pc() + 1);
             }
             // false if fetched 0xCB
             if (current_instruction_) {

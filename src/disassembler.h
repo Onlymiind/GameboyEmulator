@@ -40,7 +40,7 @@ namespace emulator {
 
         void addInstruction(gb::cpu::Instruction instr, uint16_t bank = InstructionAddress::g_none_bank) {
             gb::cpu::Instruction &value = disassembly_[InstructionAddress{
-                .address = instr.registers.PC(),
+                .address = instr.registers.pc(),
                 .bank = bank,
             }];
             if (value != instr) {

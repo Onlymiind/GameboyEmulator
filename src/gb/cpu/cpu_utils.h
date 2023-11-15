@@ -30,15 +30,15 @@ namespace gb::cpu {
         static constexpr size_t g_flags = 0;
 
       public:
-        uint8_t &A() { return registers_[size_t(Registers::A)]; }
+        uint8_t &a() { return registers_[size_t(Registers::A)]; }
 
-        uint8_t A() const { return registers_[size_t(Registers::A)]; }
-        uint8_t B() const { return registers_[size_t(Registers::B)]; }
-        uint8_t C() const { return registers_[size_t(Registers::C)]; }
-        uint8_t D() const { return registers_[size_t(Registers::D)]; }
-        uint8_t E() const { return registers_[size_t(Registers::E)]; }
-        uint8_t H() const { return registers_[size_t(Registers::H)]; }
-        uint8_t L() const { return registers_[size_t(Registers::L)]; }
+        uint8_t a() const { return registers_[size_t(Registers::A)]; }
+        uint8_t b() const { return registers_[size_t(Registers::B)]; }
+        uint8_t c() const { return registers_[size_t(Registers::C)]; }
+        uint8_t d() const { return registers_[size_t(Registers::D)]; }
+        uint8_t e() const { return registers_[size_t(Registers::E)]; }
+        uint8_t h() const { return registers_[size_t(Registers::H)]; }
+        uint8_t l() const { return registers_[size_t(Registers::L)]; }
 
         void setLow(Registers reg, uint8_t data) {
             size_t idx = uint8_t(reg) & uint8_t(Registers::LOW_REG_MASK);
@@ -81,35 +81,35 @@ namespace gb::cpu {
             setHigh(reg, uint8_t(data >> 8));
         }
 
-        uint16_t AF() const { return uint16_t(registers_[g_flags]) | (uint16_t(A()) << 8); }
-        uint16_t BC() const { return uint16_t(C()) | (uint16_t(B()) << 8); }
-        uint16_t DE() const { return uint16_t(E()) | (uint16_t(D()) << 8); }
-        uint16_t HL() const { return uint16_t(L()) | (uint16_t(H()) << 8); }
-        uint16_t PC() const {
+        uint16_t af() const { return uint16_t(registers_[g_flags]) | (uint16_t(a()) << 8); }
+        uint16_t bc() const { return uint16_t(c()) | (uint16_t(b()) << 8); }
+        uint16_t de() const { return uint16_t(e()) | (uint16_t(d()) << 8); }
+        uint16_t hl() const { return uint16_t(l()) | (uint16_t(h()) << 8); }
+        uint16_t pc() const {
             return uint16_t(registers_[size_t(Registers::PC_LOW)]) |
                    (uint16_t(registers_[size_t(Registers::PC_HIGH)]) << 8);
         }
 
-        void AF(uint16_t value) {
+        void af(uint16_t value) {
             registers_[g_flags] = uint8_t(value) & uint8_t(Flags::ALL);
             registers_[size_t(Registers::A)] = uint8_t(value >> 8);
         }
-        void BC(uint16_t value) {
+        void bc(uint16_t value) {
             registers_[size_t(Registers::C)] = uint8_t(value);
             registers_[size_t(Registers::B)] = uint8_t(value >> 8);
         }
 
-        void DE(uint16_t value) {
+        void de(uint16_t value) {
             registers_[size_t(Registers::E)] = uint8_t(value);
             registers_[size_t(Registers::D)] = uint8_t(value >> 8);
         }
 
-        void HL(uint16_t value) {
+        void hl(uint16_t value) {
             registers_[size_t(Registers::L)] = uint8_t(value);
             registers_[size_t(Registers::H)] = uint8_t(value >> 8);
         }
 
-        void PC(uint16_t value) {
+        void pc(uint16_t value) {
             registers_[size_t(Registers::PC_LOW)] = uint8_t(value);
             registers_[size_t(Registers::PC_HIGH)] = uint8_t(value >> 8);
         }

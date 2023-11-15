@@ -13,8 +13,6 @@
 #include <sstream>
 #include <string>
 
-std::string run_cmd = "-run ";
-
 class TestOutputReader : public gb::IMemoryObserver {
   public:
     TestOutputReader(std::ostream &out) : out_(out) {}
@@ -60,12 +58,12 @@ TEST_CASE("run cpu test roms") {
             emulator.tick();
             if (emulator.getCPU().isFinished()) {
                 // tests jump to infinite loop after comletion
-                if (!emulator.getCPU().isHalted() && emulator.getCPU().getLastInstruction().registers.PC() == old_pc) {
+                if (!emulator.getCPU().isHalted() && emulator.getCPU().getLastInstruction().registers.pc() == old_pc) {
                     INFO("Test rom completion detected at address:");
                     INFO(old_pc);
                     break;
                 }
-                old_pc = emulator.getCPU().getLastInstruction().registers.PC();
+                old_pc = emulator.getCPU().getLastInstruction().registers.pc();
             }
 
         } catch (const std::exception &e) {
