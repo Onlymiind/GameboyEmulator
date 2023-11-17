@@ -7,6 +7,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
+#include <memory>
 #include <optional>
 #include <sstream>
 #include <stdexcept>
@@ -193,34 +194,30 @@ class StringBuffer {
   public:
     StringBuffer() = default;
     StringBuffer(size_t capacity) : data_(new char[capacity + 1]), capacity_(capacity + 1) {}
-    ~StringBuffer() { delete[] data_; }
+    ~StringBuffer() = default;
 
     StringBuffer(const StringBuffer &) = delete;
     StringBuffer(StringBuffer &&other) noexcept {
-        delete[] data_;
-        data_ = other.data_;
+        data_.reset(other.data_.release());
         size_ = other.size_;
         capacity_ = other.capacity_;
-        other.data_ = nullptr;
         other.capacity_ = 0;
         other.size_ = 0;
     }
 
     StringBuffer &operator=(const StringBuffer &) = delete;
     StringBuffer &operator=(StringBuffer &&other) noexcept {
-        delete[] data_;
-        data_ = other.data_;
+        data_.reset(other.data_.release());
         size_ = other.size_;
         capacity_ = other.capacity_;
-        other.data_ = nullptr;
-        other.size_ = 0;
         other.capacity_ = 0;
+        other.size_ = 0;
         return *this;
     }
 
     size_t size() const { return size_; }
     size_t capacity() const { return capacity_; }
-    const char *data() const { return data_; }
+    const char *data() const { return data_.get(); }
 
     void reserve(size_t size) {
         ensure(size);
@@ -298,12 +295,11 @@ class StringBuffer {
     void ensure(size_t length) {
         if (capacity_ - size_ < length + 1) {
             size_t new_capacity = std::max(capacity_ * 2, size_ + length + 1);
-            char *new_data = new char[new_capacity];
+            std::unique_ptr<char[]> new_data = std::make_unique<char[]>(new_capacity);
             if (data_) {
-                std::memcpy(new_data, data_, size_);
+                std::memcpy(new_data.get(), data_.get(), size_);
             }
-            delete[] data_;
-            data_ = new_data;
+            std::swap(new_data, data_);
             capacity_ = new_capacity;
         }
     }
@@ -321,7 +317,7 @@ class StringBuffer {
         }
     }
 
-    char *data_ = nullptr;
+    std::unique_ptr<char[]> data_ = nullptr;
     size_t size_ = 0;
     size_t capacity_ = 0;
 };
