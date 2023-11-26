@@ -42,7 +42,7 @@ namespace emulator {
         }
     }
 
-    class MemoryBreakpoints : public gb::IMemoryObserver {
+    class MemoryBreakpoints final : public gb::IMemoryObserver {
       public:
         MemoryBreakpoints(std::function<void()> &&callback) : callback_(std::move(callback)) {}
 

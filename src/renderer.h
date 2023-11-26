@@ -42,7 +42,7 @@ namespace renderer {
         std::array<Color, 4> obj_palette1{};
     };
 
-    class Renderer : public gb::IRenderer {
+    class Renderer final : public gb::IRenderer {
       public:
         Renderer();
 

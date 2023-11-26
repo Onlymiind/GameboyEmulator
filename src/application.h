@@ -27,6 +27,7 @@
 #include <memory>
 #include <queue>
 #include <string_view>
+#include <unordered_set>
 
 namespace emulator {
 
@@ -99,7 +100,7 @@ namespace emulator {
 
         GLFWwindow *window_ = nullptr;
 
-        std::vector<uint16_t> pc_breakpoints_;
+        std::unordered_set<uint16_t> pc_breakpoints_;
         MemoryBreakpoints memory_breakpoints_{[this]() { single_step_ = true; }};
         std::unique_ptr<renderer::Renderer> emulator_renderer_;
 

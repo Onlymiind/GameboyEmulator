@@ -316,19 +316,19 @@ namespace emulator {
         }
         {
             ImGui::Text("PC breakpoints: ");
-            auto delete_it = pc_breakpoints_.end();
-            for (auto it = pc_breakpoints_.begin(); it != pc_breakpoints_.end(); ++it) {
+            std::optional<uint16_t> delete_br;
+            for (uint16_t br : pc_breakpoints_) {
                 buffer_.clear();
                 buffer_.reserve(6);
-                buffer_.putString("0x").putU16(*it);
+                buffer_.putString("0x").putU16(br);
                 buffer_.finish();
                 ImGui::Selectable(buffer_.data());
                 if (ImGui::IsItemHovered() && ImGui::IsKeyPressed(ImGuiKey_Backspace)) {
-                    delete_it = it;
+                    delete_br = br;
                 }
             }
-            if (delete_it != pc_breakpoints_.end()) {
-                pc_breakpoints_.erase(delete_it);
+            if (delete_br) {
+                pc_breakpoints_.erase(*delete_br);
             }
         }
 
@@ -607,8 +607,7 @@ namespace emulator {
                 // StaticStringBuffer<g_instruction_string_buf_size> buf;
                 // printInstruction(buf, recent_instructions_.size() - 1);
                 // std::cout << buf.data() << '\n';
-                if (!single_step_ &&
-                    std::binary_search(pc_breakpoints_.begin(), pc_breakpoints_.end(), instr.registers.pc())) {
+                if (!single_step_ && pc_breakpoints_.contains(instr.registers.pc())) {
                     single_step_ = true;
                 }
             }
@@ -682,10 +681,7 @@ namespace emulator {
         return true;
     }
 
-    void Application::addPCBreakpoint(uint16_t address) {
-        auto it = std::lower_bound(pc_breakpoints_.begin(), pc_breakpoints_.end(), address);
-        pc_breakpoints_.insert(it, address);
-    }
+    void Application::addPCBreakpoint(uint16_t address) { pc_breakpoints_.insert(address); }
 
     void Application::addMemoryBreakpoint() {
         memory_breakpoints_.addBreakpoint(memory_breakpoint_data_);
