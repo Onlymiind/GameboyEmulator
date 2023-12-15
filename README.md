@@ -34,7 +34,9 @@ The project was tested on Windows and Linux using unit tests and test ROMs (blar
 ## Building
 Run cmake at project's root directory. C++20 is required for building the project.
 ## Testing
-Tests' source code is located under src/tests directory. To build tests add `-DBUILD_TESTS=ON` flag when generating build files. Tests can be run with ctest. When running tests' executable directly, make sure to launch it from src/tests/intergation/roms directory as this is where test ROMs are located.
+Tests' source code is located under src/tests directory. To build tests add `-DBUILD_TESTS=ON` flag when generating build files. Tests can be run with ctest.
+
+Note that for tests to pass you need to place blargg's test roms in the `src/tests/integration/roms/blargg_test_roms` directory if running tests with ctest (or just `<path-to-tests'-executable>/blargg_test_roms` if you are running the tests' executable directly). Check `src/tests/integration/integration_test.cpp` for the list of needed roms.
 
 ## Usage notes
 

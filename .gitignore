@@ -372,3 +372,4 @@ lua-5.4.6/
 scripting_test/
 perf.*
 *.perf
+src/tests/integration/roms/blargg_test_roms/*
