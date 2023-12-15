@@ -17,6 +17,13 @@ jobs:
     - uses: actions/checkout@v3
       with:
         submodules: 'true'
+    
+    - name: fetch test roms
+      run: |
+        git clone git@github.com:L-P/blargg-test-roms.git
+        cp blargg-test-roms/cpu_instrs/individual/* ${{github.workspace}}/src/tests/integration/roms/blargg_test_roms/
+        cp blargg-test-roms/instr_timing/instr_timing.gb ${{github.workspace}}/src/tests/integration/roms/blargg_test_roms/
+        cp blargg-test-roms/mem_timing/individual/* ${{github.workspace}}/src/tests/integration/roms/blargg_test_roms/
 
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DTESTS_ONLY=ON
