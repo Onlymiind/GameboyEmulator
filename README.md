@@ -8,6 +8,8 @@ A Game Boy (DMG model) emulator.
 - Hardware timer
 - Basic memory emulation (some memory-mapped IO registers are implemented as normal RAM)
 - Interrupts
+- PPU
+- Keyboard input
 - Basic MBC1 chip support
 
 ### Partially implemented:
@@ -43,8 +45,9 @@ Note that for tests to pass you need to place blargg's test roms in the `src/tes
 - Breakpoints are removed by pressing backspace while hovering over them.
 - To see the CPU status during some instruction, click on the instruction.
 - Currently only 10 most recent instructions can be logged.
-- To stop/resume execution press spacebar.
+- To stop/resume execution press F9.
 - Press F11 while execution is stopped to advance a single instruction, press F12 to advance a frame.
+- Keymap is as follows (format - <keyboard key>(<GB key>)): A (A), S (B), W (Start), D (Select), Arrow keys (D-pad). Keymap is (for now) non-remappable. 
 - Some values of PPU's memory-mapped registers can appear static in memory view, although they shouldn't be (e.g. current scanline). This happens because during normal execution memory view is always drawn at the specific cycle of emulator's frame.
 
 ## Tests status
