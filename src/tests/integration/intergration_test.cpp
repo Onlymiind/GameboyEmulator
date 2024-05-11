@@ -30,6 +30,7 @@ TEST_CASE("run cpu test roms") {
 
     gb::Emulator emulator;
     REQUIRE(std::filesystem::exists(rom_dir + rom_name));
+    INFO(rom_name);
     emulator.getCartridge().setROM(readFile(rom_dir + rom_name));
     emulator.getBus().setBreakpointCallback(
         [&out, &chr](uint16_t address, gb::StopReason, uint8_t data) {

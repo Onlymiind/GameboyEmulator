@@ -43,7 +43,7 @@ namespace gb {
         uint8_t fetch(uint16_t address) const;
         uint8_t read(uint16_t address) const;
         void write(uint16_t address, uint8_t data,
-                   bool trigger_breakpoints = false);
+                   bool trigger_breakpoints = true);
 
         void reset();
 
