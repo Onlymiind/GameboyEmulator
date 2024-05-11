@@ -38,13 +38,26 @@ namespace gb {
         IE = 0xffff
     };
 
-    constexpr MemoryObjectInfo g_memory_wram = {.min_address = 0xc000, .max_address = 0xdfff};
-    constexpr MemoryObjectInfo g_memory_hram = {.min_address = 0xff80, .max_address = 0xfffe};
+    constexpr MemoryObjectInfo g_memory_vram = {.min_address = 0x8000,
+                                                .max_address = 0x9fff};
+    constexpr MemoryObjectInfo g_memory_wram = {.min_address = 0xc000,
+                                                .max_address = 0xdfff};
+    constexpr MemoryObjectInfo g_memory_mirror = {.min_address = 0xe000,
+                                                  .max_address = 0xfdff};
+    constexpr MemoryObjectInfo g_memory_oam = {.min_address = 0xfe00,
+                                               .max_address = 0xfe9f};
+    constexpr MemoryObjectInfo g_memory_forbidden = {.min_address = 0xfea0,
+                                                     .max_address = 0xfeff};
     // FIXME: this should eventually be properly mapped
-    constexpr MemoryObjectInfo g_memory_io_unused = {.min_address = 0xff00, .max_address = 0xff7f};
-    constexpr MemoryObjectInfo g_memory_vram = {.min_address = 0x8000, .max_address = 0x9fff};
-    constexpr MemoryObjectInfo g_memory_oam = {.min_address = 0xe000, .max_address = 0xfe9f};
-    constexpr MemoryObjectInfo g_memory_ppu_registers = {.min_address = 0xFF40, .max_address = 0xFF4B};
+    constexpr MemoryObjectInfo g_memory_io_unused = {.min_address = 0xff00,
+                                                     .max_address = 0xff7f};
+    constexpr MemoryObjectInfo g_memory_hram = {.min_address = 0xff80,
+                                                .max_address = 0xfffe};
+    // Mapped IO
+    constexpr MemoryObjectInfo g_memory_timer = {.min_address = 0xFF04,
+                                                 .max_address = 0xFF07};
+    constexpr MemoryObjectInfo g_memory_ppu_registers = {.min_address = 0xFF40,
+                                                         .max_address = 0xFF4B};
 
     struct Memory {
         RAM<g_memory_vram.size> vram{};
@@ -60,11 +73,16 @@ namespace gb {
     using HRAM = std::span<uint8_t, g_memory_hram.size>;
     using UnusedIO = std::span<uint8_t, g_memory_io_unused.size>;
 
-    constexpr MemoryObjectInfo g_memory_mirror = {.min_address = 0xe000, .max_address = 0xfdff};
-    constexpr MemoryObjectInfo g_memory_forbidden = {.min_address = 0xfea0, .max_address = 0xfeff};
-    constexpr MemoryObjectInfo g_memory_timer = {.min_address = 0xFF04, .max_address = 0xFF07};
-
-    enum class MemoryObjectType { ROM, VRAM, CARTRIDGE_RAM, WRAM, OAM, IO, HRAM, IE };
+    enum class MemoryObjectType {
+        ROM,
+        VRAM,
+        CARTRIDGE_RAM,
+        WRAM,
+        OAM,
+        IO,
+        HRAM,
+        IE
+    };
 
     constexpr MemoryObjectInfo objectTypeToInfo(MemoryObjectType type) {
         using enum MemoryObjectType;

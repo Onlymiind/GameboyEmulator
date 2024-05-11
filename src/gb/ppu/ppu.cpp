@@ -1,10 +1,13 @@
 #include "gb/ppu/ppu.h"
 #include "gb/interrupt_register.h"
+#include "gb/memory/memory_map.h"
 #include "util/util.h"
+
 #include <algorithm>
 #include <array>
 #include <cstdint>
 #include <cstring>
+#include <iostream>
 #include <span>
 #include <stdexcept>
 #include <type_traits>
@@ -15,7 +18,9 @@ namespace gb {
 
         switch (IO(address)) {
         case IO::LCDC: return lcd_control_;
-        case IO::LCD_STATUS: return status_ | (uint8_t(current_y_ == y_compare_) << 2) | uint8_t(mode_);
+        case IO::LCD_STATUS:
+            return status_ | (uint8_t(current_y_ == y_compare_) << 2) |
+                   uint8_t(mode_);
         case IO::SCROLL_X: return scroll_x_;
         case IO::SCROLL_Y: return scroll_y_;
         case IO::LCD_Y: return current_y_;
@@ -40,11 +45,7 @@ namespace gb {
         case IO::LCD_Y: // read only
             break;
         case IO::LYC: y_compare_ = data; break;
-        case IO::DMA_SRC:
-            dma_src_ = data;
-            dma_running_ = true;
-            // TODO: set DMA start address, implement DMA
-            break;
+        case IO::DMA_SRC: dma_src_ = data; break;
         case IO::BG_PALETTE: bg_palette_ = data; break;
         case IO::OBJ0_PALETTE: obj_palette0_ = data; break;
         case IO::OBJ1_PALETTE: obj_palette1_ = data; break;
@@ -92,35 +93,16 @@ namespace gb {
 
         switch (mode_) {
         case PPUMode::OAM_SCAN: {
-            // spend 80 clock cycles to check 40 y coordinates
-            if (cycles_to_finish_ % 2 == 0) {
-                // each OAM entry is 4 bytes long, y coordinate is the first byte in the entry
-                size_t idx = (g_oam_fetch_duration - cycles_to_finish_) * 4;
-                uint8_t y_coord = oam_[idx] - 16;
-                // height = 8 if OBJ_SIZE bit is not set, 16 otherwise
-                uint8_t height = 8 * (((lcd_control_ & LCDControlFlags::OBJ_SIZE) != 0) + 1);
-
-                if (current_y_ >= y_coord && current_y_ < y_coord + height) {
-                    ObjectAttributes attrs = decodeObjectAttributes(std::span<uint8_t, 4>{&oam_[idx], 4},
-                                                                    (lcd_control_ & LCDControlFlags::OBJ_SIZE) != 0);
-                    // discard objs that are not visible
-                    if (attrs.x == 0) {
-                        break;
-                    }
-                    auto it = std::upper_bound(objects_on_current_line_.begin(), objects_on_current_line_.end(), attrs,
-                                               [](auto lhs, auto rhs) { return lhs.x < rhs.x; });
-
-                    // if two objs have the same x coordinate, the obj with lower attributes address
-                    // is drawn
-                    if (it != objects_on_current_line_.begin() && (--it)->x == attrs.x) {
-                        break;
-                    }
-                    objects_on_current_line_.insert(it, attrs);
-                }
+            if (cycles_to_finish_ == g_oam_fetch_duration) {
+                scanOAM();
             }
             break;
         }
-        case PPUMode::RENDER: renderPixelRow(); break;
+        case PPUMode::RENDER:
+            if (cycles_to_finish_ == g_render_duration) {
+                renderPixelLine();
+            }
+            break;
         case PPUMode::HBLANK: break;
         case PPUMode::VBLANK:
             if (cycles_to_finish_ % g_scanline_duration == 1) {
@@ -138,18 +120,11 @@ namespace gb {
             case PPUMode::OAM_SCAN:
                 mode_ = PPUMode::RENDER;
                 cycles_to_finish_ = g_render_duration;
-
-                // init obj queue
-                objects_to_draw_ = objects_on_current_line_;
                 break;
             case PPUMode::RENDER:
                 mode_ = PPUMode::HBLANK;
                 cycles_to_finish_ = g_scanline_duration - g_render_duration;
                 set_interrupt = status_ & PPUInterruptSelectFlags::HBLANK;
-
-                // reset obj queue
-                objects_on_current_line_.clear();
-                objects_to_draw_ = std::span<ObjectAttributes>{};
                 break;
             case PPUMode::HBLANK:
                 if (current_y_ == g_screen_height) {
@@ -163,7 +138,6 @@ namespace gb {
                     set_interrupt = status_ & PPUInterruptSelectFlags::OAM_SCAN;
                 }
                 ++current_y_;
-                current_x_ = 0;
                 break;
             case PPUMode::VBLANK:
                 mode_ = PPUMode::OAM_SCAN;
@@ -177,136 +151,40 @@ namespace gb {
             default: throw std::runtime_error("unexpected PPU mode");
             }
         }
-        set_interrupt = set_interrupt || (current_y_ == y_compare_ && (status_ & PPUInterruptSelectFlags::Y_COMPARE));
+        set_interrupt = set_interrupt ||
+                        (current_y_ == y_compare_ &&
+                         (status_ & PPUInterruptSelectFlags::Y_COMPARE));
         if (set_interrupt) {
             interrupt_flags_.setFlag(InterruptFlags::LCD_STAT);
         }
     }
 
-    void PPU::renderPixelRow() {
-        if (current_x_ >= g_screen_width) {
-            return;
-        }
-        StaticVector<PixelInfo, 8> pixels;
-
-        if (lcd_control_ & LCDControlFlags::BG_ENABLE) {
-            uint16_t tilemap_base = g_first_tilemap_offset;
-            if (lcd_control_ & LCDControlFlags::BG_TILE_MAP) {
-                tilemap_base = g_second_tilemap_offset;
-            }
-            auto row = getTileRow(tilemap_base, current_x_ + scroll_x_, current_y_ + scroll_y_);
-
-            // used for scrolling individual pixels in background rendering
-            uint8_t pixel_offset = 0;
-            if (cycles_to_finish_ == g_render_duration) { // first BG tile drawn this scanline
-                pixel_offset = scroll_x_ % 8;
-            }
-            for (size_t i = pixel_offset; i < 8; ++i) {
-                pixels.push_back(PixelInfo{
-                    .color_idx = row[i],
-                    .default_color = getBGColor(row[i]),
-                });
-            }
-
-            if ((lcd_control_ & LCDControlFlags::WINDOW_ENABLE) != 0 && current_y_ >= window_y_ &&
-                (current_x_ + 7) >= window_x_) {
-                if (lcd_control_ & LCDControlFlags::WINDOW_TILE_MAP) {
-                    tilemap_base = g_second_tilemap_offset;
-                }
-
-                auto window_row = getTileRow(tilemap_base, current_x_ - window_x_ + 7, current_y_ - window_y_);
-                uint8_t tile_column = (current_x_ - window_x_) % 8;
-                for (uint8_t i = tile_column; i < std::min(size_t(8), pixels.size()); ++i) {
-                    pixels[i] = PixelInfo{
-                        .color_idx = window_row[i - tile_column],
-                        .default_color = getBGColor(window_row[i - tile_column]),
-                    };
-                }
-            }
-        }
-
-        if ((lcd_control_ & LCDControlFlags::OBJ_ENABLE) && !objects_to_draw_.empty()) {
-            size_t discarded_start = 0;
-            for (size_t i = 0; i < objects_to_draw_.size() && objects_to_draw_[i].x <= current_x_ + 8; ++i) {
-
-                ObjectAttributes obj = objects_to_draw_[i];
-
-                uint8_t size = lcd_control_ & LCDControlFlags::OBJ_SIZE ? 16 : 8;
-                uint8_t row = obj.flip_y ? size - (current_y_ + 16 - obj.y) : (current_y_ + 16 - obj.y);
-                // address can overflow into the next tile since sprites can be two tiles tall
-                // current_y_ >= obj.y
-                uint16_t tile_addr = uint16_t(obj.tile_idx) * 0x10 + row * 2;
-                std::array<GBColor, 8> obj_pixels = decodeTileRow(vram_[tile_addr], vram_[tile_addr + 1]);
-
-                if (obj.flip_x) {
-                    // reverse the array
-                    std::swap(obj_pixels[0], obj_pixels[7]);
-                    std::swap(obj_pixels[1], obj_pixels[6]);
-                    std::swap(obj_pixels[2], obj_pixels[5]);
-                    std::swap(obj_pixels[3], obj_pixels[4]);
-                }
-                size_t pixels_start = std::max(obj.x, uint8_t(current_x_ + 8)) - obj.x;
-                size_t count = std::min(size_t(8 - pixels_start), pixels.size());
-                for (size_t i = 0; i < count; ++i) {
-                    if (obj_pixels[pixels_start + i] == GBColor::WHITE) {
-                        // transparent pixel
-                        continue;
-                    } else if ((pixels[i].palette == Palette::OBP0 || pixels[i].palette == Palette::OBP1) &&
-                               pixels[i].color_idx != GBColor::WHITE) {
-                        // do not overwrite already drawn objs
-                        continue;
-                    } else if (pixels[i].palette == Palette::BG && obj.priority &&
-                               pixels[i].color_idx != GBColor::WHITE) {
-                        // handle ObjectAttributes.priority flag
-                        continue;
-                    }
-
-                    pixels[i] = PixelInfo{
-                        .color_idx = obj_pixels[pixels_start + i],
-                        .palette = obj.use_object_palette1 ? Palette::OBP1 : Palette::OBP0,
-                        .default_color = getSpriteColor(obj_pixels[pixels_start + i], obj.use_object_palette1),
-                    };
-                }
-
-                if (obj.x + 8 <= current_x_ + 8 + pixels.size()) {
-                    // obj will not be drawn later
-                    ++discarded_start;
-                }
-            }
-            objects_to_draw_ = objects_to_draw_.subspan(discarded_start);
-        }
-
-        if (pixels.empty()) {
-            for (size_t i = 0; i < 8; ++i) {
-                pixels.push_back(PixelInfo{});
-            }
-        }
-        if (renderer_) {
-            renderer_->drawPixels(current_x_, current_y_, pixels);
-        }
-        current_x_ += pixels.size();
-    }
-
-    std::array<GBColor, 8> PPU::getTileRow(uint16_t tilemap_base, uint8_t x, uint8_t y) {
+    std::array<GBColor, 8> PPU::getTileRow(uint16_t tilemap_base, uint8_t x,
+                                           uint8_t y) {
         uint16_t tile_y = y / 8;
         uint16_t tile_x = x / 8;
-        uint8_t tile_id = vram_[(tilemap_base + (tile_y * 32 + tile_x)) - g_memory_vram.min_address];
+        uint8_t tile_id = vram_[(tilemap_base + (tile_y * 32 + tile_x)) -
+                                g_memory_vram.min_address];
 
         uint16_t tile_address = 0;
         if ((lcd_control_ & LCDControlFlags::BG_TILE_AREA) == 0) {
-            tile_address = uint16_t(int(g_second_tile_data_block_offset) + int(int8_t(tile_id)) * 0x10);
+            tile_address = uint16_t(int(g_second_tile_data_block_offset) +
+                                    int(int8_t(tile_id)) * 0x10);
         } else {
             tile_address = g_memory_vram.min_address + uint16_t(tile_id) * 0x10;
         }
         tile_address += (y % 8) * 2;
 
         return decodeTileRow(vram_[tile_address - g_memory_vram.min_address],
-                             vram_[tile_address + 1 - g_memory_vram.min_address]);
+                             vram_[tile_address + 1 -
+                                   g_memory_vram.min_address]);
     }
 
-    GBColor PPU ::getBGColor(GBColor color_idx) { return GBColor((bg_palette_ >> uint8_t(color_idx) * 2) & 0b11); }
+    GBColor PPU::getBGColor(GBColor color_idx) {
+        return GBColor((bg_palette_ >> uint8_t(color_idx) * 2) & 0b11);
+    }
 
-    GBColor PPU ::getSpriteColor(GBColor color_idx, bool use_obp1) {
+    GBColor PPU::getSpriteColor(GBColor color_idx, bool use_obp1) {
         if (use_obp1) {
             return GBColor((obj_palette1_ >> uint8_t(color_idx) * 2) & 0b11);
         }
@@ -325,5 +203,151 @@ namespace gb {
         cycles_to_finish_ = 1;
         bg_palette_ = 0xfc;
         lcd_control_ = 0x91;
+    }
+
+    void PPU::renderPixelLine() {
+        uint16_t tilemap_base = g_first_tilemap_offset;
+        if (lcd_control_ & LCDControlFlags::BG_TILE_MAP) {
+            tilemap_base = g_second_tilemap_offset;
+        }
+        std::vector<PixelInfo> pixels;
+        pixels.resize(g_screen_width);
+
+        std::array<GBColor, 8> current_tile{};
+
+        // prefetch first tile if it is drawn partially
+        if (scroll_x_ % 8 != 0) {
+            current_tile = getTileRow(tilemap_base, scroll_x_,
+                                      current_y_ + scroll_y_);
+        }
+        bool is_window = false;
+        bool finished_sprites = false;
+        for (uint8_t i = 0; i < g_screen_width; ++i) {
+            if ((lcd_control_ & LCDControlFlags::BG_ENABLE)) {
+                bool was_window = is_window;
+                if (!is_window &&
+                    (lcd_control_ & LCDControlFlags::WINDOW_ENABLE) != 0 &&
+                    current_y_ >= window_y_ && (i + 7) >= window_x_) {
+                    is_window = true;
+                    if (lcd_control_ & LCDControlFlags::WINDOW_TILE_MAP) {
+                        tilemap_base = g_second_tilemap_offset;
+                    }
+                }
+                uint8_t x = 0;
+                uint8_t y = 0;
+                if (is_window) {
+                    x = i - window_x_ + 7;
+                    y = current_y_ - window_y_;
+                } else {
+                    x = i + scroll_x_;
+                    y = current_y_ + scroll_y_;
+                }
+                uint8_t tile_offset = x % 8;
+                if (tile_offset == 0 || (is_window && !was_window)) {
+                    current_tile = getTileRow(tilemap_base, x, y);
+                }
+                pixels[i] = PixelInfo{.color_idx = current_tile[tile_offset],
+                                      .palette = Palette::BG,
+                                      .default_color = getBGColor(
+                                          current_tile[tile_offset])};
+            }
+            if (!finished_sprites &&
+                (lcd_control_ & LCDControlFlags::OBJ_ENABLE) &&
+                !objects_on_current_line_.empty()) {
+                auto it = std::lower_bound(objects_on_current_line_.begin(),
+                                           objects_on_current_line_.end(), i,
+                                           [](ObjectAttributes attrs,
+                                              uint8_t x) {
+                                               return attrs.x + 8 <= x;
+                                           });
+                if (it == objects_on_current_line_.end()) {
+                    finished_sprites = true;
+                    continue;
+                } else if (it->x > i) {
+                    continue;
+                }
+                GBColor pixel = getSpritePixel(*it, i);
+                bool use_object_palette1 = it->use_object_palette1;
+                while (pixel == GBColor::WHITE) {
+                    ++it;
+                    if (it == objects_on_current_line_.end()) {
+                        break;
+                    } else if (it->x > i) {
+                        break;
+                    }
+                    pixel = getSpritePixel(*it, i);
+                    use_object_palette1 = it->use_object_palette1;
+                }
+                if (pixel != GBColor::WHITE) {
+                    pixels[i] = PixelInfo{.color_idx = pixel,
+                                          .palette = Palette::OBP0,
+                                          .default_color = getSpriteColor(
+                                              pixel, use_object_palette1)};
+                }
+            }
+        }
+
+        if (renderer_) {
+            renderer_->drawPixels(0, current_y_, pixels);
+        }
+    }
+
+    void PPU::scanOAM() {
+        objects_on_current_line_.clear();
+        for (size_t i = 0; i < 40; ++i) {
+            ObjectAttributes
+                obj = decodeObjectAttributes(std::span<uint8_t, 4>{&oam_[i * 4],
+                                                                   4},
+                                             lcd_control_ &
+                                                 LCDControlFlags::OBJ_SIZE);
+            if (obj.y + 16 <= current_y_ ||
+                (!(lcd_control_ & LCDControlFlags::OBJ_SIZE) &&
+                 (obj.y + 8 <= current_y_))) {
+                continue;
+            }
+            if (obj.y > current_y_) {
+                continue;
+            }
+
+            objects_on_current_line_.push_back(obj);
+        }
+
+        // According to docs, if x coordinates of two OBJs are equal, the one
+        // with lower OAM address is drawn. Thus, it is important to preserve
+        // original memory order
+        std::stable_sort(objects_on_current_line_.begin(),
+                         objects_on_current_line_.end(),
+                         [](auto lhs, auto rhs) { return lhs.x < rhs.x; });
+    }
+
+    GBColor PPU::getTilePixel(uint16_t row_start_address, uint8_t x_offset) {
+        if (row_start_address + 1 >= g_memory_vram.size) {
+            throw std::out_of_range("tile row address out of range");
+        }
+        if (x_offset > 7) {
+            throw std::out_of_range("tile x offset out of range");
+        }
+        uint8_t lsb = vram_[row_start_address];
+        uint8_t msb = vram_[row_start_address + 1];
+        x_offset = 7 - x_offset;
+        return static_cast<GBColor>(((lsb >> x_offset) & 1) |
+                                    (((msb >> x_offset) & 1) << 1));
+    }
+
+    GBColor PPU::getSpritePixel(ObjectAttributes sprite, uint8_t current_x) {
+        uint8_t size = lcd_control_ & LCDControlFlags::OBJ_SIZE ? 16 : 8;
+        uint8_t row = sprite.flip_y ? size - (current_y_ - sprite.y) - 1
+                                    : (current_y_ - sprite.y);
+        uint16_t tile_idx = sprite.tile_idx;
+        if (row >= 8) {
+            row -= 8;
+            ++tile_idx;
+        }
+        uint16_t tile_addr = tile_idx * 0x10 + row * 2;
+        uint8_t x_offset = (current_x - sprite.x) & 7;
+        if (sprite.flip_x) {
+            x_offset = 7 - x_offset;
+        }
+        return getTilePixel(tile_addr, x_offset);
     }
 } // namespace gb

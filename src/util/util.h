@@ -9,6 +9,7 @@
 #include <iomanip>
 #include <memory>
 #include <optional>
+#include <span>
 #include <sstream>
 #include <stdexcept>
 #include <string_view>
@@ -27,18 +28,6 @@ inline std::vector<uint8_t> readFile(const std::filesystem::path &path) {
     std::vector<uint8_t> contents(static_cast<size_t>(size));
     file.read(reinterpret_cast<char *>(contents.data()), size);
     return contents;
-}
-
-template <typename T, typename std::enable_if<std::is_integral<T>{}, bool>::type = true>
-inline void toHexOutput(std::stringstream &stream, T value) {
-    stream << "0x" << std::setfill('0') << std::setw(sizeof(T) * 2) << std::hex << +value;
-}
-
-template <typename... Args>
-std::string printToString(std::string_view separator, Args... args) {
-    std::stringstream stream;
-    ((stream << separator << args), ...);
-    return stream.str();
 }
 
 template <typename... Args>
@@ -77,34 +66,13 @@ class Variant : public std::variant<Args...> {
     bool empty() const { return std::holds_alternative<std::monostate>(*this); }
 };
 
-template <size_t CAPACITY>
-class StaticStringBuffer {
-  public:
-    StaticStringBuffer() { data_[0] = '\0'; }
-
-    size_t capacity() { return CAPACITY; }
-    size_t capacityWithNullChar() { return CAPACITY + 1; }
-    char *data() { return data_; }
-
-    char *begin() { return data_; }
-    char *end() { return data_ + CAPACITY + 1; }
-
-    void clear() { data_[0] = '\0'; }
-
-    bool empty() { return data_[0] == '\0'; }
-
-    char &operator[](size_t idx) { return data_[idx]; }
-
-  private:
-    char data_[CAPACITY + 1];
-};
-
 template <typename T, size_t CAPACITY>
 class RingBuffer {
   public:
     RingBuffer() = default;
     static_assert(CAPACITY >= 0, "capacity must be non-zero");
-    static_assert(std::is_trivially_destructible<T>::value, "T must be trivially destructible");
+    static_assert(std::is_trivially_destructible<T>::value,
+                  "T must be trivially destructible");
 
     template <typename... Args>
     void push_back(Args &&...args) {
@@ -142,7 +110,8 @@ template <typename T, size_t CAPACITY>
 class Queue {
   public:
     static_assert(CAPACITY >= 0, "capacity must be non-zero");
-    static_assert(std::is_trivially_destructible<T>::value, "T must be trivially destructible");
+    static_assert(std::is_trivially_destructible<T>::value,
+                  "T must be trivially destructible");
 
     Queue() = default;
 
@@ -157,14 +126,16 @@ class Queue {
 
     T front() const {
         if (empty()) {
-            throw std::runtime_error("attempting to pop_front from empty queue");
+            throw std::runtime_error(
+                "attempting to pop_front from empty queue");
         }
         return data_[begin_];
     }
 
     T pop_front() {
         if (empty()) {
-            throw std::runtime_error("attempting to pop_front from empty queue");
+            throw std::runtime_error(
+                "attempting to pop_front from empty queue");
         }
         T elem = data_[begin_];
         begin_ = (begin_ + 1) % CAPACITY;
@@ -190,10 +161,43 @@ class Queue {
 
 constexpr inline uint8_t setBit(uint8_t bit) { return uint8_t(1) << bit; }
 
+constexpr char getHexDigit(uint8_t digit) {
+    return "0123456789abcdef"[digit & 0xf];
+}
+
+constexpr void putU16(std::span<char, 5> dst, uint16_t value) {
+    dst[0] = getHexDigit(value >> 12);
+    dst[1] = getHexDigit((value & 0xf00) >> 8);
+    dst[2] = getHexDigit((value & 0xf0));
+    dst[3] = getHexDigit(value & 0xf);
+    dst[4] = 0;
+}
+
+constexpr void putSigned(std::span<char, 5> dst, int8_t value) {
+    size_t idx = 0;
+    if (value < 0) {
+        dst[idx] = '-';
+        ++idx;
+        value = static_cast<int8_t>(-value);
+    }
+    if (char digit = static_cast<char>(value / 100); digit != 0) {
+        dst[idx] = static_cast<char>('0' + digit);
+        ++idx;
+    }
+    if (char digit = static_cast<char>((value / 10) % 10); digit != 0) {
+        dst[idx] = static_cast<char>('0' + digit);
+        ++idx;
+    }
+    dst[idx] = static_cast<char>('0' + value % 10);
+    ++idx;
+    dst[idx] = 0;
+}
+
 class StringBuffer {
   public:
     StringBuffer() = default;
-    StringBuffer(size_t capacity) : data_(new char[capacity + 1]), capacity_(capacity + 1) {}
+    StringBuffer(size_t capacity)
+        : data_(new char[capacity + 1]), capacity_(capacity + 1) {}
     ~StringBuffer() = default;
 
     StringBuffer(const StringBuffer &) = delete;
@@ -260,7 +264,7 @@ class StringBuffer {
         putHexDigit(uint8_t(val >> 12));
         putHexDigit(uint8_t((val & 0x0F00) >> 8));
         putHexDigit(uint8_t((val & 0x00F0) >> 4));
-        putHexDigit(uint8_t(val % 0x10));
+        putHexDigit(uint8_t(val & 0xF));
         return *this;
     }
 
@@ -270,13 +274,13 @@ class StringBuffer {
             uncheckedPut('-');
             val = int8_t(-val);
         }
-        if (uint8_t digit = val / 100; digit != 0) {
-            uncheckedPut('0' + val / 100);
+        if (char digit = static_cast<char>(val / 100); digit != 0) {
+            uncheckedPut(static_cast<char>('0' + digit));
         }
-        if (uint8_t digit = val / 10; digit != 0) {
-            uncheckedPut('0' + val / 100);
+        if (char digit = static_cast<char>((val / 10) % 10); digit != 0) {
+            uncheckedPut(static_cast<char>('0' + digit));
         }
-        uncheckedPut('0' + val % 10);
+        uncheckedPut(static_cast<char>('0' + val % 10));
         return *this;
     }
 
@@ -295,7 +299,8 @@ class StringBuffer {
     void ensure(size_t length) {
         if (capacity_ - size_ < length + 1) {
             size_t new_capacity = std::max(capacity_ * 2, size_ + length + 1);
-            std::unique_ptr<char[]> new_data = std::make_unique<char[]>(new_capacity);
+            std::unique_ptr<char[]> new_data = std::make_unique<char[]>(
+                new_capacity);
             if (data_) {
                 std::memcpy(new_data.get(), data_.get(), size_);
             }
@@ -309,12 +314,10 @@ class StringBuffer {
         ++size_;
     }
 
+    // NOTE: digit must be in range 0 - 15
     void putHexDigit(uint8_t digit) {
-        if (digit < 10) {
-            uncheckedPut('0' + digit);
-        } else {
-            uncheckedPut('a' + (digit - 10));
-        }
+        constexpr char digits[] = "0123456789abcdef";
+        uncheckedPut(digits[digit & 0xf]);
     }
 
     std::unique_ptr<char[]> data_ = nullptr;
@@ -357,7 +360,7 @@ class StaticVector {
     }
 
   private:
-    T elems_[CAPACITY];
+    std::array<T, CAPACITY> elems_{};
     size_t size_ = 0;
 };
 

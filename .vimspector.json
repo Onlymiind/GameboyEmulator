@@ -1,0 +1,19 @@
+{
+    "configurations": {
+        "cpp": {
+            "adapter": "CodeLLDB",
+            "filetypes": [
+                "cpp"
+            ],
+            "default": true,
+            "configuration": {
+                "request": "launch",
+                "protocol": "auto",
+                "stopOnEntry": true,
+                "console": "integratedTerminal",
+                "program": "${workspaceRoot}/bin/Debug/emulator",
+                "cwd": "${workspaceRoot}/src/tests/integration/roms"
+            }
+        }
+    }
+}

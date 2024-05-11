@@ -30,6 +30,7 @@ set(EMULATOR_LIB
     src/gb/ppu/ppu.cpp
     src/gb/gb_input.h
     src/gb/memory/memory_map.h
+    src/gb/memory/breakpoint.h
 )
 
 add_library(emulator_lib
@@ -77,8 +78,6 @@ if(NOT TESTS_ONLY)
         ${IMGUI_BACKEND}
         ${GLAD}
         
-        src/breakpoint.h
-        src/breakpoint.cpp
         src/renderer.h
         src/renderer.cpp
         src/application.h
@@ -103,9 +102,6 @@ if(BUILD_TESTS OR TESTS_ONLY)
         src/tests/timer_test.cpp
         src/tests/integration/intergration_test.cpp
         src/tests/memory_breakpoints_test.cpp
-
-        src/breakpoint.h
-        src/breakpoint.cpp
     )
     target_link_libraries(tests PRIVATE emulator_lib Catch2WithMain)
     target_include_directories(tests PUBLIC src src/tests)

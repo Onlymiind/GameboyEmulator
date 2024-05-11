@@ -32,11 +32,13 @@ namespace gb {
         bool up = false;
         bool down = false;
         bool left = false;
+        bool right = false;
     };
 
     class Input {
       public:
-        Input(InterruptRegister &interrupt_flags) : interrupt_flags_(interrupt_flags) {}
+        Input(InterruptRegister &interrupt_flags)
+            : interrupt_flags_(interrupt_flags) {}
 
         uint8_t read() const {
             uint8_t value = 0xcf;
@@ -52,11 +54,30 @@ namespace gb {
         }
 
         void write(uint8_t data) {
-            select_buttons_ = (data & g_input_select_buttons) != 0;
-            select_dpad_ = (data & g_input_select_dpad) != 0;
+            select_buttons_ = (data & g_input_select_buttons) == 0;
+            select_dpad_ = (data & g_input_select_dpad) == 0;
         }
 
-        void setState(uint8_t state) { state_ = state; }
+        void setState(InputState state) {
+            uint8_t old_state = state_;
+            state_ = 0;
+            state_ |= uint8_t(state.a);
+            state_ |= uint8_t(state.b) << 1;
+            state_ |= uint8_t(state.select) << 2;
+            state_ |= uint8_t(state.start) << 3;
+            state_ |= uint8_t(state.right) << 4;
+            state_ |= uint8_t(state.left) << 5;
+            state_ |= uint8_t(state.up) << 6;
+            state_ |= uint8_t(state.down) << 7;
+            if (select_buttons_ &&
+                ((old_state & 0xf) | (state_ & 0xf)) != old_state) {
+                interrupt_flags_.setFlag(InterruptFlags::JOYPAD);
+            }
+            if (select_buttons_ &&
+                ((old_state >> 4) | (state_ >> 4)) != old_state) {
+                interrupt_flags_.setFlag(InterruptFlags::JOYPAD);
+            }
+        }
 
       private:
         InterruptRegister &interrupt_flags_;

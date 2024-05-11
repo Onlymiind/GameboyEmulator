@@ -13,7 +13,9 @@ namespace renderer {
     constexpr size_t g_red_offset = 0;
     constexpr size_t g_blue_offset = 1;
     constexpr size_t g_green_offset = 2;
-    constexpr size_t g_image_size_bytes = gb::g_screen_width * gb::g_screen_height * g_bytes_per_pixel;
+    constexpr size_t g_image_size_bytes = gb::g_screen_width *
+                                          gb::g_screen_height *
+                                          g_bytes_per_pixel;
 
     struct Color {
         uint8_t red = 0;
@@ -29,11 +31,9 @@ namespace renderer {
         };
     }
 
-    constexpr std::array<Color, 4> g_default_palette{
-        from_hex(0xe0f8d0),
-        from_hex(0x88c070),
-        from_hex(0x346856),
-        from_hex(0x081820),
+    constexpr std::array<Color, 5> g_default_palette{
+        from_hex(0xe0f8d0), from_hex(0x88c070), from_hex(0x346856),
+        from_hex(0x081820), from_hex(0xff0000),
     };
 
     struct Palette {
@@ -46,7 +46,8 @@ namespace renderer {
       public:
         Renderer();
 
-        void drawPixels(size_t x, size_t y, std::span<gb::PixelInfo> color) noexcept override;
+        void drawPixels(size_t x, size_t y,
+                        std::span<gb::PixelInfo> color) noexcept override;
         void finishFrame() noexcept override {}
 
         uint64_t getTextureID() const { return texture_id_; }

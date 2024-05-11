@@ -1,6 +1,10 @@
-#include "breakpoint.h"
-
 #include "catch2/catch_test_macros.hpp"
+#include "catch2/generators/catch_generators.hpp"
+#include "catch2/generators/catch_generators_range.hpp"
+
+#include "gb/emulator.h"
+#include "gb/memory/breakpoint.h"
+
 #include <algorithm>
 #include <array>
 #include <cstddef>
@@ -9,128 +13,119 @@
 #include <random>
 #include <set>
 
-using namespace emulator;
-using enum MemoryBreakpointData::BreakOn;
-std::array test_data = {MemoryBreakpointData{0, READ},
-                        MemoryBreakpointData{0, ALWAYS, 10},
-                        MemoryBreakpointData{0, WRITE},
-                        MemoryBreakpointData{.address = 8, .value = 10},
-                        MemoryBreakpointData{10},
-                        MemoryBreakpointData{.address = 12, .value = 10},
-                        MemoryBreakpointData{12, WRITE},
-                        MemoryBreakpointData{14, READ},
-                        MemoryBreakpointData{.address = 14, .value = 10},
-                        MemoryBreakpointData{16},
-                        MemoryBreakpointData{18},
-                        MemoryBreakpointData{20},
-                        MemoryBreakpointData{22},
-                        MemoryBreakpointData{24, READ},
-                        MemoryBreakpointData{24, ALWAYS},
-                        MemoryBreakpointData{24, WRITE}};
+std::vector<std::pair<uint16_t, gb::Breakpoint>> cases{
+    {0, gb::Breakpoint{.info = gb::BreakpointInfo::FETCH}},
+    {1, gb::Breakpoint{.info = gb::BreakpointInfo::READ}},
+    {2, gb::Breakpoint{.info = gb::BreakpointInfo::WRITE}},
+    {3, gb::Breakpoint{.info = gb::BreakpointInfo::FETCH |
+                               gb::BreakpointInfo::HAS_VALUE,
+                       .data = 1}},
+    {4, gb::Breakpoint{.info = gb::BreakpointInfo::READ |
+                               gb::BreakpointInfo::HAS_VALUE,
+                       .data = 1}},
+    {5, gb::Breakpoint{.info = gb::BreakpointInfo::WRITE |
+                               gb::BreakpointInfo::HAS_VALUE,
+                       .data = 1}},
+    {5, gb::Breakpoint{.info = gb::BreakpointInfo::WRITE |
+                               gb::BreakpointInfo::READ |
+                               gb::BreakpointInfo::FETCH |
 
-class InitTest {
-  public:
-    InitTest() {
-        std::iota(indicies_.begin(), indicies_.end(), 0);
-        std::random_device d{};
-        std::mt19937_64 random{d()};
-        std::ranges::shuffle(indicies_, random);
-
-        for (auto idx : indicies_) {
-            breakpoints_.addBreakpoint(test_data[idx]);
-        }
-    }
-
-  protected:
-    MemoryBreakpoints breakpoints_{[this]() { callback_called_ = true; }};
-    std::array<size_t, test_data.size()> indicies_;
-    bool callback_called_ = false;
+                               gb::BreakpointInfo::HAS_VALUE,
+                       .data = 1}},
 };
 
-TEST_CASE_METHOD(InitTest, "addBreakpoint, ordering") {
+TEST_CASE("breakpoints: hitting") {
+    size_t idx = GENERATE(Catch::Generators::range(size_t(0), cases.size()));
 
-    auto result = breakpoints_.getBreakpoints();
-    REQUIRE(result.size() == test_data.size());
+    constexpr uint8_t value = 1;
+    auto [address, info] = cases[idx];
 
-    for (size_t i = 0; i < result.size(); ++i) {
-        REQUIRE(test_data[i].address == result[i].address);
-        REQUIRE(test_data[i].break_on == result[i].break_on);
+    gb::Emulator emulator;
+    bool hit = false;
+    auto callback = [&hit](auto, auto, auto) { hit = true; };
+    emulator.getBus().setBreakpointCallback(callback);
+
+    // minimum ROM size is 32 kilobytes
+    // This is not needed by the tests,
+    // but it is better to add a full ROM just in case
+    std::vector<uint8_t> dummy_rom;
+    dummy_rom.resize(32 * 1024);
+    dummy_rom[address] = value;
+    emulator.getCartridge().setROM(std::move(dummy_rom));
+
+    emulator.getBus().setBreakpoint(address, info);
+
+    using enum gb::BreakpointInfo;
+    if (!!(info.info & READ)) {
+        emulator.getBus().read(address);
+        REQUIRE(hit);
+        hit = false;
+    }
+    if (!!(info.info & FETCH)) {
+        emulator.getBus().fetch(address);
+        REQUIRE(hit);
+        hit = false;
+    }
+    if (!!(info.info & WRITE)) {
+        emulator.getBus().write(address, value);
+        REQUIRE(hit);
+        hit = false;
     }
 }
 
-TEST_CASE("minAddress, maxAddress") {
-    MemoryBreakpoints br{[]() {}};
-    REQUIRE(br.minAddress() == 0);
-    REQUIRE(br.maxAddress() == uint16_t(-1));
-}
+TEST_CASE("breakpoints: not hitting") {
+    size_t idx = GENERATE(Catch::Generators::range(size_t(0), cases.size()));
 
-TEST_CASE_METHOD(InitTest, "onRead") {
-    SECTION("simple") {
-        breakpoints_.onRead(10, 0);
-        REQUIRE(callback_called_);
-        callback_called_ = false;
-    }
-    SECTION("multiple breakpoints on same address") {
-        breakpoints_.onRead(0, 0);
-        REQUIRE(callback_called_);
-        callback_called_ = false;
-    }
-    SECTION("breakpoint with value set") {
-        breakpoints_.onRead(8, 0);
-        REQUIRE_FALSE(callback_called_);
-        breakpoints_.onRead(8, 10);
-        REQUIRE(callback_called_);
-        callback_called_ = false;
-    }
-    SECTION("multiple breakpoints with value set") {
-        breakpoints_.onRead(12, 0);
-        REQUIRE_FALSE(callback_called_);
-        breakpoints_.onRead(12, 10);
-        REQUIRE(callback_called_);
-        callback_called_ = false;
-    }
-}
+    constexpr uint8_t wrong_value = 2;
+    constexpr uint8_t value = 1;
+    auto [address, info] = cases[idx];
 
-TEST_CASE_METHOD(InitTest, "onWrite") {
-    SECTION("simple") {
-        breakpoints_.onWrite(10, 0);
-        REQUIRE(callback_called_);
-        callback_called_ = false;
-    }
-    SECTION("multiple breakpoints on same address") {
-        breakpoints_.onWrite(0, 0);
-        REQUIRE(callback_called_);
-        callback_called_ = false;
-    }
-    SECTION("breakpoint with value set") {
-        breakpoints_.onWrite(8, 0);
-        REQUIRE_FALSE(callback_called_);
-        breakpoints_.onWrite(8, 10);
-        REQUIRE(callback_called_);
-        callback_called_ = false;
-    }
-    SECTION("multiple breakpoints with value set") {
-        breakpoints_.onWrite(14, 0);
-        REQUIRE_FALSE(callback_called_);
-        breakpoints_.onWrite(14, 10);
-        REQUIRE(callback_called_);
-        callback_called_ = false;
-    }
-}
+    gb::Emulator emulator;
+    bool hit = false;
+    auto callback = [&hit](auto, auto, auto) { hit = true; };
+    emulator.getBus().setBreakpointCallback(callback);
 
-TEST_CASE_METHOD(InitTest, "deletion") {
-    std::set<MemoryBreakpointData> deleted;
-    for (size_t idx : indicies_) {
-        breakpoints_.removeBreakpoint(test_data[idx]);
-        deleted.insert(test_data[idx]);
-        auto rest = breakpoints_.getBreakpoints();
-        REQUIRE(rest.size() == test_data.size() - deleted.size());
-        for (size_t i = 0; i < rest.size(); ++i) {
-            REQUIRE(!deleted.contains(rest[i]));
-            if (i != 0) {
-                bool le = rest[i - 1] < rest[i] || rest[i - 1] == rest[i];
-                REQUIRE(le);
-            }
+    // minimum ROM size is 32 kilobytes
+    // This is not needed by the tests,
+    // but it is better to add a full ROM just in case
+    std::vector<uint8_t> dummy_rom;
+    dummy_rom.resize(32 * 1024);
+    dummy_rom[address] = wrong_value;
+    emulator.getCartridge().setROM(std::move(dummy_rom));
+
+    emulator.getBus().setBreakpoint(address, info);
+
+    uint16_t other_address = address + 1;
+
+    using enum gb::BreakpointInfo;
+    if (!!(info.info & READ)) {
+        emulator.getBus().read(other_address);
+        REQUIRE(!hit);
+        hit = false;
+        if (!!(info.info & HAS_VALUE)) {
+            emulator.getBus().read(address);
+            REQUIRE(!hit);
+            hit = false;
+        }
+    }
+    if (!!(info.info & FETCH)) {
+        emulator.getBus().fetch(other_address);
+        REQUIRE(!hit);
+        hit = false;
+        if (!!(info.info & HAS_VALUE)) {
+            emulator.getBus().fetch(address);
+            REQUIRE(!hit);
+            hit = false;
+        }
+    }
+    if (!!(info.info & WRITE)) {
+        emulator.getBus().write(other_address, value);
+        REQUIRE(!hit);
+        hit = false;
+        if (!!(info.info & HAS_VALUE)) {
+            emulator.getBus().write(address, wrong_value);
+            REQUIRE(!hit);
+            hit = false;
         }
     }
 }

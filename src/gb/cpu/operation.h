@@ -57,7 +57,14 @@ namespace gb::cpu {
 
     // Some LD instructions are quite different fron others, this enum is used
     // to mark them
-    enum class LoadSubtype : uint8_t { TYPICAL = 0, LD_INC, LD_DEC, LD_IO, LD_SP, LD_OFFSET_SP };
+    enum class LoadSubtype : uint8_t {
+        TYPICAL = 0,
+        LD_INC,
+        LD_DEC,
+        LD_IO,
+        LD_SP,
+        LD_OFFSET_SP
+    };
 
     enum class ArgumentSource : uint8_t {
         NONE = 0,
@@ -69,7 +76,12 @@ namespace gb::cpu {
         IMMEDIATE_S8
     };
 
-    enum class ArgumentType : uint8_t { NONE = 0, UNSIGNED_8, UNSIGNED_16, SIGNED_8 };
+    enum class ArgumentType : uint8_t {
+        NONE = 0,
+        UNSIGNED_8,
+        UNSIGNED_16,
+        SIGNED_8
+    };
 
     enum class Registers : uint8_t {
 
@@ -95,9 +107,13 @@ namespace gb::cpu {
         HIGH_REG_MASK = 0xF0
     };
 
-    constexpr inline bool isByteRegister(Registers reg) { return (uint8_t(reg) & 0xf0) == 0; }
+    constexpr inline bool isByteRegister(Registers reg) {
+        return (uint8_t(reg) & 0xf0) == 0;
+    }
 
-    constexpr inline uint8_t operator&(Registers lhs, Registers rhs) { return uint8_t(lhs) & uint8_t(rhs); }
+    constexpr inline uint8_t operator&(Registers lhs, Registers rhs) {
+        return uint8_t(lhs) & uint8_t(rhs);
+    }
 
     enum class Conditions : uint8_t { NOT_ZERO, ZERO, NOT_CARRY, CARRY };
 
@@ -105,7 +121,9 @@ namespace gb::cpu {
         ArgumentSource src = ArgumentSource::NONE;
         Registers reg = Registers::NONE;
 
-        inline bool operator==(ArgumentInfo other) const { return src == other.src && reg == other.reg; }
+        inline bool operator==(ArgumentInfo other) const {
+            return src == other.src && reg == other.reg;
+        }
     };
 
     struct DecodedInstruction {
@@ -123,8 +141,10 @@ namespace gb::cpu {
 
         // For Debugging
         inline bool operator==(DecodedInstruction other) const {
-            return type == other.type && src == other.src && dst == other.dst && condition == other.condition &&
-                   reset_vector == other.reset_vector && ld_subtype == other.ld_subtype && bit == other.bit;
+            return type == other.type && src == other.src && dst == other.dst &&
+                   condition == other.condition &&
+                   reset_vector == other.reset_vector &&
+                   ld_subtype == other.ld_subtype && bit == other.bit;
         }
 
         constexpr ArgumentInfo &arg() { return src; }
@@ -135,12 +155,24 @@ namespace gb::cpu {
         constexpr Opcode() : code(0) {}
         constexpr Opcode(uint8_t val) : code(val) {}
 
-        constexpr inline uint8_t getX() const { return (code & 0b11000000) >> 6; }
-        constexpr inline uint8_t getY() const { return (code & 0b00111000) >> 3; }
-        constexpr inline uint8_t getZ() const { return (code & 0b00000111) >> 0; }
-        constexpr inline uint8_t getP() const { return (code & 0b00110000) >> 4; }
-        constexpr inline uint8_t getQ() const { return (code & 0b00001000) >> 3; }
-        constexpr inline uint8_t getColumn() const { return code & 0b1100'1111; }
+        constexpr inline uint8_t getX() const {
+            return (code & 0b11000000) >> 6;
+        }
+        constexpr inline uint8_t getY() const {
+            return (code & 0b00111000) >> 3;
+        }
+        constexpr inline uint8_t getZ() const {
+            return (code & 0b00000111) >> 0;
+        }
+        constexpr inline uint8_t getP() const {
+            return (code & 0b00110000) >> 4;
+        }
+        constexpr inline uint8_t getQ() const {
+            return (code & 0b00001000) >> 3;
+        }
+        constexpr inline uint8_t getColumn() const {
+            return code & 0b1100'1111;
+        }
 
         constexpr inline uint8_t getLowerNibble() const { return code & 0x0F; }
 

@@ -24,7 +24,8 @@ namespace gb::cpu {
     }
 
     struct Instruction {
-        using Argument = Variant<std::monostate, Registers, int8_t, uint8_t, uint16_t>;
+        using Argument = Variant<std::monostate, Registers, int8_t, uint8_t,
+                                 uint16_t>;
 
         InstructionType type = InstructionType::NONE;
         std::optional<LoadSubtype> load_subtype;
@@ -44,8 +45,8 @@ namespace gb::cpu {
     };
 
     constexpr inline bool operator==(Instruction lhs, Instruction rhs) {
-        return lhs.type == rhs.type && lhs.load_subtype == rhs.load_subtype && lhs.condition == rhs.condition &&
-               lhs.src == rhs.src;
+        return lhs.type == rhs.type && lhs.load_subtype == rhs.load_subtype &&
+               lhs.condition == rhs.condition && lhs.src == rhs.src;
     }
 
     struct MemoryOp {
@@ -83,7 +84,8 @@ namespace gb::cpu {
 
     class SharpSM83 {
       public:
-        SharpSM83(AddressBus &bus, InterruptRegister &interrupt_enable, InterruptRegister &interrupt_flags);
+        SharpSM83(AddressBus &bus, InterruptRegister &interrupt_enable,
+                  InterruptRegister &interrupt_flags);
 
         void tick();
 
@@ -91,7 +93,10 @@ namespace gb::cpu {
 
         uint16_t getProgramCounter() const { return reg_.pc(); }
 
-        bool isFinished() const { return stopped_ || (!jumping_to_interrupt_ && !prefixed_next_ && finished_); }
+        bool isFinished() const {
+            return stopped_ ||
+                   (!jumping_to_interrupt_ && !prefixed_next_ && finished_);
+        }
 
         bool isHalted() const { return halt_mode_; }
 
@@ -117,7 +122,8 @@ namespace gb::cpu {
 
         bool checkCondition(Conditions condition);
 
-        void setArgData(Instruction::Argument &arg, ArgumentInfo info, uint8_t data);
+        void setArgData(Instruction::Argument &arg, ArgumentInfo info,
+                        uint8_t data);
 
         void sheduleMemoryNoOp();
         void sheduleReadByte(uint16_t address);

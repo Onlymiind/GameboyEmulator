@@ -2,6 +2,8 @@
 #include "gb/gb_input.h"
 #include "gb/interrupt_register.h"
 #include "gb/memory/basic_components.h"
+#include "gb/memory/breakpoint.h"
+#include "gb/memory/memory_map.h"
 #include "gb/ppu/ppu.h"
 #include "util/util.h"
 
@@ -15,8 +17,16 @@
 #include <string>
 
 namespace gb {
-
-    bool less(const IMemoryObserver *mem, uint16_t address) { return mem->maxAddress() < address; }
+    void AddressBus::checkBreakpoints(BreakpointInfo mode, uint16_t address,
+                                      uint8_t data, StopReason reason) const {
+        if (breakpoints_.empty() || !breakpoint_callback_) {
+            return;
+        }
+        auto it = breakpoints_.find(address);
+        if (it != breakpoints_.end() && it->second.isHit(mode, data)) {
+            breakpoint_callback_(address, reason, data);
+        }
+    }
 
     uint8_t AddressBus::read(uint16_t address) const {
         std::optional<uint8_t> data = peek(address);
@@ -24,15 +34,23 @@ namespace gb {
         if (!data) {
             throw std::invalid_argument("trying to read from invalid address");
         }
-
-        if (observer_) {
-            observer_->onRead(address, *data);
-        }
-
+        checkBreakpoints(BreakpointInfo::READ, address, *data,
+                         StopReason::READ);
         return *data;
     }
 
-    void AddressBus::write(uint16_t address, uint8_t data) {
+    uint8_t AddressBus::fetch(uint16_t address) const {
+        std::optional<uint8_t> data = peek(address);
+        if (!data) {
+            throw std::invalid_argument("trying to read from invalid address");
+        }
+        checkBreakpoints(BreakpointInfo::FETCH, address, *data,
+                         StopReason::FETCH);
+        return *data;
+    }
+
+    void AddressBus::write(uint16_t address, uint8_t data,
+                           bool trigger_breakpoints) {
         if (address <= g_memory_rom.max_address) {
             cartridge_.writeROM(address, data);
         } else if (address <= g_memory_vram.max_address) {
@@ -54,6 +72,12 @@ namespace gb {
             timer_.write(address, data);
         } else if (g_memory_ppu_registers.isInRange(address)) {
             ppu_.writeIO(address, data);
+            if (address == uint16_t(IO::DMA_SRC)) {
+                uint16_t base = uint16_t(data) << 8;
+                for (size_t i = 0; i < g_memory_oam.size; ++i) {
+                    write(g_memory_oam.min_address + i, *peek(base + i), false);
+                }
+            }
         } else if (address == uint16_t(IO::IE)) {
             interrupt_enable_.write(data);
         } else if (address == uint16_t(IO::IF)) {
@@ -66,34 +90,21 @@ namespace gb {
         } else {
             throw std::invalid_argument("trying to access invalid memory");
         }
-
-        if (observer_) {
-            observer_->onWrite(address, data);
+        if (trigger_breakpoints) {
+            checkBreakpoints(BreakpointInfo::WRITE, address, data,
+                             StopReason::WRITE);
         }
     }
 
     void AddressBus::reset() {
-        // values set according to mooneye test suite, see accepnance/boot_hwio_dmg0.gb
-        // initial values for all implemented hardware are reset by corresponding class
-        std::memcpy(unused_io_.data(), g_io_initail_values.data(), g_io_initail_values.size());
+        // values set according to mooneye test suite, see
+        // accepnance/boot_hwio_dmg0.gb
+        // initial values for all implemented
+        // hardware are reset by a corresponding class
+        std::memcpy(unused_io_.data(), g_io_initail_values.data(),
+                    g_io_initail_values.size());
         uint8_t *ptr = unused_io_.data() + g_io_initail_values.size();
         memset(ptr, 0xff, unused_io_.data() + unused_io_.size() - ptr);
-    }
-
-    std::string AddressBus::getErrorDescription(uint16_t address, int value) const {
-        std::stringstream err;
-
-        if (value == -1) {
-            err << "Attempting to read from invalid memory address: ";
-            toHexOutput(err, address);
-        } else {
-            err << "Attempting to write to invalid memory address: ";
-            toHexOutput(err, address);
-            err << ". Data: ";
-            toHexOutput(err, value);
-        }
-
-        return err.str();
     }
 
     std::optional<uint8_t> AddressBus::peek(uint16_t address) const {

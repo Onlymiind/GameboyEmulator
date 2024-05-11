@@ -14,7 +14,8 @@
 
 namespace gb::cpu {
 
-    SharpSM83::SharpSM83(AddressBus &bus, InterruptRegister &interrupt_enable, InterruptRegister &interrupt_flags)
+    SharpSM83::SharpSM83(AddressBus &bus, InterruptRegister &interrupt_enable,
+                         InterruptRegister &interrupt_flags)
         : bus_(bus), ie_(interrupt_enable), if_(interrupt_flags) {
         reg_.af(0x01B0);
         reg_.bc(0x0013);
@@ -34,7 +35,8 @@ namespace gb::cpu {
         finished_ = false;
 
         if (halt_mode_ && getPendingInterrupt()) {
-            // TODO: exiting HALT mode should take 4 cycles, even if IME = false;
+            // TODO: exiting HALT mode should take 4 cycles, even if IME =
+            // false;
             halt_mode_ = false;
         }
 
@@ -47,7 +49,8 @@ namespace gb::cpu {
             if (!current_instruction_) {
                 stopped_ = true;
                 throw std::runtime_error(
-                    "CPU's memory operation invariant failed: no instruction available after queue exhaustion");
+                    "CPU's invariant failed: no instruction available after "
+                    "queue exhaustion");
             }
 
             if (auto interrupt = getPendingInterrupt(); IME_ && interrupt) {
@@ -65,7 +68,8 @@ namespace gb::cpu {
     std::optional<InterruptFlags> SharpSM83::getPendingInterrupt() const {
         uint8_t pending_interrupts = ie_.getFlags() & if_.getFlags();
         if (pending_interrupts != 0) {
-            return static_cast<InterruptFlags>(pending_interrupts & -pending_interrupts);
+            return static_cast<InterruptFlags>(pending_interrupts &
+                                               -pending_interrupts);
         } else {
             return {};
         }
@@ -76,13 +80,15 @@ namespace gb::cpu {
         IME_ = false;
         if_.clearFlag(interrupt);
         // with this no-op added the emulator fails mooneye's intr_timing test.
-        // it looks like interrupts are checked before new instruction is fetched
-        // so in case of this emulator the FETCH_INSTRUCTION takes place of the first no-op.
+        // it looks like interrupts are checked before new instruction is
+        // fetched so in case of this emulator the FETCH_INSTRUCTION takes place
+        // of the first no-op.
         // TODO: probably should call it from executeMemoryOp() then.
         // sheduleMemoryNoOp();
         sheduleMemoryNoOp();
-        // instruction_.registers.PC() contains address of the fetched instruction
-        // reg_.PC() contains address of the byte after the instruction
+        // instruction_.registers.PC() contains address of the fetched
+        // instruction reg_.PC() contains address of the byte after the
+        // instruction
         shedulePushStack(instruction_.registers.pc());
         sheduleMemoryNoOp();
         reg_.pc(getInterruptVector(interrupt));
@@ -159,9 +165,15 @@ namespace gb::cpu {
         case type::SRA: return SRA(current_instruction_->arg().reg);
         case type::SRL: return SRL(current_instruction_->arg().reg);
         case type::SWAP: return SWAP(current_instruction_->arg().reg);
-        case type::BIT: return BIT(current_instruction_->arg().reg, *current_instruction_->bit);
-        case type::RES: return RES(current_instruction_->arg().reg, *current_instruction_->bit);
-        case type::SET: return SET(current_instruction_->arg().reg, *current_instruction_->bit);
+        case type::BIT:
+            return BIT(current_instruction_->arg().reg,
+                       *current_instruction_->bit);
+        case type::RES:
+            return RES(current_instruction_->arg().reg,
+                       *current_instruction_->bit);
+        case type::SET:
+            return SET(current_instruction_->arg().reg,
+                       *current_instruction_->bit);
         default: throw std::runtime_error("unknown instruction");
         }
     }
@@ -233,8 +245,10 @@ namespace gb::cpu {
         }
     }
 
-    void SharpSM83::setArgData(Instruction::Argument &arg, ArgumentInfo info, uint8_t data) {
-        if (info.src == ArgumentSource::REGISTER || info.src == ArgumentSource::INDIRECT) {
+    void SharpSM83::setArgData(Instruction::Argument &arg, ArgumentInfo info,
+                               uint8_t data) {
+        if (info.src == ArgumentSource::REGISTER ||
+            info.src == ArgumentSource::INDIRECT) {
             arg = info.reg;
         } else {
             arg = data;
@@ -251,28 +265,44 @@ namespace gb::cpu {
     void SharpSM83::sheduleMemoryNoOp() { pushMemoryOp(MemoryOp{}); }
 
     void SharpSM83::sheduleReadByte(uint16_t address) {
-        pushMemoryOp(MemoryOp{.address = address, .type = MemoryOp::Type::READ, .data = uint8_t(Registers::NONE)});
+        pushMemoryOp(MemoryOp{.address = address,
+                              .type = MemoryOp::Type::READ,
+                              .data = uint8_t(Registers::NONE)});
     }
 
     void SharpSM83::sheduleReadWord(uint16_t address) {
-        pushMemoryOp(MemoryOp{.address = address, .type = MemoryOp::Type::READ, .data = uint8_t(Registers::NONE)});
-        pushMemoryOp(MemoryOp{.address = ++address, .type = MemoryOp::Type::READ, .data = uint8_t(Registers::NONE)});
+        pushMemoryOp(MemoryOp{.address = address,
+                              .type = MemoryOp::Type::READ,
+                              .data = uint8_t(Registers::NONE)});
+        pushMemoryOp(MemoryOp{.address = ++address,
+                              .type = MemoryOp::Type::READ,
+                              .data = uint8_t(Registers::NONE)});
     }
 
     void SharpSM83::sheduleWriteByte(uint16_t address, uint8_t data) {
-        pushMemoryOp(MemoryOp{.address = address, .type = MemoryOp::Type::WRITE, .data = data});
+        pushMemoryOp(MemoryOp{.address = address,
+                              .type = MemoryOp::Type::WRITE,
+                              .data = data});
     }
 
     void SharpSM83::sheduleWriteWord(uint16_t address, uint16_t data) {
-        pushMemoryOp(MemoryOp{.address = address, .type = MemoryOp::Type::WRITE, .data = uint8_t(data)});
-        pushMemoryOp(MemoryOp{.address = ++address, .type = MemoryOp::Type::WRITE, .data = uint8_t(data >> 8)});
+        pushMemoryOp(MemoryOp{.address = address,
+                              .type = MemoryOp::Type::WRITE,
+                              .data = uint8_t(data)});
+        pushMemoryOp(MemoryOp{.address = ++address,
+                              .type = MemoryOp::Type::WRITE,
+                              .data = uint8_t(data >> 8)});
     }
 
     void SharpSM83::shedulePushStack(uint16_t data) {
         --reg_.sp;
-        pushMemoryOp(MemoryOp{.address = uint16_t(reg_.sp), .type = MemoryOp::Type::WRITE, .data = uint8_t(data >> 8)});
+        pushMemoryOp(MemoryOp{.address = uint16_t(reg_.sp),
+                              .type = MemoryOp::Type::WRITE,
+                              .data = uint8_t(data >> 8)});
         --reg_.sp;
-        pushMemoryOp(MemoryOp{.address = uint16_t(reg_.sp), .type = MemoryOp::Type::WRITE, .data = uint8_t(data)});
+        pushMemoryOp(MemoryOp{.address = uint16_t(reg_.sp),
+                              .type = MemoryOp::Type::WRITE,
+                              .data = uint8_t(data)});
     }
 
     void SharpSM83::shedulePopStack(Registers reg) {
@@ -282,13 +312,17 @@ namespace gb::cpu {
 
     void SharpSM83::sheduleReadToReg(uint16_t address, Registers reg) {
         if (isByteRegister(reg)) {
-            pushMemoryOp(MemoryOp{.address = address, .type = MemoryOp::Type::READ, .data = uint8_t(reg)});
+            pushMemoryOp(MemoryOp{.address = address,
+                                  .type = MemoryOp::Type::READ,
+                                  .data = uint8_t(reg)});
         } else {
-            pushMemoryOp(
-                MemoryOp{.address = address, .type = MemoryOp::Type::READ, .data = reg & Registers::LOW_REG_MASK});
+            pushMemoryOp(MemoryOp{.address = address,
+                                  .type = MemoryOp::Type::READ,
+                                  .data = reg & Registers::LOW_REG_MASK});
             pushMemoryOp(MemoryOp{.address = ++address,
                                   .type = MemoryOp::Type::READ,
-                                  .data = uint8_t((reg & Registers::HIGH_REG_MASK) >> 4)});
+                                  .data = uint8_t(
+                                      (reg & Registers::HIGH_REG_MASK) >> 4)});
         }
     }
 
@@ -300,11 +334,12 @@ namespace gb::cpu {
     void SharpSM83::sheduleMemoryAcceses(DecodedInstruction instr) {
         if (!memory_op_executed_) [[unlikely]] {
             throw std::runtime_error(
-                "sheduleMemoryAccess must be called only during FETCH_INSTRUCTION memory operation");
+                "sheduleMemoryAccess must be called only during "
+                "FETCH_INSTRUCTION memory operation");
         }
 
-        // manually inline all neseccary sheduleXXX method to avoid calling executeMemoryOp()
-        // as it will never actually execute anything
+        // manually inline all neseccary sheduleXXX methods to avoid calling
+        // executeMemoryOp() as it will never actually execute anything
         switch (instr.src.src) {
         case ArgumentSource::IMMEDIATE_S8:
         case ArgumentSource::IMMEDIATE_U8:
@@ -386,7 +421,7 @@ namespace gb::cpu {
             break;
         case FETCH_INSTRUCTION:
             finished_ = true;
-            decode(bus_.read(reg_.pc()));
+            decode(bus_.fetch(reg_.pc()));
             if (halt_bug_) {
                 halt_bug_ = false;
             } else {
