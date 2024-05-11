@@ -47,7 +47,7 @@ Note that for tests to pass you need to place blargg's test roms in the `src/tes
 - Currently only 10 most recent instructions can be logged.
 - To stop/resume execution press F9.
 - Press F11 while execution is stopped to advance a single instruction, press F12 to advance a frame.
-- Keymap is as follows (format - <keyboard key>(<GB key>)): A (A), S (B), W (Start), D (Select), Arrow keys (D-pad). Keymap is (for now) non-remappable. 
+- Keymap is as follows (format - `<keyboard key>(<GB key>)`): A (A), S (B), W (Start), D (Select), Arrow keys (D-pad). Keymap is (for now) non-remappable. 
 - Some values of PPU's memory-mapped registers can appear static in memory view, although they shouldn't be (e.g. current scanline). This happens because during normal execution memory view is always drawn at the specific cycle of emulator's frame.
 
 ## Tests status
@@ -67,5 +67,3 @@ All blargg's tests for CPU instructions as well as instr_timing.gb and memory ac
 ## TODO list
 - Properly test PPU
 - Make PPU emulation more accurate
-- Sprites are not displayed
-- Emulator completely fails mooneye tests for MBC1 chip, although it works fine with some banked blargg test roms.
