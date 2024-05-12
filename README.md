@@ -30,7 +30,7 @@ The project was tested on Windows and Linux using unit tests and test ROMs (blar
 
 ## Dependencies
  - GLAD
- - GLFW
+ - SDL2 2.30
  - Dear ImGui
  - Catch2
 ## Building
