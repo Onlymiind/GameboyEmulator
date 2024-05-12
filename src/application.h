@@ -7,6 +7,7 @@
 #include "gb/cpu/cpu_utils.h"
 #include "gb/cpu/decoder.h"
 #include "gb/emulator.h"
+#include "gb/gb_input.h"
 #include "gb/interrupt_register.h"
 #include "gb/memory/basic_components.h"
 #include "gb/memory/breakpoint.h"
@@ -14,10 +15,11 @@
 #include "renderer.h"
 #include "util/util.h"
 
-// clang-format off
 #include "glad/gl.h"
-#include "GLFW/glfw3.h"
-// clang-format on
+
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_events.h>
+#include <SDL2/SDL_video.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -72,6 +74,8 @@ namespace emulator {
         bool setROMDirectory();
         bool runROM(const std::filesystem::path path);
 
+        bool processKeyboardEvent(const SDL_KeyboardEvent &event);
+
         void drawMainMenu();
         void drawDebuggerMenu();
         void drawBreakpointMenu();
@@ -99,7 +103,8 @@ namespace emulator {
         RingBuffer<gb::cpu::Instruction, g_recent_cache_size>
             recent_instructions_;
 
-        GLFWwindow *window_ = nullptr;
+        SDL_Window *window_ = nullptr;
+        SDL_GLContext context_ = nullptr;
 
         std::unique_ptr<renderer::Renderer> emulator_renderer_;
 
@@ -120,8 +125,8 @@ namespace emulator {
         StringBuffer buffer_;
         StringBuffer disasm_buffer_;
 
-	uint16_t new_breakpoint_address_{};
-	gb::Breakpoint new_breakpoint_info_{};
+        uint16_t new_breakpoint_address_{};
+        gb::Breakpoint new_breakpoint_info_{};
 
         bool is_running_ = true;
         bool gui_init_ = false;

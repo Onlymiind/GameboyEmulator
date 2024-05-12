@@ -25,6 +25,9 @@ jobs:
         cp blargg-test-roms/instr_timing/instr_timing.gb ${{github.workspace}}/src/tests/integration/roms/blargg_test_roms/
         cp blargg-test-roms/mem_timing/individual/* ${{github.workspace}}/src/tests/integration/roms/blargg_test_roms/
 
+    - name: install sdl
+      run: sudo apt-get install libsdl2-dev -y
+
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DTESTS_ONLY=ON
 

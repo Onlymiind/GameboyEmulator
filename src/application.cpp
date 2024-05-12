@@ -16,12 +16,19 @@
 #include "renderer.h"
 #include "util/util.h"
 
-#include "GLFW/glfw3.h"
-#include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
+#include "backends/imgui_impl_sdl2.h"
 #include "imgui.h"
 #include "misc/cpp/imgui_stdlib.h"
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_events.h>
+#include <SDL2/SDL_keycode.h>
+#include <SDL2/SDL_timer.h>
+#include <SDL2/SDL_video.h>
 
+#include <SDL_keyboard.h>
+#include <SDL_scancode.h>
+#include <SDL_stdinc.h>
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
@@ -38,7 +45,7 @@
 namespace emulator {
     void Application::draw() {
         ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
+        ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
 
         ImGui::SetNextWindowPos(ImVec2(0, 0));
@@ -72,8 +79,7 @@ namespace emulator {
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-        glfwSwapBuffers(window_);
-        glfwPollEvents();
+        SDL_GL_SwapWindow(window_);
     }
 
     void Application::drawMainMenu() {
@@ -530,47 +536,83 @@ namespace emulator {
     void Application::run() {
         while (is_running_) {
 
-            double start = glfwGetTime();
+            uint32_t start = SDL_GetTicks();
 
-            if (ImGui::IsKeyPressed(ImGuiKey_F9, false)) {
-                single_step_ = !single_step_;
-            }
-
-            if (single_step_) {
-                if (ImGui::IsKeyPressed(ImGuiKey_F11)) {
-                    update();
-                    while (!(emulator_.getCPU().isFinished() ||
-                             emulator_.terminated())) {
-                        update();
+            SDL_Event event;
+            while (SDL_PollEvent(&event)) {
+                switch (event.type) {
+                case SDL_QUIT: is_running_ = false; break;
+                case SDL_KEYDOWN:
+                    if (!processKeyboardEvent(event.key)) {
+                        ImGui_ImplSDL2_ProcessEvent(&event);
                     }
-                } else if (ImGui::IsKeyPressed(ImGuiKey_F12)) {
-                    advanceFrame();
+                    break;
+                default: ImGui_ImplSDL2_ProcessEvent(&event); break;
                 }
-            } else {
-                advanceFrame();
             }
-
-            glfwSetWindowTitle(window_,
-                               ("emulator [" +
-                                std::to_string(glfwGetTime() - start) + "]")
-                                   .c_str());
 
             gb::InputState input;
-            input.a = glfwGetKey(window_, GLFW_KEY_A);
-            input.b = glfwGetKey(window_, GLFW_KEY_S);
-            input.start = glfwGetKey(window_, GLFW_KEY_W);
-            input.select = glfwGetKey(window_, GLFW_KEY_D);
-            input.up = glfwGetKey(window_, GLFW_KEY_UP);
-            input.down = glfwGetKey(window_, GLFW_KEY_DOWN);
-            input.left = glfwGetKey(window_, GLFW_KEY_LEFT);
-            input.right = glfwGetKey(window_, GLFW_KEY_RIGHT);
-            emulator_.getInput().setState(input);
-            draw();
-
-            if (window_ && glfwWindowShouldClose(window_)) {
-                is_running_ = false;
+            int numkeys = 0;
+            const Uint8 *keyboard_state = SDL_GetKeyboardState(&numkeys);
+            auto check_key = [keyboard_state,
+                              numkeys](SDL_Scancode scancode) -> bool {
+                if (scancode < numkeys) {
+                    return keyboard_state[scancode] != 0;
+                }
+                return false;
+            };
+            if (keyboard_state) {
+                input.a = check_key(SDL_SCANCODE_A);
+                input.b = check_key(SDL_SCANCODE_S);
+                input.start = check_key(SDL_SCANCODE_W);
+                input.select = check_key(SDL_SCANCODE_D);
+                input.up = check_key(SDL_SCANCODE_UP);
+                input.down = check_key(SDL_SCANCODE_DOWN);
+                input.left = check_key(SDL_SCANCODE_LEFT);
+                input.right = check_key(SDL_SCANCODE_RIGHT);
             }
+            emulator_.getInput().setState(input);
+            if (!single_step_) {
+                advanceFrame();
+            }
+            SDL_SetWindowTitle(window_,
+                               ("emulator [" +
+                                std::to_string(double(SDL_GetTicks() - start) /
+                                               1000) +
+                                "]")
+                                   .c_str());
+
+            draw();
         }
+    }
+
+    bool Application::processKeyboardEvent(const SDL_KeyboardEvent &event) {
+        if (event.type != SDL_KEYDOWN) {
+            return false;
+        }
+        switch (event.keysym.sym) {
+        case SDLK_F9:
+            if (!event.repeat) {
+                single_step_ = !single_step_;
+            }
+            break;
+        case SDLK_F11:
+            if (single_step_ && !event.repeat) {
+                update();
+                while (!(emulator_.getCPU().isFinished() ||
+                         emulator_.terminated())) {
+                    update();
+                }
+            }
+            break;
+        case SDLK_F12:
+            if (single_step_ && !event.repeat) {
+                advanceFrame();
+            }
+            break;
+        default: return false;
+        }
+        return true;
     }
 
     void Application::initGUI() {
@@ -578,10 +620,26 @@ namespace emulator {
             return;
         }
 
-        glfwInit();
-        window_ = glfwCreateWindow(1000, 1000, "emulator", nullptr, nullptr);
-        glfwMakeContextCurrent(window_);
-        if (gladLoadGL(glfwGetProcAddress) == 0) {
+        if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_TIMER) < 0) {
+            std::cerr << "failed to init sdl" << std::endl;
+            is_running_ = false;
+            return;
+        }
+        window_ = SDL_CreateWindow("emulator", SDL_WINDOWPOS_CENTERED,
+                                   SDL_WINDOWPOS_CENTERED, 1000, 1000,
+                                   SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL);
+        if (!window_) {
+            std::cerr << "failed to create window" << std::endl;
+            is_running_ = false;
+            return;
+        }
+        context_ = SDL_GL_CreateContext(window_);
+        if (!context_) {
+            std::cerr << "failed to create OpenGL context" << std::endl;
+            is_running_ = false;
+            return;
+        }
+        if (gladLoadGL((GLADloadfunc)SDL_GL_GetProcAddress) == 0) {
             std::cout << "failed to load OpenGL" << std::endl;
             is_running_ = false;
             return;
@@ -589,9 +647,8 @@ namespace emulator {
 
         ImGui::CreateContext();
 
-        ImGui_ImplGlfw_InitForOpenGL(window_, true);
+        ImGui_ImplSDL2_InitForOpenGL(window_, context_);
         ImGui_ImplOpenGL3_Init();
-        refresh_rate_ = glfwGetVideoMode(glfwGetPrimaryMonitor())->refreshRate;
         emulator_renderer_ = std::make_unique<renderer::Renderer>();
         emulator_.getPPU().setRenderer(*emulator_renderer_);
         gui_init_ = true;
@@ -600,9 +657,9 @@ namespace emulator {
     Application::~Application() {
         if (gui_init_) {
             ImGui_ImplOpenGL3_Shutdown();
-            ImGui_ImplGlfw_Shutdown();
-            glfwDestroyWindow(window_);
-            glfwTerminate();
+            ImGui_ImplSDL2_Shutdown();
+            SDL_DestroyWindow(window_);
+            SDL_Quit();
         }
     }
 

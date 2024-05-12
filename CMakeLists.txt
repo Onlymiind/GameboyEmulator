@@ -57,8 +57,8 @@ set(IMGUI_LIB
 set(IMGUI_BACKEND
     imgui/backends/imgui_impl_opengl3.h
     imgui/backends/imgui_impl_opengl3.cpp
-    imgui/backends/imgui_impl_glfw.h
-    imgui/backends/imgui_impl_glfw.cpp
+    imgui/backends/imgui_impl_sdl2.h
+    imgui/backends/imgui_impl_sdl2.cpp
 )
 
 set(GLAD
@@ -69,7 +69,7 @@ set(GLAD
 
 
 if(NOT TESTS_ONLY)
-    add_subdirectory(glfw)
+    find_package(SDL2 REQUIRED)
 
     add_executable(
         emulator
@@ -86,8 +86,8 @@ if(NOT TESTS_ONLY)
     )
 
 
-    target_link_libraries(emulator PUBLIC emulator_lib glfw)
-    target_include_directories(emulator PRIVATE src imgui glfw/include glad/include)
+    target_link_libraries(emulator PUBLIC emulator_lib SDL2::SDL2)
+    target_include_directories(emulator PRIVATE src imgui glad/include)
 
     target_compile_features(emulator PUBLIC cxx_std_17)
 
