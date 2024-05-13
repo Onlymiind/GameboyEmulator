@@ -23,6 +23,8 @@ namespace gb::cpu {
         }
     }
 
+    constexpr uint16_t g_entrypoint_address = 0x100;
+
     struct Instruction {
         using Argument = Variant<std::monostate, Registers, int8_t, uint8_t,
                                  uint16_t>;
@@ -48,6 +50,8 @@ namespace gb::cpu {
         return lhs.type == rhs.type && lhs.load_subtype == rhs.load_subtype &&
                lhs.condition == rhs.condition && lhs.src == rhs.src;
     }
+
+    std::string to_string(Instruction instr);
 
     struct MemoryOp {
         enum class Type : uint8_t { NONE, READ, FETCH_INSTRUCTION, WRITE };

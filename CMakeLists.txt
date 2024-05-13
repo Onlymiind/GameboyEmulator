@@ -98,10 +98,11 @@ if(BUILD_TESTS OR TESTS_ONLY)
     add_subdirectory(Catch2)
 
     add_executable(tests
+        src/tests/memory_breakpoints_test.cpp
         src/tests/decoder_test.cpp
         src/tests/timer_test.cpp
+	src/tests/cpu_test.cpp
         src/tests/integration/intergration_test.cpp
-        src/tests/memory_breakpoints_test.cpp
     )
     target_link_libraries(tests PRIVATE emulator_lib Catch2WithMain)
     target_include_directories(tests PUBLIC src src/tests)

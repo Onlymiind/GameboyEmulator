@@ -13,7 +13,7 @@
 #include <random>
 #include <set>
 
-std::vector<std::pair<uint16_t, gb::Breakpoint>> cases{
+static std::vector<std::pair<uint16_t, gb::Breakpoint>> cases{
     {0, gb::Breakpoint{.info = gb::BreakpointInfo::FETCH}},
     {1, gb::Breakpoint{.info = gb::BreakpointInfo::READ}},
     {2, gb::Breakpoint{.info = gb::BreakpointInfo::WRITE}},

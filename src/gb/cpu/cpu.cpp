@@ -7,6 +7,7 @@
 #include "util/util.h"
 
 #include <cstdint>
+#include <cstdio>
 #include <exception>
 #include <iostream>
 #include <optional>
@@ -23,7 +24,7 @@ namespace gb::cpu {
         reg_.hl(0x014D);
 
         reg_.sp = 0xFFFE;
-        reg_.pc(0x0100);
+        reg_.pc(g_entrypoint_address);
     }
 
     void SharpSM83::tick() {
@@ -185,7 +186,7 @@ namespace gb::cpu {
         reg_.setWordRegister(Registers::HL, 0x014d);
 
         reg_.sp = 0xFFFE;
-        reg_.pc(0x100);
+        reg_.pc(g_entrypoint_address);
 
         IME_ = false;
         instruction_ = Instruction{};
@@ -435,5 +436,92 @@ namespace gb::cpu {
 
         case WRITE: bus_.write(op.address, op.data); break;
         }
+    }
+
+    std::string to_string(Instruction instr) {
+        std::string out;
+        out.resize(sizeof("LD HL, SP, -128"));
+        size_t offset = snprintf(out.data(), out.size(), "%s",
+                                 to_string(instr.type).data());
+        size_t size = out.size() - offset;
+        if (instr.condition) {
+            offset = offset + snprintf(out.data() + offset, size, " %s",
+                                       to_string(*instr.condition).data());
+            if (offset >= out.size()) {
+                return out;
+            }
+            size = out.size() - offset;
+        }
+        auto print_arg = [&out, &offset, &size](Instruction::Argument arg) {
+            if (arg.empty()) {
+                return;
+            }
+            if (arg.is<Registers>()) {
+                offset = offset +
+                         snprintf(out.data() + offset, size, " %s",
+                                  to_string(arg.get<Registers>()).data());
+            } else if (arg.is<int8_t>()) {
+                offset = offset + snprintf(out.data() + offset, size, " %d",
+                                           arg.get<int8_t>());
+            } else if (arg.is<uint8_t>()) {
+                offset = offset + snprintf(out.data() + offset, size, " %02x",
+                                           arg.get<uint8_t>());
+            } else if (arg.is<uint16_t>()) {
+                offset = offset + snprintf(out.data() + offset, size, " %04x",
+                                           arg.get<uint16_t>());
+            }
+            size = out.size() - offset;
+        };
+
+        if (instr.load_subtype == LoadSubtype::LD_OFFSET_SP) {
+            offset = offset + snprintf(out.data() + offset, size, " HL,");
+        } else if (instr.load_subtype == LoadSubtype::LD_IO) {
+            offset = offset + snprintf(out.data() + offset, size, "H");
+        }
+        if (offset >= out.size()) {
+            return out;
+        }
+
+        size = out.size() - offset;
+
+        print_arg(instr.dst);
+        if (offset >= out.size()) {
+            return out;
+        }
+
+        if (instr.load_subtype == LoadSubtype::LD_DEC &&
+            instr.dst.get<Registers>() == Registers::HL) {
+            offset = offset + snprintf(out.data() + offset, size, "--");
+        } else if (instr.load_subtype == LoadSubtype::LD_INC &&
+                   instr.dst.get<Registers>() == Registers::HL) {
+            offset = offset + snprintf(out.data() + offset, size, "++");
+        }
+        if (offset >= out.size()) {
+            return out;
+        }
+        size = out.size() - offset;
+
+        if (!instr.dst.empty()) {
+            offset = offset + snprintf(out.data() + offset, size, ",");
+            if (offset >= out.size()) {
+                return out;
+            }
+            size = out.size() - offset;
+        }
+
+        print_arg(instr.src);
+        if (offset >= out.size()) {
+            return out;
+        }
+        if (instr.load_subtype == LoadSubtype::LD_DEC &&
+            instr.src.get<Registers>() == Registers::HL) {
+            offset = offset + snprintf(out.data() + offset, size, "--");
+        } else if (instr.load_subtype == LoadSubtype::LD_INC &&
+                   instr.src.get<Registers>() == Registers::HL) {
+            offset = offset + snprintf(out.data() + offset, size, "++");
+        }
+        out.resize(offset);
+
+        return out;
     }
 } // namespace gb::cpu

@@ -726,12 +726,6 @@ namespace emulator {
         }
     }
 
-    constexpr size_t i = 70224 / 4;
-    constexpr double bufsize = i * (sizeof(gb::cpu::Instruction)) /
-                               double(1024);
-    constexpr double bufsize1 = i * (g_instruction_string_buf_size - 5 +
-                                     sizeof(InstructionAddress));
-
     bool Application::setROMDirectory() {
         std::filesystem::path path(new_romdir_);
         if (std::filesystem::exists(path) &&
